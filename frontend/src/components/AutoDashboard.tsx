@@ -42,33 +42,36 @@ const THEME_COLORS = [
   { name: 'Slate', value: '#64748b' }
 ];
 
-export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
-  if (!dataPreview || dataPreview.length === 0) return null;
+export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardProps) {
+  // Find columns safely using fallback values to avoid TypeErrors during initial render
+  const safeDataPreview = dataPreview || [];
+  const safeColumns = columns || [];
 
-  // Find columns by data types
-  let stringCols = columns.filter(col => typeof dataPreview[0][col] === 'string' && isNaN(Number(dataPreview[0][col])));
-  let numCols = columns.filter(col => typeof dataPreview[0][col] === 'number' || !isNaN(Number(dataPreview[0][col])));
+  const firstRow = safeDataPreview[0] || {};
 
-  if (stringCols.length === 0) stringCols = [columns[0]];
-  if (numCols.length === 0) numCols = [columns[1] || columns[0]];
+  let stringCols = safeColumns.filter(col => typeof firstRow[col] === 'string' && isNaN(Number(firstRow[col])));
+  let numCols = safeColumns.filter(col => typeof firstRow[col] === 'number' || !isNaN(Number(firstRow[col])));
 
-  const xCol = stringCols[0];
-  const yCol1 = numCols[0];
+  if (stringCols.length === 0) stringCols = safeColumns.length > 0 ? [safeColumns[0]] : [''];
+  if (numCols.length === 0) numCols = safeColumns.length > 1 ? [safeColumns[1]] : (safeColumns.length > 0 ? [safeColumns[0]] : ['']);
+
+  const xCol = stringCols[0] || '';
+  const yCol1 = numCols[0] || '';
   const yCol2 = numCols.length > 1 ? numCols[1] : null;
 
   // Custom Graph Builder State
   const [chartType, setChartType] = useState<'bar' | 'line' | 'area' | 'scatter' | 'pie' | 'composed' | 'radial'>('bar');
-  const [customX, setCustomX] = useState(xCol);
-  const [customY, setCustomY] = useState(yCol1);
+  const [customX, setCustomX] = useState('');
+  const [customY, setCustomY] = useState('');
   const [customColor, setCustomColor] = useState('#3b82f6');
   const [customLimit, setCustomLimit] = useState<number>(10);
   
-  const [distX, setDistX] = useState(xCol);
-  const [distY, setDistY] = useState(yCol1);
+  const [distX, setDistX] = useState('');
+  const [distY, setDistY] = useState('');
   const [distLimit, setDistLimit] = useState<number>(10);
   
-  const [trendX, setTrendX] = useState(xCol);
-  const [trendY, setTrendY] = useState(yCol2 || yCol1);
+  const [trendX, setTrendX] = useState('');
+  const [trendY, setTrendY] = useState('');
   const [trendLimit, setTrendLimit] = useState<number>(10);
   
   // Custom Section for Interactive Display
@@ -76,17 +79,97 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
   const [showGridlines, setShowGridlines] = useState(true);
   const [movingAverageWindow, setMovingAverageWindow] = useState(0);
 
+  // Dynamic Category Composition State
+  const [compCategory, setCompCategory] = useState('');
+  const [compMetric, setCompMetric] = useState('');
+  const [compChartType, setCompChartType] = useState<'donut' | 'pie' | 'radial'>('donut');
+  const [compLimit, setCompLimit] = useState<number>(5);
+  const [compSidebarTab, setCompSidebarTab] = useState<'share' | 'metric_profile'>('share');
+  
+  // Custom states for AI Hypothesis Testing Sandbox
+  const [hypothesisTemplate, setHypothesisTemplate] = useState<string>('positive');
+  const [hypothesisX, setHypothesisX] = useState('');
+  const [hypothesisY, setHypothesisY] = useState('');
+  const [customHypothesisText, setCustomHypothesisText] = useState('');
+  const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
+  const [hypothesisResult, setHypothesisResult] = useState<any>(null);
+  const [testing, setTesting] = useState(false);
+  
+  // Custom states for Auto-Generated Analytical Insights selectors
+  const [radarCols, setRadarCols] = useState<string[]>([]);
+  const [cumulX, setCumulX] = useState('');
+  const [cumulY, setCumulY] = useState('');
+  const [cumulLimit, setCumulLimit] = useState<number>(10);
+
+  // Custom Section for Auto-Generated Analytical Insights
+  const [auditCol, setAuditCol] = useState('');
+  const [auditX, setAuditX] = useState('');
+  const [auditChartType, setAuditChartType] = useState<'bar' | 'line' | 'area'>('bar');
+
+  // Interactive 5 KPIs configurations
+  const [kpiConfigs, setKpiConfigs] = useState([
+    { id: 1, label: '', column: '', operation: 'mean', color: 'text-blue-400', border: 'hover:border-blue-500/30' },
+    { id: 2, label: '', column: '', operation: 'max', color: 'text-emerald-400', border: 'hover:border-emerald-500/30' },
+    { id: 3, label: '', column: '', operation: 'unique', color: 'text-purple-400', border: 'hover:border-purple-500/30' },
+    { id: 4, label: '', column: '', operation: 'sum', color: 'text-amber-400', border: 'hover:border-amber-500/30' },
+    { id: 5, label: '', column: '', operation: 'completeness', color: 'text-rose-400', border: 'hover:border-rose-500/30' }
+  ]);
+
+  const [activeKpiSettings, setActiveKpiSettings] = useState<number | null>(null);
+
+  // Synchronize column selection states when columns load asynchronously
+  React.useEffect(() => {
+    if (safeDataPreview.length > 0 && safeColumns.length > 0) {
+      setCustomX(prev => prev || xCol);
+      setCustomY(prev => prev || yCol1);
+      setDistX(prev => prev || xCol);
+      setDistY(prev => prev || yCol1);
+      setTrendX(prev => prev || xCol);
+      setTrendY(prev => prev || yCol2 || yCol1);
+      setCompCategory(prev => prev || xCol);
+      setCompMetric(prev => prev || yCol1);
+      setCumulX(prev => prev || xCol);
+      setCumulY(prev => prev || yCol1);
+      setAuditCol(prev => prev || safeColumns[0]);
+      setAuditX(prev => prev || safeColumns[0]);
+      setRadarCols(prev => prev.length > 0 ? prev : numCols.slice(0, 5));
+      setHypothesisX(prev => prev || numCols[0] || safeColumns[0]);
+      setHypothesisY(prev => prev || numCols.length > 1 ? numCols[1] : (numCols[0] || safeColumns[0]));
+      
+      // Update default KPI configs if they were initialized empty
+      setKpiConfigs(prev => prev.map(kpi => {
+        if (!kpi.column) {
+          const opLabels: { [key: string]: string } = {
+            mean: 'Average',
+            sum: 'Total Sum',
+            max: 'Maximum',
+            min: 'Minimum',
+            unique: 'Unique Count',
+            completeness: 'Completeness %',
+            median: 'Median'
+          };
+          if (kpi.id === 1) return { ...kpi, label: `${opLabels[kpi.operation]} of ${yCol1}`, column: yCol1 };
+          if (kpi.id === 2) return { ...kpi, label: `${opLabels[kpi.operation]} of ${yCol1}`, column: yCol1 };
+          if (kpi.id === 3) return { ...kpi, label: `${opLabels[kpi.operation]} of ${xCol}`, column: xCol };
+          if (kpi.id === 4) return { ...kpi, label: `${opLabels[kpi.operation]} of ${yCol2 || yCol1}`, column: yCol2 || yCol1 };
+          if (kpi.id === 5) return { ...kpi, label: `${opLabels[kpi.operation]} of ${yCol1}`, column: yCol1 };
+        }
+        return kpi;
+      }));
+    }
+  }, [safeDataPreview, safeColumns, xCol, yCol1, yCol2]);
+
   // processedData for Moving Average & Trendline
   const processedData = React.useMemo(() => {
-    let result = dataPreview;
+    let result = safeDataPreview;
     
-    if (customLimit > 0) {
-      result = [...dataPreview]
+    if (customLimit > 0 && safeDataPreview.length > 0 && customY) {
+      result = [...safeDataPreview]
         .sort((a, b) => (Number(b[customY]) || 0) - (Number(a[customY]) || 0))
         .slice(0, customLimit);
     }
 
-    if (movingAverageWindow > 0) {
+    if (movingAverageWindow > 0 && result.length > 0 && customY) {
       const source = result;
       result = source.map((row, idx) => {
         const windowRows = source.slice(Math.max(0, idx - movingAverageWindow + 1), idx + 1);
@@ -99,7 +182,7 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
       });
     }
 
-    if (showTrendline) {
+    if (showTrendline && result.length > 0 && customY) {
       // Calculate linear regression: y = mx + c
       const n = result.length;
       let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
@@ -119,63 +202,40 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
     }
 
     return result;
-  }, [dataPreview, customY, movingAverageWindow, showTrendline, customLimit]);
+  }, [safeDataPreview, customY, movingAverageWindow, showTrendline, customLimit]);
 
   const processedDistData = React.useMemo(() => {
-    if (distLimit > 0) {
-      return [...dataPreview]
+    if (distLimit > 0 && safeDataPreview.length > 0 && distY) {
+      return [...safeDataPreview]
         .sort((a, b) => (Number(b[distY]) || 0) - (Number(a[distY]) || 0))
         .slice(0, distLimit);
     }
-    return dataPreview;
-  }, [dataPreview, distY, distLimit]);
+    return safeDataPreview;
+  }, [safeDataPreview, distY, distLimit]);
 
   const processedTrendData = React.useMemo(() => {
-    if (trendLimit > 0) {
-      return [...dataPreview]
+    if (trendLimit > 0 && safeDataPreview.length > 0 && trendY) {
+      return [...safeDataPreview]
         .sort((a, b) => (Number(b[trendY]) || 0) - (Number(a[trendY]) || 0))
         .slice(0, trendLimit);
     }
-    return dataPreview;
-  }, [dataPreview, trendY, trendLimit]);
+    return safeDataPreview;
+  }, [safeDataPreview, trendY, trendLimit]);
 
-  // Dynamic Category Composition State
-  const [compCategory, setCompCategory] = useState(xCol);
-  const [compMetric, setCompMetric] = useState(yCol1);
-  const [compChartType, setCompChartType] = useState<'donut' | 'pie' | 'radial'>('donut');
-  const [compLimit, setCompLimit] = useState<number>(5);
-  const [compSidebarTab, setCompSidebarTab] = useState<'share' | 'metric_profile'>('share');
-  
-  // Custom states for AI Hypothesis Testing Sandbox
-  const [hypothesisTemplate, setHypothesisTemplate] = useState<string>('positive');
-  const [hypothesisX, setHypothesisX] = useState(numCols[0] || columns[0]);
-  const [hypothesisY, setHypothesisY] = useState(numCols.length > 1 ? numCols[1] : (numCols[0] || columns[0]));
-  const [customHypothesisText, setCustomHypothesisText] = useState('');
-  const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
-  const [hypothesisResult, setHypothesisResult] = useState<any>(null);
-  const [testing, setTesting] = useState(false);
-  
-  // Custom states for Auto-Generated Analytical Insights selectors
-  const [radarCols, setRadarCols] = useState<string[]>(numCols.slice(0, 5));
-  const [cumulX, setCumulX] = useState(xCol);
-  const [cumulY, setCumulY] = useState(yCol1);
-  const [cumulLimit, setCumulLimit] = useState<number>(10);
-
-  // Custom Section for Auto-Generated Analytical Insights
-  const [auditCol, setAuditCol] = useState(columns[0]);
-  const [auditX, setAuditX] = useState(columns[0]);
-  const [auditChartType, setAuditChartType] = useState<'bar' | 'line' | 'area'>('bar');
-
-  // Interactive 5 KPIs configurations
-  const [kpiConfigs, setKpiConfigs] = useState([
-    { id: 1, label: `Average of ${yCol1}`, column: yCol1, operation: 'mean', color: 'text-blue-400', border: 'hover:border-blue-500/30' },
-    { id: 2, label: `Max of ${yCol1}`, column: yCol1, operation: 'max', color: 'text-emerald-400', border: 'hover:border-emerald-500/30' },
-    { id: 3, label: `Unique of ${xCol}`, column: xCol, operation: 'unique', color: 'text-purple-400', border: 'hover:border-purple-500/30' },
-    { id: 4, label: `Total of ${yCol2 || yCol1}`, column: yCol2 || yCol1, operation: 'sum', color: 'text-amber-400', border: 'hover:border-amber-500/30' },
-    { id: 5, label: `Completeness of ${yCol1}`, column: yCol1, operation: 'completeness', color: 'text-rose-400', border: 'hover:border-rose-500/30' }
-  ]);
-
-  const [activeKpiSettings, setActiveKpiSettings] = useState<number | null>(null);
+  const processedCumulativeData = React.useMemo(() => {
+    let runningTotal = 0;
+    const slicedData = safeDataPreview.length > 0
+      ? (cumulLimit > 0 && cumulY ? safeDataPreview.slice(0, cumulLimit) : safeDataPreview)
+      : [];
+    return slicedData.map(d => {
+      const val = cumulY ? (Number(d[cumulY]) || 0) : 0;
+      runningTotal += val;
+      return {
+        category: (cumulX && d[cumulX]) || 'Unknown',
+        'Cumulative Sum': runningTotal
+      };
+    });
+  }, [safeDataPreview, cumulY, cumulX, cumulLimit]);
 
   // Update KPI column/operation
   const updateKpiConfig = (id: number, field: 'column' | 'operation', value: string) => {
@@ -333,6 +393,14 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
       }
     }, 800);
   };
+
+  if (safeDataPreview.length === 0) {
+    return (
+      <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50 p-6 text-center text-neutral-400">
+        No preview data available for auto-insights.
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -1284,36 +1352,21 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="h-72 w-full">
-                {(() => {
-                  let total = 0;
-                  const slicedData = cumulLimit > 0 ? dataPreview.slice(0, cumulLimit) : dataPreview;
-                  const cumulativeData = slicedData.map(d => {
-                    const val = Number(d[cumulY]) || 0;
-                    total += val;
-                    return {
-                      category: d[cumulX] || 'Unknown',
-                      'Cumulative Sum': total
-                    };
-                  });
-
-                  return (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={cumulativeData}>
-                        <defs>
-                          <linearGradient id="cumulGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.4}/>
-                            <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                        <XAxis dataKey="category" stroke="#737373" fontSize={9} />
-                        <YAxis stroke="#737373" fontSize={9} />
-                        <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '8px' }} />
-                        <Area type="monotone" dataKey="Cumulative Sum" stroke="#f43f5e" strokeWidth={2.5} fill="url(#cumulGrad)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  );
-                })()}
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={processedCumulativeData}>
+                    <defs>
+                      <linearGradient id="cumulGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.4}/>
+                        <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+                    <XAxis dataKey="category" stroke="#737373" fontSize={9} />
+                    <YAxis stroke="#737373" fontSize={9} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '8px' }} />
+                    <Area type="monotone" dataKey="Cumulative Sum" stroke="#f43f5e" strokeWidth={2.5} fill="url(#cumulGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>

@@ -27,6 +27,13 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
   const [result, setResult] = useState<any>(null);
   const [selectedTimeCol, setSelectedTimeCol] = useState(defaultDateCol);
 
+  React.useEffect(() => {
+    if (columns && columns.length > 0) {
+      setTargetCol(prev => prev || columns[columns.length - 1] || '');
+      setSelectedTimeCol(prev => prev || defaultDateCol || '');
+    }
+  }, [columns, defaultDateCol]);
+
   const handleTrain = async () => {
     if (!targetCol) return;
     setLoading(true);
