@@ -8,8 +8,8 @@ export default function Footer() {
   const router = useRouter();
 
   return (
-    <footer className="w-full border-t border-neutral-900 bg-neutral-950 px-6 py-12 md:py-16 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto">
+    <footer className="w-full border-t border-neutral-900 bg-neutral-950 px-8 py-12 md:py-16 relative overflow-hidden">
+      <div className="max-w-5xl md:max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-12 gap-8 pb-12 border-b border-neutral-900">
           
           {/* Brand and Description */}
