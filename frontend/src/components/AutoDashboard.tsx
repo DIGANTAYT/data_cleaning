@@ -61,6 +61,15 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
   const [customX, setCustomX] = useState(xCol);
   const [customY, setCustomY] = useState(yCol1);
   const [customColor, setCustomColor] = useState('#3b82f6');
+  const [customLimit, setCustomLimit] = useState<number>(10);
+  
+  const [distX, setDistX] = useState(xCol);
+  const [distY, setDistY] = useState(yCol1);
+  const [distLimit, setDistLimit] = useState<number>(10);
+  
+  const [trendX, setTrendX] = useState(xCol);
+  const [trendY, setTrendY] = useState(yCol2 || yCol1);
+  const [trendLimit, setTrendLimit] = useState<number>(10);
   
   // Custom Section for Interactive Display
   const [showTrendline, setShowTrendline] = useState(false);
@@ -70,9 +79,17 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
   // processedData for Moving Average & Trendline
   const processedData = React.useMemo(() => {
     let result = dataPreview;
+    
+    if (customLimit > 0) {
+      result = [...dataPreview]
+        .sort((a, b) => (Number(b[customY]) || 0) - (Number(a[customY]) || 0))
+        .slice(0, customLimit);
+    }
+
     if (movingAverageWindow > 0) {
-      result = dataPreview.map((row, idx) => {
-        const windowRows = dataPreview.slice(Math.max(0, idx - movingAverageWindow + 1), idx + 1);
+      const source = result;
+      result = source.map((row, idx) => {
+        const windowRows = source.slice(Math.max(0, idx - movingAverageWindow + 1), idx + 1);
         const sum = windowRows.reduce((acc, r) => acc + (Number(r[customY]) || 0), 0);
         const avg = sum / windowRows.length;
         return {
@@ -102,7 +119,25 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
     }
 
     return result;
-  }, [dataPreview, customY, movingAverageWindow, showTrendline]);
+  }, [dataPreview, customY, movingAverageWindow, showTrendline, customLimit]);
+
+  const processedDistData = React.useMemo(() => {
+    if (distLimit > 0) {
+      return [...dataPreview]
+        .sort((a, b) => (Number(b[distY]) || 0) - (Number(a[distY]) || 0))
+        .slice(0, distLimit);
+    }
+    return dataPreview;
+  }, [dataPreview, distY, distLimit]);
+
+  const processedTrendData = React.useMemo(() => {
+    if (trendLimit > 0) {
+      return [...dataPreview]
+        .sort((a, b) => (Number(b[trendY]) || 0) - (Number(a[trendY]) || 0))
+        .slice(0, trendLimit);
+    }
+    return dataPreview;
+  }, [dataPreview, trendY, trendLimit]);
 
   // Dynamic Category Composition State
   const [compCategory, setCompCategory] = useState(xCol);
@@ -111,11 +146,16 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
   const [compLimit, setCompLimit] = useState<number>(5);
   const [compSidebarTab, setCompSidebarTab] = useState<'share' | 'metric_profile'>('share');
   
+  // Custom states for AI Hypothesis Testing Sandbox
+  const [hypothesisTemplate, setHypothesisTemplate] = useState<string>('positive');
+  const [hypothesisX, setHypothesisX] = useState(numCols[0] || columns[0]);
+  const [hypothesisY, setHypothesisY] = useState(numCols.length > 1 ? numCols[1] : (numCols[0] || columns[0]));
+  const [customHypothesisText, setCustomHypothesisText] = useState('');
+  const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
+  const [hypothesisResult, setHypothesisResult] = useState<any>(null);
+  const [testing, setTesting] = useState(false);
+  
   // Custom states for Auto-Generated Analytical Insights selectors
-  const [distX, setDistX] = useState(xCol);
-  const [distY, setDistY] = useState(yCol1);
-  const [trendX, setTrendX] = useState(xCol);
-  const [trendY, setTrendY] = useState(yCol2 || yCol1);
   const [radarCols, setRadarCols] = useState<string[]>(numCols.slice(0, 5));
   const [cumulX, setCumulX] = useState(xCol);
   const [cumulY, setCumulY] = useState(yCol1);
@@ -196,6 +236,101 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
     }
     
     return '0.00';
+  };
+
+  const runHypothesisTest = () => {
+    setTesting(true);
+    setTimeout(() => {
+      try {
+        const pairs = dataPreview
+          .map(d => ({ x: Number(d[hypothesisX]), y: Number(d[hypothesisY]) }))
+          .filter(p => !isNaN(p.x) && !isNaN(p.y));
+
+        const n = pairs.length;
+        if (n < 3) {
+          setHypothesisResult({ error: 'Need at least 3 rows with valid numeric data to perform test.' });
+          setTesting(false);
+          return;
+        }
+
+        const sumX = pairs.reduce((sum, p) => sum + p.x, 0);
+        const sumY = pairs.reduce((sum, p) => sum + p.y, 0);
+        const meanX = sumX / n;
+        const meanY = sumY / n;
+
+        let num = 0;
+        let denX = 0;
+        let denY = 0;
+
+        for (let i = 0; i < n; i++) {
+          const diffX = pairs[i].x - meanX;
+          const diffY = pairs[i].y - meanY;
+          num += diffX * diffY;
+          denX += diffX * diffX;
+          denY += diffY * diffY;
+        }
+
+        const r = denX === 0 || denY === 0 ? 0 : num / Math.sqrt(denX * denY);
+        
+        // Calculate t-statistic
+        const r2 = r * r;
+        const tStat = r2 === 1 ? 999 : r * Math.sqrt((n - 2) / (1 - r2));
+        
+        // Approximate p-value
+        const z = Math.abs(tStat);
+        const pVal = 2 * (1 - (1 / (1 + Math.exp(1.5976 * z * (1 + 0.04417 * z * z)))));
+
+        const alpha = 1 - confidenceLevel;
+        const isSignificant = pVal < alpha;
+
+        let strength = 'No correlation';
+        const absR = Math.abs(r);
+        if (absR >= 0.7) strength = r > 0 ? 'Strong Positive' : 'Strong Negative';
+        else if (absR >= 0.4) strength = r > 0 ? 'Moderate Positive' : 'Moderate Negative';
+        else if (absR >= 0.1) strength = r > 0 ? 'Weak Positive' : 'Weak Negative';
+
+        let templateVerdict = false;
+        let explanation = '';
+        
+        if (hypothesisTemplate === 'positive') {
+          templateVerdict = isSignificant && r > 0.1;
+          explanation = templateVerdict 
+            ? `Hypothesis CONFIRMED: There is a statistically significant positive correlation (r = ${r.toFixed(3)}, p = ${pVal.toFixed(4)}) between ${hypothesisX} and ${hypothesisY}. As ${hypothesisX} increases, ${hypothesisY} increases systematically.`
+            : `Hypothesis REJECTED: No statistically significant positive correlation was found. The correlation coefficient is r = ${r.toFixed(3)} and the p-value is ${pVal.toFixed(4)}, which is above the significance threshold of alpha = ${alpha.toFixed(2)}.`;
+        } else if (hypothesisTemplate === 'negative') {
+          templateVerdict = isSignificant && r < -0.1;
+          explanation = templateVerdict
+            ? `Hypothesis CONFIRMED: There is a statistically significant negative correlation (r = ${r.toFixed(3)}, p = ${pVal.toFixed(4)}) between ${hypothesisX} and ${hypothesisY}. As ${hypothesisX} increases, ${hypothesisY} decreases systematically.`
+            : `Hypothesis REJECTED: No statistically significant negative correlation was found. The correlation coefficient is r = ${r.toFixed(3)} and the p-value is ${pVal.toFixed(4)}, which is above the significance threshold of alpha = ${alpha.toFixed(2)}.`;
+        } else if (hypothesisTemplate === 'independent') {
+          templateVerdict = !isSignificant || Math.abs(r) < 0.1;
+          explanation = templateVerdict
+            ? `Hypothesis CONFIRMED: The variables are statistically independent. The p-value of ${pVal.toFixed(4)} and correlation of r = ${r.toFixed(3)} show no systematic linear relationship.`
+            : `Hypothesis REJECTED: The variables are NOT independent. We found a statistically significant correlation of r = ${r.toFixed(3)} (p = ${pVal.toFixed(4)}), showing they are linearly dependent.`;
+        } else {
+          templateVerdict = isSignificant;
+          explanation = templateVerdict
+            ? `Custom Hypothesis SUPPORTED: We found a statistically significant linear correlation between the selected variables (r = ${r.toFixed(3)}, p = ${pVal.toFixed(4)}), indicating a strong mathematical pattern.`
+            : `Custom Hypothesis UNSUPPORTED: No statistically significant linear pattern was found (r = ${r.toFixed(3)}, p = ${pVal.toFixed(4)}). The null hypothesis cannot be rejected.`;
+        }
+
+        setHypothesisResult({
+          r,
+          absR,
+          pVal,
+          tStat,
+          isSignificant,
+          strength,
+          templateVerdict,
+          explanation,
+          sampleCount: n
+        });
+      } catch (err: any) {
+        setHypothesisResult({ error: `Calculation error: ${err.message}` });
+      } finally {
+        setTesting(false);
+      }
+    }, 800);
   };
 
   return (
@@ -347,6 +482,26 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                   {numCols.map(col => (
                     <option key={col} value={col}>{col}</option>
                   ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-3 top-3 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Limit Selector */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider flex items-center">
+                <Percent className="w-3 h-3 mr-1 text-purple-400" /> Limit Data Points
+              </label>
+              <div className="relative">
+                <select
+                  value={customLimit}
+                  onChange={(e) => setCustomLimit(Number(e.target.value))}
+                  className="w-full bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value={5}>Top 5 Rows (Sorted)</option>
+                  <option value={10}>Top 10 Rows (Sorted)</option>
+                  <option value={20}>Top 20 Rows (Sorted)</option>
+                  <option value={0}>All Rows (Unsorted)</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-3 top-3 pointer-events-none" />
               </div>
@@ -565,12 +720,22 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                     <option key={col} value={col}>{col}</option>
                   ))}
                 </select>
+                <select
+                  value={distLimit}
+                  onChange={(e) => setDistLimit(Number(e.target.value))}
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                >
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                  <option value={25}>Top 25</option>
+                  <option value={0}>All</option>
+                </select>
               </div>
             </CardHeader>
             <CardContent>
               <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dataPreview}>
+                  <BarChart data={processedDistData}>
                     <defs>
                       <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.85}/>
@@ -613,12 +778,22 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                     <option key={col} value={col}>{col}</option>
                   ))}
                 </select>
+                <select
+                  value={trendLimit}
+                  onChange={(e) => setTrendLimit(Number(e.target.value))}
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                >
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                  <option value={25}>Top 25</option>
+                  <option value={0}>All</option>
+                </select>
               </div>
             </CardHeader>
             <CardContent>
               <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dataPreview}>
+                  <LineChart data={processedTrendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
                     <XAxis dataKey={trendX} stroke="#737373" fontSize={11} />
                     <YAxis stroke="#737373" fontSize={11} />
@@ -1149,6 +1324,155 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                 </div>
               );
             })()}
+          </CardContent>
+        </Card>
+
+        {/* 🧠 Premium AI Hypothesis Testing Sandbox */}
+        <Card className="dark bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 backdrop-blur-md border border-neutral-800/80 text-neutral-50 shadow-2xl mt-8 overflow-hidden">
+          <CardHeader className="border-b border-neutral-850 pb-4 bg-neutral-950/20">
+            <div className="flex items-center space-x-2">
+              <div className="w-9 h-9 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <CardTitle className="text-md font-bold">AI Hypothesis Testing Sandbox</CardTitle>
+                <CardDescription className="text-neutral-400 text-xs">Formulate statistical assumptions and let our AI correlation engine test validity in real-time.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end bg-neutral-950/30 border border-neutral-850 p-5 rounded-xl">
+              {/* Hypothesis Template */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Hypothesis Model</label>
+                <select
+                  value={hypothesisTemplate}
+                  onChange={(e) => setHypothesisTemplate(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="positive">Positive Correlation (X ↗, Y ↗)</option>
+                  <option value="negative">Negative Correlation (X ↗, Y ↘)</option>
+                  <option value="independent">Independence Test (No Relation)</option>
+                  <option value="custom">Custom Sandbox Hypothesis</option>
+                </select>
+              </div>
+
+              {/* Independent X */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Independent (X)</label>
+                <select
+                  value={hypothesisX}
+                  onChange={(e) => setHypothesisX(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  {numCols.map(col => (
+                    <option key={col} value={col}>{col}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dependent Y */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Dependent (Y)</label>
+                <select
+                  value={hypothesisY}
+                  onChange={(e) => setHypothesisY(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  {numCols.map(col => (
+                    <option key={col} value={col}>{col}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Action Button */}
+              <Button
+                onClick={runHypothesisTest}
+                disabled={testing}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-6 rounded-lg shadow-lg shadow-indigo-600/20 transition-all duration-200 cursor-pointer h-[40px]"
+              >
+                {testing ? 'Computing T-Test...' : 'Run Hypothesis Test'}
+              </Button>
+            </div>
+
+            {/* Custom text if custom is selected */}
+            {hypothesisTemplate === 'custom' && (
+              <div className="space-y-1 bg-neutral-950/40 p-4 rounded-xl border border-neutral-850">
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Enter your custom hypothesis assumption statement</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Higher values of marketing budget yield lower customer acquisition costs."
+                  value={customHypothesisText}
+                  onChange={(e) => setCustomHypothesisText(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            )}
+
+            {/* Results Panel */}
+            {hypothesisResult && (
+              <div className="bg-neutral-950/60 border border-neutral-850 rounded-xl p-5 space-y-6 animate-fade-in">
+                {hypothesisResult.error ? (
+                  <p className="text-xs text-red-400">{hypothesisResult.error}</p>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center pb-3 border-b border-neutral-800/60">
+                      <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider font-mono">Verification Verdict</span>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border capitalize flex items-center ${
+                        hypothesisResult.templateVerdict 
+                          ? 'text-green-400 bg-green-500/10 border-green-500/20' 
+                          : 'text-red-400 bg-red-500/10 border-red-500/20'
+                      }`}>
+                        {hypothesisResult.templateVerdict ? '✓ Hypothesis Confirmed' : '✗ Hypothesis Rejected'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Pearson r */}
+                      <div className="p-4 bg-neutral-900/40 border border-neutral-800/80 rounded-xl relative overflow-hidden">
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider font-mono">Pearson Correlation (r)</span>
+                        <p className={`text-3xl font-extrabold mt-1 ${
+                          hypothesisResult.r > 0 ? 'text-blue-400' : hypothesisResult.r < 0 ? 'text-indigo-400' : 'text-neutral-400'
+                        }`}>
+                          {hypothesisResult.r.toFixed(3)}
+                        </p>
+                        <p className="text-[11px] text-neutral-400 mt-1.5">Strength: <strong className="text-neutral-200">{hypothesisResult.strength}</strong></p>
+                      </div>
+
+                      {/* P-Value */}
+                      <div className="p-4 bg-neutral-900/40 border border-neutral-800/80 rounded-xl relative overflow-hidden">
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider font-mono">P-Value Significance</span>
+                        <p className={`text-3xl font-extrabold mt-1 ${
+                          hypothesisResult.isSignificant ? 'text-green-400' : 'text-yellow-400'
+                        }`}>
+                          {hypothesisResult.pVal.toFixed(4)}
+                        </p>
+                        <p className="text-[11px] text-neutral-400 mt-1.5">Status: <strong className="text-neutral-200">{
+                          hypothesisResult.isSignificant ? 'Statistically Significant' : 'Not Significant'
+                        }</strong></p>
+                      </div>
+
+                      {/* Confidence Level */}
+                      <div className="p-4 bg-neutral-900/40 border border-neutral-800/80 rounded-xl relative overflow-hidden">
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider font-mono">Confidence Level</span>
+                        <p className="text-3xl font-extrabold text-neutral-200 mt-1">{(confidenceLevel * 100)}%</p>
+                        <p className="text-[11px] text-neutral-400 mt-1.5">Sample Size: <strong className="text-neutral-200">{hypothesisResult.sampleCount} rows</strong></p>
+                      </div>
+                    </div>
+
+                    <div className="p-4.5 bg-neutral-900/30 border border-neutral-850 rounded-xl space-y-2">
+                      <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-800/60 pb-1.5 font-mono">
+                        AI Statistical Interpretation
+                      </div>
+                      <p className="text-xs text-neutral-300 leading-relaxed">{hypothesisResult.explanation}</p>
+                      <p className="text-[11px] text-neutral-400 leading-relaxed mt-1">
+                        Statistical proof: The t-statistic score is <code className="bg-neutral-950 px-1 py-0.5 rounded text-[10px] text-indigo-400">{hypothesisResult.tStat.toFixed(4)}</code>, establishing a critical confidence threshold against the null hypothesis standard of <code className="bg-neutral-950 px-1 py-0.5 rounded text-[10px] text-indigo-400">alpha = {(1 - confidenceLevel).toFixed(2)}</code>.
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
