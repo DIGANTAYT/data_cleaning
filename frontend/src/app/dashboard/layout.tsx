@@ -4,7 +4,6 @@ import * as React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { LayoutDashboard, Settings, LogOut, Database, User, Home } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import Footer from '@/components/Footer';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -92,9 +91,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex-1">
             {children}
           </div>
-
-          {/* Professional Platform Footer */}
-          <Footer />
         </main>
       </div>
     </div>
