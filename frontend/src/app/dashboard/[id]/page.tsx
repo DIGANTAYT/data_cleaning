@@ -45,6 +45,15 @@ export default function DatasetDetail() {
   const handleAutoClean = async () => {
     if (!data?.issues) return;
     
+    // Check credits first
+    const storedCredits = localStorage.getItem('user_credits');
+    const credits = storedCredits ? Number(storedCredits) : 500;
+    
+    if (credits < 100) {
+      setMessage('⚠️ Credit Limit Reached: You need at least 100 AI compute credits to perform 1-Click AI Auto Clean. Please go back to the Home page and upgrade to Analyst Lite or Data Scientist Pro to get fresh credits!');
+      return;
+    }
+    
     setCleaning(true);
     setMessage('');
     
@@ -67,6 +76,11 @@ export default function DatasetDetail() {
       await axios.post(`${API_URL}/api/datasets/${id}/clean`, { operations }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Deduct credits and update
+      localStorage.setItem('user_credits', String(credits - 100));
+      window.dispatchEvent(new Event('credits-updated'));
+      
       setMessage('Dataset cleaned successfully! Reloading...');
       setTimeout(() => {
         fetchIssues(); // Reload clean data

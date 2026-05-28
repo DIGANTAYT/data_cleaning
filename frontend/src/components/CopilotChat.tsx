@@ -31,6 +31,20 @@ export function CopilotChat({ datasetId }: { datasetId: string }) {
   const handleSend = async () => {
     if (!input.trim()) return;
     
+    // Check credits first
+    const storedCredits = localStorage.getItem('user_credits');
+    const credits = storedCredits ? Number(storedCredits) : 500;
+    
+    if (credits < 200) {
+      setMessages(prev => [
+        ...prev, 
+        { role: 'user', content: input.trim() },
+        { role: 'assistant', content: '⚠️ **Credit Limit Reached:** You have run out of AI compute credits! Please go back to the Home page and upgrade to the Analyst Lite or Data Scientist Pro tier to get fresh credits.' }
+      ]);
+      setInput('');
+      return;
+    }
+    
     const userMsg = input;
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
@@ -46,6 +60,10 @@ export function CopilotChat({ datasetId }: { datasetId: string }) {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Deduct credits and update
+      localStorage.setItem('user_credits', String(credits - 200));
+      window.dispatchEvent(new Event('credits-updated'));
       
       setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }]);
     } catch (err) {

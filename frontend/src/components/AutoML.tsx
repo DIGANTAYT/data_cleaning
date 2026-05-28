@@ -36,6 +36,16 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
 
   const handleTrain = async () => {
     if (!targetCol) return;
+    
+    // Check credits
+    const storedCredits = localStorage.getItem('user_credits');
+    const credits = storedCredits ? Number(storedCredits) : 500;
+    
+    if (credits < 500) {
+      setResult({ error: '⚠️ Credit Limit Reached: You need at least 500 AI compute credits to train an AutoML model. Please go back to the Home page and upgrade to Analyst Lite or Data Scientist Pro to get fresh credits!' });
+      return;
+    }
+    
     setLoading(true);
     setResult(null);
 
@@ -44,6 +54,11 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
       const response = await axios.post(`${API_URL}/api/datasets/${datasetId}/train`, { targetColumn: targetCol }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Deduct credits and update
+      localStorage.setItem('user_credits', String(credits - 500));
+      window.dispatchEvent(new Event('credits-updated'));
+      
       setResult(response.data.result);
     } catch (err) {
       console.error(err);

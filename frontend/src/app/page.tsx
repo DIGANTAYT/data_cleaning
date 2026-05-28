@@ -26,6 +26,15 @@ export default function LandingPage() {
     router.push('/');
   };
 
+  const handlePlanSelect = (planName: string, initialCredits: number) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_plan', planName);
+      localStorage.setItem('user_credits', String(initialCredits));
+      window.dispatchEvent(new Event('credits-updated'));
+    }
+    router.push(isLoggedIn ? '/dashboard' : '/register');
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 flex flex-col overflow-x-hidden selection:bg-blue-500/30">
       
@@ -275,7 +284,7 @@ export default function LandingPage() {
 
             <div className="pt-8">
               <Button
-                onClick={() => router.push(isLoggedIn ? '/dashboard' : '/register')}
+                onClick={() => handlePlanSelect('Developer Sandbox', 500)}
                 className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/50 rounded-xl py-5 shadow-lg transition-all"
               >
                 {isLoggedIn ? 'Go to Studio Sandbox' : 'Start Sandbox Free'}
@@ -335,7 +344,7 @@ export default function LandingPage() {
 
             <div className="pt-8">
               <Button
-                onClick={() => router.push(isLoggedIn ? '/dashboard' : '/register')}
+                onClick={() => handlePlanSelect('Data Analyst Lite', billingInterval === 'monthly' ? 15000 : 18000)}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-5 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all font-semibold"
               >
                 {isLoggedIn ? 'Go to Dashboard' : 'Upgrade to Analyst Lite'}
@@ -395,7 +404,7 @@ export default function LandingPage() {
 
             <div className="pt-8">
               <Button
-                onClick={() => router.push(isLoggedIn ? '/dashboard' : '/register')}
+                onClick={() => handlePlanSelect('Data Scientist Pro', billingInterval === 'monthly' ? 75000 : 90000)}
                 className="w-full bg-neutral-800 hover:bg-purple-600/20 hover:text-purple-300 text-neutral-200 border border-neutral-700/50 hover:border-purple-500/40 rounded-xl py-5 shadow-lg transition-all"
               >
                 {isLoggedIn ? 'Go to Dashboard' : 'Upgrade to Scientist Pro'}

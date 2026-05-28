@@ -9,6 +9,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [credits, setCredits] = useState<number>(500);
+  const [plan, setPlan] = useState<string>('Developer Sandbox');
 
   useEffect(() => {
     setMounted(true);
@@ -16,6 +18,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/login');
     }
   }, [router]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const syncCredits = () => {
+      if (typeof window !== 'undefined') {
+        const storedCredits = localStorage.getItem('user_credits');
+        const storedPlan = localStorage.getItem('user_plan');
+        
+        if (storedCredits === null) {
+          localStorage.setItem('user_credits', '500');
+          localStorage.setItem('user_plan', 'Developer Sandbox');
+          setCredits(500);
+          setPlan('Developer Sandbox');
+        } else {
+          setCredits(Number(storedCredits));
+          setPlan(storedPlan || 'Developer Sandbox');
+        }
+      }
+    };
+
+    syncCredits();
+
+    window.addEventListener('credits-updated', syncCredits);
+    window.addEventListener('storage', syncCredits);
+    return () => {
+      window.removeEventListener('credits-updated', syncCredits);
+      window.removeEventListener('storage', syncCredits);
+    };
+  }, [mounted]);
 
   if (!mounted) return null;
 
@@ -77,12 +109,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
         {/* Header */}
-        <header className="h-16 border-b border-neutral-800 bg-neutral-950 flex items-center justify-end px-8">
-          <div className="flex items-center space-x-3 cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
-              <User className="w-4 h-4 text-neutral-400" />
+        <header className="h-16 border-b border-neutral-800 bg-neutral-950 flex items-center justify-between px-8">
+          {/* Active Subscription Badge */}
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-neutral-500">PLAN:</span>
+            <span className={`text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full border ${
+              plan.includes('Scientist') 
+                ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' 
+                : plan.includes('Analyst') 
+                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' 
+                  : 'bg-neutral-800 border-neutral-700 text-neutral-450'
+            }`}>
+              {plan}
+            </span>
+          </div>
+
+          {/* User Profile & Credits Points Panel */}
+          <div className="flex items-center space-x-6">
+            {/* Glowing Credits Point Counter */}
+            <div className="flex items-center space-x-2 bg-neutral-900 border border-neutral-850 px-3 py-1.5 rounded-xl">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+              <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider font-mono">AI Credits:</span>
+              <span className="text-xs font-bold font-mono text-white select-none">{credits.toLocaleString()} pts</span>
             </div>
-            <span className="text-sm font-medium text-neutral-300">My Account</span>
+
+            {/* Account Info */}
+            <div className="flex items-center space-x-3 cursor-pointer">
+              <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
+                <User className="w-4 h-4 text-neutral-400" />
+              </div>
+              <span className="text-sm font-medium text-neutral-300">My Account</span>
+            </div>
           </div>
         </header>
 
