@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, LogOut, Database, User } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Database, User, Home } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Footer from '@/components/Footer';
 
@@ -29,14 +29,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen bg-neutral-950 text-neutral-50 overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 border-r border-neutral-800 bg-neutral-950 flex flex-col hidden md:flex">
-        <div className="p-6 flex items-center space-x-2">
-          <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center">
+        <div 
+          onClick={() => router.push('/')}
+          className="p-6 flex items-center space-x-2 cursor-pointer hover:opacity-85 transition-opacity"
+          title="Back to Landing Page"
+        >
+          <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center shadow-[0_0_12px_rgba(37,99,235,0.3)]">
             <Database className="w-4 h-4 text-white" />
           </div>
           <span className="text-xl font-bold tracking-tight">Metrics Flow</span>
         </div>
         
         <nav className="flex-1 px-4 space-y-2 mt-4">
+          <button 
+            onClick={() => router.push('/')}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-neutral-400 hover:bg-neutral-800/50 hover:text-white"
+          >
+            <Home className="w-5 h-5" />
+            <span>Home Page</span>
+          </button>
           <button 
             onClick={() => router.push('/dashboard')}
             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${pathname === '/dashboard' || pathname.startsWith('/dashboard/') ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}
