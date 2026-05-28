@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String?
+  passwordHash String?
+  googleId     String?   @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  projects     Project[]
+}
+
+model Project {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  datasets    Dataset[]
+  dashboards  Dashboard[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Dataset {
+  id          String           @id @default(uuid())
+  name        String
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  filePath    String
+  rowCount    Int?
+  status      String           @default("UPLOADED") // UPLOADED, CLEANING, READY, FAILED
+  versions    DatasetVersion[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model DatasetVersion {
+  id          String   @id @default(uuid())
+  datasetId   String
+  dataset     Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  version     Int
+  filePath    String
+  changes     String?    // Summary of cleaning operations applied (Stringified JSON)
+  createdAt   DateTime @default(now())
+}
+
+model Dashboard {
+  id          String   @id @default(uuid())
+  name        String
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  config      String     // UI layout, charts, queries (Stringified JSON)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

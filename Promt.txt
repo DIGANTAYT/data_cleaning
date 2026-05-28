@@ -1,0 +1,481 @@
+You are an elite AI software architect, senior full-stack engineer, data engineer, ML engineer, and SaaS product designer.
+
+Your task is to build a COMPLETE AI-powered automated Business Analytics and Data Cleaning SaaS platform from scratch.
+
+The software must be:
+- Fully functional
+- Production-ready
+- Modern
+- Automated
+- Scalable
+- Enterprise-grade
+- AI-powered
+
+====================================================
+PROJECT GOAL
+====================================================
+
+Build a platform that automates:
+- Data cleaning
+- Data transformation
+- Dashboard generation
+- Business insights
+- KPI analysis
+- Report generation
+- Machine learning predictions
+
+The software should work like a combination of:
+- Power BI
+- Tableau
+- IBM Cognos
+- Excel Power Query
+- ChatGPT for Analytics
+- Pandas AI
+
+====================================================
+MAIN USER FLOW
+====================================================
+
+1. User uploads dataset
+2. AI analyzes dataset automatically
+3. AI detects issues automatically
+4. AI suggests cleaning operations
+5. User approves or edits
+6. AI cleans data automatically
+7. AI generates dashboard automatically
+8. AI generates insights automatically
+9. AI generates downloadable reports automatically
+10. AI predicts future trends automatically
+
+====================================================
+TECH STACK
+====================================================
+
+Frontend:
+- Next.js
+- React.js
+- TypeScript
+- Tailwind CSS
+- ShadCN UI
+- Framer Motion
+- Zustand
+- Recharts
+- React DnD
+
+Backend:
+- Node.js
+- Express.js
+
+Python AI Engine:
+- FastAPI
+- Pandas
+- NumPy
+- Scikit-learn
+- OpenAI API
+- LangChain
+- Polars
+- Matplotlib
+
+Database:
+- PostgreSQL
+
+Authentication:
+- JWT
+- Google OAuth
+
+Storage:
+- Local storage initially
+- Architecture ready for AWS S3
+
+Deployment:
+- Docker
+- Vercel
+- Railway/Render
+
+====================================================
+UI/UX REQUIREMENTS
+====================================================
+
+Create a modern premium SaaS interface inspired by:
+- Notion
+- Stripe Dashboard
+- Linear
+- Power BI
+- Tableau
+
+Requirements:
+- Dark mode default
+- Responsive layout
+- Sidebar navigation
+- Smooth animations
+- Drag-and-drop dashboard builder
+- Beautiful charts
+- Professional typography
+- Soft shadows
+- Rounded corners
+- Enterprise feel
+
+====================================================
+CORE MODULES
+====================================================
+
+====================================================
+1. AUTHENTICATION SYSTEM
+====================================================
+
+Build:
+- Register
+- Login
+- Forgot password
+- Google login
+- JWT authentication
+- User profile management
+
+====================================================
+2. DATASET MANAGEMENT
+====================================================
+
+Allow upload of:
+- CSV
+- Excel
+- JSON
+- SQL databases
+- Google Sheets
+
+After upload:
+- Detect schema
+- Detect column types
+- Detect null values
+- Detect duplicates
+- Detect invalid values
+- Generate dataset summary automatically
+
+Create:
+- Dataset history
+- Dataset versioning
+- Dataset metadata
+
+====================================================
+3. AI AUTOMATED DATA CLEANING ENGINE
+====================================================
+
+This is the MOST IMPORTANT PART.
+
+Automatically detect:
+- Missing values
+- Duplicates
+- Incorrect data types
+- Outliers
+- Invalid text
+- Formatting issues
+
+Automatically suggest:
+- Remove duplicates
+- Fill null values
+- Convert data types
+- Normalize text
+- Remove outliers
+- Standardize dates
+
+Provide:
+- One-click auto cleaning
+- Real-time preview
+- Cleaning history
+- Undo/redo
+
+AI should explain:
+- Why cleaning is necessary
+- Impact on analytics
+
+====================================================
+4. DATA TRANSFORMATION ENGINE
+====================================================
+
+Build:
+- Filters
+- Sorting
+- Group By
+- Aggregations
+- Pivot tables
+- Dataset merging
+- SQL-like operations
+- Feature engineering
+- Custom formulas
+
+====================================================
+5. AI ANALYTICS COPILOT
+====================================================
+
+Create a ChatGPT-like assistant for analytics.
+
+Users can type:
+- “Clean this dataset”
+- “Find insights”
+- “Generate dashboard”
+- “Predict sales”
+- “Show customer trends”
+- “Detect anomalies”
+- “Best performing region?”
+
+The AI should:
+- Understand natural language
+- Convert requests into analytics operations
+- Generate charts
+- Generate KPIs
+- Generate explanations
+- Recommend business actions
+
+====================================================
+6. AUTOMATED DASHBOARD GENERATION
+====================================================
+
+AI should automatically:
+- Detect important columns
+- Select proper charts
+- Create KPI cards
+- Create layouts
+- Build interactive dashboards
+
+Dashboard components:
+- KPI cards
+- Bar charts
+- Pie charts
+- Line charts
+- Heatmaps
+- Funnel charts
+- Tables
+- Scatter plots
+
+Features:
+- Drag-and-drop
+- Real-time filtering
+- Dashboard saving
+- Responsive resizing
+
+====================================================
+7. AUTOMATED BUSINESS INSIGHTS ENGINE
+====================================================
+
+AI should generate:
+- Trend analysis
+- Revenue insights
+- Customer insights
+- Product performance analysis
+- Correlation analysis
+- Growth opportunities
+- Risk detection
+
+Example:
+“Revenue increased 18% in Q2 due to higher customer retention.”
+
+====================================================
+8. MACHINE LEARNING AUTOMATION
+====================================================
+
+Allow users to:
+- Predict sales
+- Forecast trends
+- Detect churn
+- Classify customers
+
+AI should automatically:
+- Choose ML model
+- Train model
+- Evaluate accuracy
+- Generate prediction charts
+
+Use:
+- Regression
+- Classification
+- Clustering
+- Time-series forecasting
+
+====================================================
+9. REPORT GENERATION SYSTEM
+====================================================
+
+Generate:
+- PDF reports
+- Excel reports
+- PowerPoint reports
+
+Automatically include:
+- KPI summaries
+- Dashboard screenshots
+- AI-generated insights
+- Data quality reports
+
+====================================================
+10. SQL WORKSPACE
+====================================================
+
+Create:
+- SQL editor
+- Syntax highlighting
+- Query execution
+- Saved queries
+- Table preview
+
+====================================================
+11. PROJECT MANAGEMENT
+====================================================
+
+Users can:
+- Save projects
+- Load projects
+- Duplicate projects
+- Share dashboards
+- Export projects
+
+====================================================
+12. ADMIN PANEL
+====================================================
+
+Build admin dashboard for:
+- User management
+- Subscription management
+- AI usage tracking
+- Dataset tracking
+- System analytics
+
+====================================================
+13. PERFORMANCE OPTIMIZATION
+====================================================
+
+The platform must:
+- Handle large datasets
+- Use pagination
+- Use lazy loading
+- Use caching
+- Prevent UI lag
+- Support async processing
+
+====================================================
+14. SECURITY
+====================================================
+
+Implement:
+- JWT protection
+- Rate limiting
+- Secure uploads
+- SQL injection prevention
+- XSS protection
+- Environment variables
+
+====================================================
+15. DATABASE DESIGN
+====================================================
+
+Create PostgreSQL schemas for:
+- Users
+- Projects
+- Datasets
+- Dashboards
+- Reports
+- AI conversations
+- Dataset versions
+
+====================================================
+16. FOLDER STRUCTURE
+====================================================
+
+Frontend:
+- components
+- pages
+- hooks
+- store
+- services
+- charts
+- layouts
+- utils
+
+Backend:
+- routes
+- controllers
+- middleware
+- services
+- models
+
+Python AI Engine:
+- cleaners
+- transformers
+- ml_models
+- ai_modules
+- dashboard_generator
+- report_generator
+
+====================================================
+17. API SYSTEM
+====================================================
+
+Create APIs for:
+- Authentication
+- Dataset upload
+- Data cleaning
+- Dashboard generation
+- AI chat
+- Report generation
+- ML prediction
+
+====================================================
+18. AUTOMATION WORKFLOWS
+====================================================
+
+Allow users to create workflows:
+
+Example:
+Upload CSV →
+Clean data →
+Generate dashboard →
+Generate report →
+Email report automatically
+
+====================================================
+19. DEPLOYMENT
+====================================================
+
+Generate:
+- Dockerfiles
+- docker-compose
+- Environment setup
+- Deployment guide
+
+Prepare deployment for:
+- Vercel frontend
+- Railway backend
+- PostgreSQL cloud DB
+
+====================================================
+20. FINAL REQUIREMENTS
+====================================================
+
+Generate:
+- Complete frontend code
+- Complete backend code
+- Complete AI engine
+- Database setup
+- APIs
+- Authentication
+- Responsive UI
+- Charts
+- Automation workflows
+- AI assistant
+- Documentation
+- README
+- Installation guide
+
+====================================================
+IMPORTANT INSTRUCTIONS
+====================================================
+
+- Use REAL implementation
+- Avoid placeholder code
+- Build production-ready architecture
+- Use modular clean code
+- Add comments
+- Ensure scalability
+- Ensure maintainability
+- Create reusable components
+- Build enterprise-level SaaS quality software
+
+The final product should feel like a real premium analytics platform used by modern companies.
