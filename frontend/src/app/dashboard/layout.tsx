@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
         {/* Header */}
         <header className="h-16 border-b border-neutral-800 bg-neutral-950 flex items-center justify-end px-8">
           <div className="flex items-center space-x-3 cursor-pointer">
@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Scrollable Content Area */}
-        <main className="flex-1 overflow-y-auto bg-neutral-950 flex flex-col justify-between">
+        <main className="flex-1 overflow-y-auto bg-neutral-950 flex flex-col justify-between min-h-0 pb-16">
           <div className="flex-1">
             {children}
           </div>
