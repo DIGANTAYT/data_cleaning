@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight } from 'lucide-react';
+import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 
 export default function LandingPage() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [billingInterval, setBillingInterval] = React.useState<'monthly' | 'annually'>('monthly');
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -200,6 +201,208 @@ export default function LandingPage() {
             <h3 className="text-xl font-semibold text-white mb-3">Auto ML Predictions</h3>
             <p className="text-neutral-400 leading-relaxed">Train Random Forest models entirely in the background. Uncover the features driving your KPIs.</p>
           </div>
+        </div>
+      </div>
+
+      {/* Premium Pricing Section */}
+      <div className="max-w-7xl mx-auto w-full px-6 md:px-8 mb-32 border-t border-neutral-900/60 pt-16 text-center">
+        <div className="space-y-4 mb-12">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-neutral-400">
+            Simple, Role-Based Pricing
+          </h2>
+          <p className="text-neutral-400 max-w-xl mx-auto text-sm leading-relaxed">
+            Choose the plan that matches your role. Pay only for the row limit and AI credits your datasets require.
+          </p>
+
+          {/* Sliding Billing Toggle */}
+          <div className="flex items-center justify-center pt-4">
+            <div className="bg-neutral-900 border border-neutral-805 p-1.5 rounded-full flex items-center space-x-2 relative">
+              <button
+                onClick={() => setBillingInterval('monthly')}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 relative z-10 cursor-pointer ${
+                  billingInterval === 'monthly' ? 'text-black bg-white shadow-md' : 'text-neutral-455 hover:text-neutral-200'
+                }`}
+              >
+                Monthly Billed
+              </button>
+              <button
+                onClick={() => setBillingInterval('annually')}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 relative z-10 cursor-pointer ${
+                  billingInterval === 'annually' ? 'text-black bg-white shadow-md' : 'text-neutral-455 hover:text-neutral-200'
+                }`}
+              >
+                Annually (Save 20%)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Pricing Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          {/* Card 1: Developer Sandbox (Free) */}
+          <div className="bg-neutral-900/30 border border-neutral-805 p-8 rounded-2xl backdrop-blur-md flex flex-col justify-between hover:border-neutral-800 transition-colors relative overflow-hidden group">
+            <div className="space-y-6">
+              <div className="text-left">
+                <span className="text-[10px] bg-neutral-800 border border-neutral-700 text-neutral-300 px-2.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                  Tier 1: Free
+                </span>
+                <h3 className="text-xl font-bold text-white mt-3">Developer Sandbox</h3>
+                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">Perfect for learning, personal projects, and initial dataset exploration.</p>
+              </div>
+
+              <div className="text-left flex items-baseline">
+                <span className="text-3xl font-extrabold text-white">₹0</span>
+                <span className="text-neutral-500 text-xs ml-2 font-mono">/ forever free</span>
+              </div>
+
+              <ul className="text-left space-y-3.5 text-xs border-t border-neutral-850 pt-6">
+                {[
+                  "Dataset capacity up to 10,000 rows",
+                  "500 AI compute credits / month",
+                  "Standard 1-Click Pandas cleaning",
+                  "Local CSV, JSON, and XLSX uploads",
+                  "Interactive custom visual builder (Top 5/10 filter)",
+                  "Community Discord support"
+                ].map((feature, idx) => (
+                  <li key={idx} className="flex items-start text-neutral-400 leading-normal">
+                    <Check className="w-4 h-4 text-neutral-500 mr-2.5 shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-8">
+              <Button
+                onClick={() => router.push(isLoggedIn ? '/dashboard' : '/register')}
+                className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/50 rounded-xl py-5 shadow-lg transition-all"
+              >
+                {isLoggedIn ? 'Go to Studio Sandbox' : 'Start Sandbox Free'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Card 2: Data Analyst Lite (₹120/mo) - Featured Card */}
+          <div className="bg-neutral-900/50 border border-blue-605/40 p-8 rounded-2xl backdrop-blur-md flex flex-col justify-between transition-all duration-300 hover:border-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.15)] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/5 rounded-full blur-2xl pointer-events-none -z-10 group-hover:bg-blue-500/10 transition-all duration-300"></div>
+            
+            <div className="space-y-6">
+              <div className="text-left flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] bg-blue-505/15 border border-blue-500/30 text-blue-400 px-2.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                    Tier 2: Analyst
+                  </span>
+                  <h3 className="text-xl font-bold text-white mt-3">Data Analyst Lite</h3>
+                  <p className="text-xs text-neutral-400 mt-1 leading-relaxed">Tailored for professional business analysts and growing startups.</p>
+                </div>
+                {billingInterval === 'annually' && (
+                  <span className="text-[9px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded font-black font-mono">
+                    20% OFF
+                  </span>
+                )}
+              </div>
+
+              <div className="text-left flex items-baseline">
+                <span className="text-4xl font-black text-white">
+                  ₹{billingInterval === 'monthly' ? '120' : '99'}
+                </span>
+                <span className="text-neutral-400 text-xs ml-2 font-mono">/ user / month</span>
+              </div>
+              
+              {billingInterval === 'annually' && (
+                <div className="text-left text-[10px] text-blue-400 font-mono -mt-4">
+                  Billed annually at ₹1,188/yr
+                </div>
+              )}
+
+              <ul className="text-left space-y-3.5 text-xs border-t border-neutral-850 pt-6">
+                {[
+                  "Dataset capacity up to 250,000 rows",
+                  "15,000 AI compute credits / month",
+                  "Advanced IQR outlier removals & imputation",
+                  "Direct PostgreSQL & Supabase sync connect",
+                  "Custom analytical customizer themes",
+                  "Priority Email Support (under 12 hours)"
+                ].map((feature, idx) => (
+                  <li key={idx} className="flex items-start text-neutral-300 leading-normal">
+                    <Check className="w-4 h-4 text-blue-400 mr-2.5 shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-8">
+              <Button
+                onClick={() => router.push(isLoggedIn ? '/dashboard' : '/register')}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-5 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all font-semibold"
+              >
+                {isLoggedIn ? 'Go to Dashboard' : 'Upgrade to Analyst Lite'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Card 3: Data Scientist Pro (₹259/mo) */}
+          <div className="bg-neutral-900/30 border border-neutral-805 p-8 rounded-2xl backdrop-blur-md flex flex-col justify-between hover:border-purple-500/30 transition-all duration-300 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-2xl pointer-events-none -z-10 group-hover:bg-purple-500/10 transition-all duration-300"></div>
+
+            <div className="space-y-6">
+              <div className="text-left flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] bg-purple-505/15 border border-purple-500/30 text-purple-400 px-2.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                    Tier 3: Scientist
+                  </span>
+                  <h3 className="text-xl font-bold text-white mt-3">Data Scientist Pro</h3>
+                  <p className="text-xs text-neutral-500 mt-1 leading-relaxed">For professional data scientists needing complex AutoML clusters.</p>
+                </div>
+                {billingInterval === 'annually' && (
+                  <span className="text-[9px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded font-black font-mono">
+                    20% OFF
+                  </span>
+                )}
+              </div>
+
+              <div className="text-left flex items-baseline">
+                <span className="text-4xl font-black text-white">
+                  ₹{billingInterval === 'monthly' ? '259' : '210'}
+                </span>
+                <span className="text-neutral-500 text-xs ml-2 font-mono">/ user / month</span>
+              </div>
+
+              {billingInterval === 'annually' && (
+                <div className="text-left text-[10px] text-purple-400 font-mono -mt-4">
+                  Billed annually at ₹2,520/yr
+                </div>
+              )}
+
+              <ul className="text-left space-y-3.5 text-xs border-t border-neutral-850 pt-6">
+                {[
+                  "Dataset capacity up to 10,000,000 rows",
+                  "75,000 AI compute credits / month",
+                  "Full AutoML Random Forest prediction engine",
+                  "Advanced DB Sync: Snowflake, BigQuery, MySQL",
+                  "High-performance parallel GPU server arrays",
+                  "Dedicated 1-Hour SLA priority queue support"
+                ].map((feature, idx) => (
+                  <li key={idx} className="flex items-start text-neutral-400 leading-normal">
+                    <Check className="w-4 h-4 text-purple-400 mr-2.5 shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-8">
+              <Button
+                onClick={() => router.push(isLoggedIn ? '/dashboard' : '/register')}
+                className="w-full bg-neutral-800 hover:bg-purple-600/20 hover:text-purple-300 text-neutral-200 border border-neutral-700/50 hover:border-purple-500/40 rounded-xl py-5 shadow-lg transition-all"
+              >
+                {isLoggedIn ? 'Go to Dashboard' : 'Upgrade to Scientist Pro'}
+              </Button>
+            </div>
+          </div>
+
         </div>
       </div>
 
