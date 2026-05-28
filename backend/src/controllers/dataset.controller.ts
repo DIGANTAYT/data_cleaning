@@ -5,6 +5,8 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 
+const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:7860';
+
 export const uploadDataset = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -45,8 +47,28 @@ export const uploadDataset = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     // Notify AI engine to profile the dataset asynchronously
-    axios.post('http://localhost:8000/api/profile', { datasetId: dataset.id, filePath })
-      .catch((err: any) => console.error('Failed to trigger AI engine profiling:', err.message));
+    const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${backendUrl}/${filePath}`;
+
+    axios.post(`${AI_ENGINE_URL}/api/profile`, { datasetId: dataset.id, filePath: fileUrl })
+      .then(async (aiResponse) => {
+        const { rowCount, status } = aiResponse.data;
+        await prisma.dataset.update({
+          where: { id: dataset.id },
+          data: {
+            rowCount: rowCount || 0,
+            status: status === 'READY' ? 'READY' : 'FAILED'
+          }
+        });
+        console.log(`Successfully profiled dataset ${dataset.id}: ${rowCount} rows.`);
+      })
+      .catch(async (err: any) => {
+        console.error('Failed to trigger AI engine profiling:', err.message);
+        await prisma.dataset.update({
+          where: { id: dataset.id },
+          data: { status: 'FAILED' }
+        });
+      });
 
     res.status(201).json({ message: 'Dataset uploaded successfully', dataset });
   } catch (error: any) {
@@ -75,9 +97,9 @@ export const getDatasets = async (req: AuthRequest, res: Response): Promise<void
 
 export const detectIssues = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const dataset = await prisma.dataset.findUnique({
-      where: { id: id as string },
+      where: { id },
       include: { versions: { orderBy: { version: 'desc' } } }
     });
     
@@ -86,8 +108,11 @@ export const detectIssues = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const aiResponse = await axios.post('http://localhost:8000/api/detect-issues', {
-      filePath: dataset.filePath
+    const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+
+    const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/detect-issues`, {
+      filePath: fileUrl
     });
     
     res.status(200).json({
@@ -102,22 +127,87 @@ export const detectIssues = async (req: AuthRequest, res: Response): Promise<voi
 
 export const cleanDataset = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { operations } = req.body;
     
-    const dataset = await prisma.dataset.findUnique({ where: { id: id as string } });
+    const dataset = await prisma.dataset.findUnique({ where: { id } });
     if (!dataset) {
       res.status(404).json({ error: 'Dataset not found' });
       return;
     }
 
-    const aiResponse = await axios.post('http://localhost:8000/api/clean', {
+    const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+
+    const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/clean`, {
       datasetId: id,
-      filePath: dataset.filePath,
+      filePath: fileUrl,
       operations
     });
     
-    res.status(200).json(aiResponse.data);
+    const { rowCount, records, columns } = aiResponse.data;
+    
+    // Save the cleaned file locally on the Express backend!
+    const newFileName = `cleaned_${Date.now()}-${path.basename(dataset.filePath)}`;
+    const newFilePath = `uploads/${newFileName}`;
+    const absolutePath = path.resolve(newFilePath);
+    
+    // Convert records back to CSV
+    let fileContent = '';
+    if (records && records.length > 0) {
+      const headers = Object.keys(records[0]);
+      fileContent += headers.join(',') + '\n';
+      records.forEach((row: any) => {
+        const line = headers.map(header => {
+          let cell = row[header];
+          if (cell === null || cell === undefined) cell = '';
+          // Escape quotes
+          cell = cell.toString().replace(/"/g, '""');
+          if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
+            cell = `"${cell}"`;
+          }
+          return cell;
+        }).join(',');
+        fileContent += line + '\n';
+      });
+    } else {
+      fileContent = columns.join(',');
+    }
+    
+    fs.writeFileSync(absolutePath, fileContent);
+    
+    // Create new DatasetVersion inside the Express backend database!
+    const lastVersion = await prisma.datasetVersion.findFirst({
+      where: { datasetId: id },
+      orderBy: { version: 'desc' }
+    });
+    const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+    
+    const versionRecord = await prisma.datasetVersion.create({
+      data: {
+        datasetId: id,
+        version: nextVersion,
+        filePath: newFilePath,
+        changes: JSON.stringify(operations)
+      }
+    });
+    
+    // Update main dataset record to point to the new file and row count
+    const updatedDataset = await prisma.dataset.update({
+      where: { id },
+      data: {
+        filePath: newFilePath,
+        rowCount
+      }
+    });
+    
+    res.status(200).json({
+      message: 'Dataset cleaned successfully',
+      newFilePath,
+      rowCount,
+      dataset: updatedDataset,
+      version: versionRecord
+    });
   } catch (error: any) {
     console.error('Clean dataset error:', error.message);
     res.status(500).json({ error: 'Failed to clean dataset' });
@@ -126,17 +216,20 @@ export const cleanDataset = async (req: AuthRequest, res: Response): Promise<voi
 
 export const askCopilot = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { query, apiKey } = req.body;
     
-    const dataset = await prisma.dataset.findUnique({ where: { id: id as string } });
+    const dataset = await prisma.dataset.findUnique({ where: { id } });
     if (!dataset) {
       res.status(404).json({ error: 'Dataset not found' });
       return;
     }
 
-    const aiResponse = await axios.post('http://localhost:8000/api/copilot', {
-      filePath: dataset.filePath,
+    const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+
+    const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/copilot`, {
+      filePath: fileUrl,
       query,
       apiKey
     });
@@ -150,17 +243,20 @@ export const askCopilot = async (req: AuthRequest, res: Response): Promise<void>
 
 export const trainModel = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { targetColumn } = req.body;
     
-    const dataset = await prisma.dataset.findUnique({ where: { id: id as string } });
+    const dataset = await prisma.dataset.findUnique({ where: { id } });
     if (!dataset) {
       res.status(404).json({ error: 'Dataset not found' });
       return;
     }
 
-    const aiResponse = await axios.post('http://localhost:8000/api/train', {
-      filePath: dataset.filePath,
+    const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+
+    const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/train`, {
+      filePath: fileUrl,
       targetColumn
     });
     
@@ -173,10 +269,10 @@ export const trainModel = async (req: AuthRequest, res: Response): Promise<void>
 
 export const downloadDataset = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { versionId } = req.query;
 
-    const dataset = await prisma.dataset.findUnique({ where: { id: id as string } });
+    const dataset = await prisma.dataset.findUnique({ where: { id } });
     if (!dataset) {
       res.status(404).json({ error: 'Dataset not found' });
       return;
