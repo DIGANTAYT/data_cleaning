@@ -8,6 +8,22 @@ import Footer from '@/components/Footer';
 
 export default function LandingPage() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        setIsLoggedIn(true);
+      }
+    }
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    router.push('/');
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 flex flex-col overflow-x-hidden selection:bg-blue-500/30">
@@ -20,14 +36,26 @@ export default function LandingPage() {
           </div>
           <span className="text-xl font-bold tracking-tight text-white">Metrics Flow</span>
         </div>
-        <div className="space-x-4">
-          <Button variant="ghost" className="text-neutral-300 hover:text-white" onClick={() => router.push('/login')}>
-            Sign In
-          </Button>
-          <Button className="bg-white text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all" onClick={() => router.push('/register')}>
-            Get Started
-          </Button>
-        </div>
+        
+        {isLoggedIn ? (
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" className="text-neutral-300 hover:text-white" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all" onClick={() => router.push('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </div>
+        ) : (
+          <div className="space-x-4">
+            <Button variant="ghost" className="text-neutral-300 hover:text-white" onClick={() => router.push('/login')}>
+              Sign In
+            </Button>
+            <Button className="bg-white text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all" onClick={() => router.push('/register')}>
+              Get Started
+            </Button>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -51,13 +79,23 @@ export default function LandingPage() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <Button 
-            className="h-12 px-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-lg shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all flex items-center group"
-            onClick={() => router.push('/register')}
-          >
-            Start Analyzing Free
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
+          {isLoggedIn ? (
+            <Button 
+              className="h-12 px-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-lg shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all flex items-center group cursor-pointer"
+              onClick={() => router.push('/dashboard')}
+            >
+              Enter Studio Dashboard
+              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          ) : (
+            <Button 
+              className="h-12 px-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-lg shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all flex items-center group cursor-pointer"
+              onClick={() => router.push('/register')}
+            >
+              Start Analyzing Free
+              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          )}
         </div>
 
         {/* Feature Grid */}
