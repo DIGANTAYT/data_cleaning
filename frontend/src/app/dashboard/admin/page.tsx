@@ -40,7 +40,7 @@ export default function AdminPanel() {
       const role = localStorage.getItem('user_role') || '';
       
       // Enforce Admin access boundaries
-      if (email === 'sarkardiganta04@gmail.com' || role === 'admin') {
+      if (email === 'sarkardiganta04@gmail.com') {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);

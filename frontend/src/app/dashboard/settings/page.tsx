@@ -44,7 +44,7 @@ export default function SettingsPage() {
       
       setCurrentPlan(storedPlan);
       setCredits(Number(storedCredits));
-      setIsAdmin(storedEmail === 'sarkardiganta04@gmail.com' || storedRole === 'admin');
+      setIsAdmin(storedEmail === 'sarkardiganta04@gmail.com');
     }
   }, []);
 
@@ -58,23 +58,16 @@ export default function SettingsPage() {
         localStorage.removeItem('user_openai_key');
       }
       
-      // Auto-assign admin if email updated to sarkardiganta04@gmail.com
       if (email === 'sarkardiganta04@gmail.com') {
         localStorage.setItem('user_role', 'admin');
         setIsAdmin(true);
+      } else {
+        localStorage.setItem('user_role', 'user');
+        setIsAdmin(false);
       }
       
       window.dispatchEvent(new Event('credits-updated'));
       toast.success('Preferences saved successfully.');
-    }
-  };
-
-  const handleSimulateAdmin = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user_role', 'admin');
-      setIsAdmin(true);
-      window.dispatchEvent(new Event('credits-updated'));
-      toast.success('👑 Admin Access Simulation Enabled! You can now access the Admin Console from the sidebar.');
     }
   };
 
@@ -367,19 +360,12 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="p-5 rounded-2xl bg-neutral-950/40 border border-neutral-850 space-y-4">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-neutral-350">Simulate Admin Mode Access</h4>
-                      <p className="text-xs text-neutral-450 leading-relaxed">
-                        By default, the Admin Console dashboard is blocked and protected. To make testing and evaluation extremely easy, you can click the button below to assign **Admin role** directly to your active browser context!
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={handleSimulateAdmin} 
-                      className="bg-gradient-to-r from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-550 text-white font-semibold text-xs px-6 py-2.5 rounded-xl shadow-md border-0 cursor-pointer"
-                    >
-                      👑 Simulate Admin Access
-                    </Button>
+                  <div className="p-5 rounded-2xl bg-neutral-950/40 border border-neutral-850 space-y-2 text-center py-8">
+                    <Shield className="w-8 h-8 text-red-500 mx-auto opacity-60 mb-2" />
+                    <h4 className="text-sm font-bold text-neutral-350">Administrative Access Required</h4>
+                    <p className="text-xs text-neutral-455 leading-relaxed max-w-md mx-auto">
+                      🔒 The Admin Console is protected and restricted strictly to authorized corporate accounts. Your email does not hold administrative access tokens.
+                    </p>
                   </div>
                 )}
               </CardContent>
