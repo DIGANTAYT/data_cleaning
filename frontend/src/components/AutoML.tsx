@@ -53,7 +53,6 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
 
   const handleTrain = async () => {
     if (!targetCol) return;
-    if (userPlan !== 'Data Scientist Pro') return;
     
     // Check credits
     const storedCredits = localStorage.getItem('user_credits');
@@ -110,25 +109,6 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
       </CardHeader>
 
       <CardContent className="pt-6 space-y-6 relative min-h-[250px]">
-        {userPlan !== 'Data Scientist Pro' ? (
-          <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-md z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 rounded-b-xl border-t border-neutral-900">
-            <div className="w-12 h-12 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.35)] animate-pulse">
-              <BrainCircuit className="w-6 h-6 text-purple-400" />
-            </div>
-            <h3 className="text-md font-bold text-neutral-100 tracking-tight">Data Scientist Pro Feature</h3>
-            <p className="text-xs text-neutral-400 max-w-sm leading-relaxed">
-              🔒 Machine learning auto-modeling (Random Forest ensembles, feature weight analysis, and automated timelines) is a premium feature exclusive to **Data Scientist Pro** tier users.
-            </p>
-            <Button 
-              onClick={() => {
-                if (typeof window !== 'undefined') window.location.href = '/';
-              }}
-              className="mt-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs px-6 py-2.5 rounded-lg shadow-lg shadow-purple-600/35 transition-all cursor-pointer border-0"
-            >
-              Upgrade to Scientist Pro (₹259/mo)
-            </Button>
-          </div>
-        ) : null}
 
         <div className="flex flex-col md:flex-row md:space-x-4 md:items-end gap-4 bg-neutral-950/30 border border-neutral-800/50 p-5 rounded-xl">
           <div className="flex-1 space-y-2">

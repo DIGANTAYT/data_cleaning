@@ -23,6 +23,13 @@ export default function LoginPage() {
       const response = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user_email', email);
+        localStorage.setItem('user_name', response.data.name || email.split('@')[0]);
+        if (email === 'sarkardiganta04@gmail.com') {
+          localStorage.setItem('user_role', 'admin');
+        } else {
+          localStorage.setItem('user_role', 'user');
+        }
         router.push('/dashboard');
       }
     } catch (err: any) {

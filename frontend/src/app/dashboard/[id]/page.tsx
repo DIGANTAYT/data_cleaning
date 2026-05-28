@@ -39,15 +39,9 @@ export default function DatasetDetail() {
     };
   }, []);
 
-  const getRowLimit = () => {
-    if (userPlan === 'Data Scientist Pro') return 10000000;
-    if (userPlan === 'Data Analyst Lite') return 250000;
-    return 10000; // Developer Sandbox limit
-  };
-
-  const rowLimit = getRowLimit();
+  const isLimitExceeded = false;
+  const rowLimit = 10000000;
   const rowCount = data?.rowCount || data?.preview?.length || 0;
-  const isLimitExceeded = rowCount > rowLimit;
 
   useEffect(() => {
     fetchIssues();

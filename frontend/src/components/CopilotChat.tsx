@@ -47,7 +47,6 @@ export function CopilotChat({ datasetId }: { datasetId: string }) {
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    if (userPlan === 'Developer Sandbox') return;
     
     // Check credits first
     const storedCredits = localStorage.getItem('user_credits');
@@ -101,25 +100,6 @@ export function CopilotChat({ datasetId }: { datasetId: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden relative">
-        {userPlan === 'Developer Sandbox' ? (
-          <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-md z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 rounded-b-xl border-t border-neutral-900">
-            <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.35)] animate-pulse">
-              <Bot className="w-6 h-6 text-blue-400" />
-            </div>
-            <h3 className="text-md font-bold text-neutral-100 tracking-tight">AI Analytics Copilot</h3>
-            <p className="text-xs text-neutral-400 max-w-sm leading-relaxed">
-              🔒 The Interactive Analytics Copilot (real-time chat querying, code snippet generation, and auto-insights) is a premium feature exclusive to **Data Analyst Lite** and **Data Scientist Pro** plans.
-            </p>
-            <Button 
-              onClick={() => {
-                if (typeof window !== 'undefined') window.location.href = '/';
-              }}
-              className="mt-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-6 py-2.5 rounded-lg shadow-lg shadow-blue-600/35 transition-all cursor-pointer border-0"
-            >
-              Upgrade to Analyst Lite (₹120/mo)
-            </Button>
-          </div>
-        ) : null}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

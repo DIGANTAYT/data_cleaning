@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, LogOut, Database, User, Home } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Database, User, Home, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
   const [credits, setCredits] = useState<number>(500);
   const [plan, setPlan] = useState<string>('Developer Sandbox');
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
     setMounted(true);
@@ -26,6 +27,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (typeof window !== 'undefined') {
         const storedCredits = localStorage.getItem('user_credits');
         const storedPlan = localStorage.getItem('user_plan');
+        const storedEmail = localStorage.getItem('user_email') || '';
+        const storedRole = localStorage.getItem('user_role') || '';
+        
+        setIsAdmin(storedEmail === 'sarkardiganta04@gmail.com' || storedRole === 'admin');
         
         if (storedCredits === null) {
           localStorage.setItem('user_credits', '500');
@@ -93,6 +98,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Settings className="w-5 h-5" />
             <span>Settings</span>
           </button>
+          {isAdmin && (
+            <button 
+              onClick={() => router.push('/dashboard/admin')}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${pathname === '/dashboard/admin' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}
+            >
+              <Shield className="w-5 h-5 text-purple-450" />
+              <span>Admin Console</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-4 border-t border-neutral-800">
