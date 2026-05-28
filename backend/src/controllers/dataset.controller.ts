@@ -48,7 +48,7 @@ export const uploadDataset = async (req: AuthRequest, res: Response): Promise<vo
 
     // Notify AI engine to profile the dataset asynchronously
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${backendUrl}/${filePath}`;
+    const fileUrl = `${backendUrl}/${encodeURI(filePath.replace(/\\/g, '/'))}`;
 
     axios.post(`${AI_ENGINE_URL}/api/profile`, { datasetId: dataset.id, filePath: fileUrl })
       .then(async (aiResponse) => {
@@ -109,7 +109,7 @@ export const detectIssues = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+    const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
 
     const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/detect-issues`, {
       filePath: fileUrl
@@ -137,7 +137,7 @@ export const cleanDataset = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+    const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
 
     const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/clean`, {
       datasetId: id,
@@ -226,7 +226,7 @@ export const askCopilot = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+    const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
 
     const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/copilot`, {
       filePath: fileUrl,
@@ -253,7 +253,7 @@ export const trainModel = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${backendUrl}/${dataset.filePath}`;
+    const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
 
     const aiResponse = await axios.post(`${AI_ENGINE_URL}/api/train`, {
       filePath: fileUrl,
