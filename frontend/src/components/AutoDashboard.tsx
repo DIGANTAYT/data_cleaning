@@ -159,6 +159,7 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
   const [radarCols, setRadarCols] = useState<string[]>(numCols.slice(0, 5));
   const [cumulX, setCumulX] = useState(xCol);
   const [cumulY, setCumulY] = useState(yCol1);
+  const [cumulLimit, setCumulLimit] = useState<number>(10);
 
   // Custom Section for Auto-Generated Analytical Insights
   const [auditCol, setAuditCol] = useState(columns[0]);
@@ -488,23 +489,58 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
             </div>
 
             {/* Limit Selector */}
-            <div className="space-y-1">
+            <div className="space-y-2">
               <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider flex items-center">
                 <Percent className="w-3 h-3 mr-1 text-purple-400" /> Limit Data Points
               </label>
               <div className="relative">
                 <select
-                  value={customLimit}
-                  onChange={(e) => setCustomLimit(Number(e.target.value))}
+                  value={
+                    customLimit === 5
+                      ? '5'
+                      : customLimit === 10
+                      ? '10'
+                      : customLimit === 0
+                      ? 'all'
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '5') {
+                      setCustomLimit(5);
+                    } else if (val === '10') {
+                      setCustomLimit(10);
+                    } else if (val === 'all') {
+                      setCustomLimit(0);
+                    } else {
+                      setCustomLimit(15);
+                    }
+                  }}
                   className="w-full bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer"
                 >
-                  <option value={5}>Top 5 Rows (Sorted)</option>
-                  <option value={10}>Top 10 Rows (Sorted)</option>
-                  <option value={20}>Top 20 Rows (Sorted)</option>
-                  <option value={0}>All Rows (Unsorted)</option>
+                  <option value="5">Top 5 Rows (Sorted)</option>
+                  <option value="10">Top 10 Rows (Sorted)</option>
+                  <option value="all">All Rows (Unsorted)</option>
+                  <option value="custom">Custom Limit...</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-3 top-3 pointer-events-none" />
               </div>
+              
+              {/* Show custom input if custom is selected */}
+              {customLimit !== 5 && customLimit !== 10 && customLimit !== 0 && (
+                <div className="pt-1.5 flex items-center space-x-2">
+                  <span className="text-[10px] text-neutral-400 font-mono">Row Limit:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={dataPreview.length}
+                    value={customLimit}
+                    onChange={(e) => setCustomLimit(Math.max(1, Number(e.target.value)))}
+                    className="w-20 bg-neutral-950 border border-neutral-800 text-neutral-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                  <span className="text-[10px] text-neutral-500 font-mono">of {dataPreview.length}</span>
+                </div>
+              )}
             </div>
 
             {/* Theme Color Selector */}
@@ -721,15 +757,45 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                   ))}
                 </select>
                 <select
-                  value={distLimit}
-                  onChange={(e) => setDistLimit(Number(e.target.value))}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                  value={
+                    distLimit === 5
+                      ? '5'
+                      : distLimit === 10
+                      ? '10'
+                      : distLimit === 0
+                      ? 'all'
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '5') {
+                      setDistLimit(5);
+                    } else if (val === '10') {
+                      setDistLimit(10);
+                    } else if (val === 'all') {
+                      setDistLimit(0);
+                    } else {
+                      setDistLimit(15);
+                    }
+                  }}
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer mr-1"
                 >
-                  <option value={5}>Top 5</option>
-                  <option value={10}>Top 10</option>
-                  <option value={25}>Top 25</option>
-                  <option value={0}>All</option>
+                  <option value="5">Top 5</option>
+                  <option value="10">Top 10</option>
+                  <option value="all">All</option>
+                  <option value="custom">Custom...</option>
                 </select>
+                {distLimit !== 5 && distLimit !== 10 && distLimit !== 0 && (
+                  <input
+                    type="number"
+                    min="1"
+                    max={dataPreview.length}
+                    value={distLimit}
+                    onChange={(e) => setDistLimit(Math.max(1, Number(e.target.value)))}
+                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1 py-0.5 focus:outline-none font-mono text-center"
+                    title="Custom Row Limit"
+                  />
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -779,15 +845,45 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                   ))}
                 </select>
                 <select
-                  value={trendLimit}
-                  onChange={(e) => setTrendLimit(Number(e.target.value))}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                  value={
+                    trendLimit === 5
+                      ? '5'
+                      : trendLimit === 10
+                      ? '10'
+                      : trendLimit === 0
+                      ? 'all'
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '5') {
+                      setTrendLimit(5);
+                    } else if (val === '10') {
+                      setTrendLimit(10);
+                    } else if (val === 'all') {
+                      setTrendLimit(0);
+                    } else {
+                      setTrendLimit(15);
+                    }
+                  }}
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer mr-1"
                 >
-                  <option value={5}>Top 5</option>
-                  <option value={10}>Top 10</option>
-                  <option value={25}>Top 25</option>
-                  <option value={0}>All</option>
+                  <option value="5">Top 5</option>
+                  <option value="10">Top 10</option>
+                  <option value="all">All</option>
+                  <option value="custom">Custom...</option>
                 </select>
+                {trendLimit !== 5 && trendLimit !== 10 && trendLimit !== 0 && (
+                  <input
+                    type="number"
+                    min="1"
+                    max={dataPreview.length}
+                    value={trendLimit}
+                    onChange={(e) => setTrendLimit(Math.max(1, Number(e.target.value)))}
+                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1 py-0.5 focus:outline-none font-mono text-center"
+                    title="Custom Row Limit"
+                  />
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -1144,13 +1240,54 @@ export function AutoDashboard({ dataPreview, columns }: AutoDashboardProps) {
                     <option key={col} value={col}>{col}</option>
                   ))}
                 </select>
+                <select
+                  value={
+                    cumulLimit === 5
+                      ? '5'
+                      : cumulLimit === 10
+                      ? '10'
+                      : cumulLimit === 0
+                      ? 'all'
+                      : 'custom'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '5') {
+                      setCumulLimit(5);
+                    } else if (val === '10') {
+                      setCumulLimit(10);
+                    } else if (val === 'all') {
+                      setCumulLimit(0);
+                    } else {
+                      setCumulLimit(15);
+                    }
+                  }}
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer mr-1"
+                >
+                  <option value="5">Top 5</option>
+                  <option value="10">Top 10</option>
+                  <option value="all">All</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                {cumulLimit !== 5 && cumulLimit !== 10 && cumulLimit !== 0 && (
+                  <input
+                    type="number"
+                    min="1"
+                    max={dataPreview.length}
+                    value={cumulLimit}
+                    onChange={(e) => setCumulLimit(Math.max(1, Number(e.target.value)))}
+                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1 py-0.5 focus:outline-none font-mono text-center"
+                    title="Custom Row Limit"
+                  />
+                )}
               </div>
             </CardHeader>
             <CardContent>
               <div className="h-72 w-full">
                 {(() => {
                   let total = 0;
-                  const cumulativeData = dataPreview.map(d => {
+                  const slicedData = cumulLimit > 0 ? dataPreview.slice(0, cumulLimit) : dataPreview;
+                  const cumulativeData = slicedData.map(d => {
                     const val = Number(d[cumulY]) || 0;
                     total += val;
                     return {
