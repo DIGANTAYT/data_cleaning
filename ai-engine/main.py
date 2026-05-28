@@ -6,6 +6,8 @@ import os
 import json
 import urllib.request
 import urllib.parse
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 from dotenv import load_dotenv
 from cleaner import detect_issues, apply_cleaning
 from copilot import ask_copilot
