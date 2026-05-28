@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Footer from '@/components/Footer';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -87,6 +88,8 @@ export default function LandingPage() {
         </div>
       </main>
 
+      {/* Professional Footer */}
+      <Footer />
     </div>
   );
 }
