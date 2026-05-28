@@ -98,6 +98,17 @@ export default function TermsOfService() {
               This agreement is governed by and construed in accordance with the laws of the Republic of India. Any litigation arising from the service usage must be handled under Karnataka legal jurisdictions.
             </p>
           </div>
+
+          <div className="space-y-4 border-t border-neutral-900 pt-8">
+            <h3 className="text-lg font-bold text-white">5. Legal Inquiries & Contacts</h3>
+            <p>
+              For any clarification regarding our Terms of Service or Cookies policy, please write to us at:
+            </p>
+            <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-900 text-xs font-mono text-neutral-400">
+              Email: contact@magnetnode.com <br/>
+              Address: Kolkata, India
+            </div>
+          </div>
         </div>
       </main>
 

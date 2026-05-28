@@ -91,8 +91,8 @@ export default function PrivacyPolicy() {
               If you have any questions, compliance reviews, or database account wipe requests, please reach out to our privacy team directly:
             </p>
             <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-900 text-xs font-mono text-neutral-400">
-              Email: privacy@metricsflow.ai <br/>
-              Address: Tech Hub Center, Level 18, Bangalore, India
+              Email: contact@magnetnode.com <br/>
+              Address: Kolkata, India
             </div>
           </div>
         </div>

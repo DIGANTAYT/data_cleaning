@@ -40,7 +40,6 @@ export default function DatasetDetail() {
   }, []);
 
   const isLimitExceeded = false;
-  const rowLimit = 10000000;
   const rowCount = data?.rowCount || data?.preview?.length || 0;
 
   useEffect(() => {
@@ -64,7 +63,6 @@ export default function DatasetDetail() {
 
   const handleAutoClean = async () => {
     if (!data?.issues) return;
-    if (isLimitExceeded) return;
     
     // Check credits first
     const storedCredits = localStorage.getItem('user_credits');
@@ -227,35 +225,6 @@ export default function DatasetDetail() {
           </motion.div>
         )}
 
-        {isLimitExceeded && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-5 rounded-2xl bg-red-500/10 border border-red-500/20 text-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  Dataset Capacity Limit Exceeded ({rowCount.toLocaleString()} / {rowLimit.toLocaleString()} rows)
-                </h4>
-                <p className="text-xs text-neutral-400 leading-normal">
-                  Your current plan **{userPlan}** supports datasets up to **{rowLimit.toLocaleString()}** rows. Please upgrade your tier to unlock full cleaning, AutoML, and Analytics on larger files.
-                </p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => {
-                if (typeof window !== 'undefined') window.location.href = '/';
-              }}
-              className="bg-red-600 hover:bg-red-500 text-white text-xs px-5 py-2.5 rounded-xl shrink-0 cursor-pointer font-semibold shadow-lg shadow-red-600/15 border-0"
-            >
-              Upgrade Your Plan
-            </Button>
-          </motion.div>
-        )}
 
         {/* Data Quality Hero Banner */}
         <motion.div 
@@ -386,19 +355,10 @@ export default function DatasetDetail() {
         <div className="flex justify-end">
           <Button 
             onClick={handleAutoClean} 
-            disabled={cleaning || isLimitExceeded}
-            className={`flex items-center transition-all cursor-pointer font-semibold ${
-              isLimitExceeded 
-                ? 'bg-neutral-800 border border-neutral-750 text-neutral-500 hover:bg-neutral-800' 
-                : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20'
-            }`}
+            disabled={cleaning}
+            className="flex items-center transition-all cursor-pointer font-semibold bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
           >
-            {isLimitExceeded ? (
-              <>
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Capacity Locked (Upgrade Plan)
-              </>
-            ) : cleaning ? (
+            {cleaning ? (
               'Cleaning Dataset...'
             ) : (
               <>

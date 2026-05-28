@@ -233,14 +233,14 @@ export default function SettingsPage() {
                       onClick={() => handlePlanChange('Data Analyst Lite', 15000)}
                       className="bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 text-xs font-bold"
                     >
-                      Analyst Lite (₹120)
+                      Analyst Lite (₹99)
                     </Button>
                     <Button 
                       size="sm"
                       onClick={() => handlePlanChange('Data Scientist Pro', 75000)}
                       className="bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/20 text-purple-400 text-xs font-bold"
                     >
-                      Scientist Pro (₹259)
+                      Scientist Pro (₹210)
                     </Button>
                   </div>
                 </div>
@@ -263,9 +263,9 @@ export default function SettingsPage() {
                       </thead>
                       <tbody className="divide-y divide-neutral-850">
                         {[
-                          { id: 'INV-2026-003', plan: 'Data Scientist Pro upgrade', amount: '₹259.00', date: 'May 28, 2026', status: 'Paid' },
-                          { id: 'INV-2026-002', plan: 'Data Analyst Lite subscription', amount: '₹120.00', date: 'April 28, 2026', status: 'Paid' },
-                          { id: 'INV-2026-001', plan: 'Data Analyst Lite subscription', amount: '₹120.00', date: 'March 28, 2026', status: 'Paid' },
+                          { id: 'INV-2026-003', plan: 'Data Scientist Pro upgrade', amount: '₹210.00', date: 'May 28, 2026', status: 'Paid' },
+                          { id: 'INV-2026-002', plan: 'Data Analyst Lite subscription', amount: '₹99.00', date: 'April 28, 2026', status: 'Paid' },
+                          { id: 'INV-2026-001', plan: 'Data Analyst Lite subscription', amount: '₹99.00', date: 'March 28, 2026', status: 'Paid' },
                         ].map((inv) => (
                           <tr key={inv.id} className="hover:bg-neutral-850/10">
                             <td className="px-4 py-3 font-semibold text-neutral-200">{inv.id}</td>

@@ -217,33 +217,11 @@ export default function LandingPage() {
       <div className="max-w-7xl mx-auto w-full px-6 md:px-8 mb-32 border-t border-neutral-900/60 pt-16 text-center">
         <div className="space-y-4 mb-12">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-neutral-400">
-            Simple, Role-Based Pricing
+            Simple, Role-Based Monthly Pricing
           </h2>
           <p className="text-neutral-400 max-w-xl mx-auto text-sm leading-relaxed">
-            Choose the plan that matches your role. Pay only for the row limit and AI credits your datasets require.
+            Choose the plan that matches your role. Enjoy unlimited row processing limits and rich AI credit balances renewed automatically every 30 days.
           </p>
-
-          {/* Sliding Billing Toggle */}
-          <div className="flex items-center justify-center pt-4">
-            <div className="bg-neutral-900 border border-neutral-805 p-1.5 rounded-full flex items-center space-x-2 relative">
-              <button
-                onClick={() => setBillingInterval('monthly')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 relative z-10 cursor-pointer ${
-                  billingInterval === 'monthly' ? 'text-black bg-white shadow-md' : 'text-neutral-455 hover:text-neutral-200'
-                }`}
-              >
-                Monthly Billed
-              </button>
-              <button
-                onClick={() => setBillingInterval('annually')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 relative z-10 cursor-pointer ${
-                  billingInterval === 'annually' ? 'text-black bg-white shadow-md' : 'text-neutral-455 hover:text-neutral-200'
-                }`}
-              >
-                Annually (Save 20%)
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Pricing Cards Grid */}
@@ -262,17 +240,17 @@ export default function LandingPage() {
 
               <div className="text-left flex items-baseline">
                 <span className="text-3xl font-extrabold text-white">₹0</span>
-                <span className="text-neutral-500 text-xs ml-2 font-mono">/ forever free</span>
+                <span className="text-neutral-500 text-xs ml-2 font-mono">/ month</span>
               </div>
 
               <ul className="text-left space-y-3.5 text-xs border-t border-neutral-850 pt-6">
                 {[
-                  "Dataset capacity up to 10,000 rows",
+                  "Unlimited dataset row capacity",
                   "500 AI compute credits / month",
+                  "Plan renewed automatically every 30 days",
                   "Standard 1-Click Pandas cleaning",
                   "Local CSV, JSON, and XLSX uploads",
-                  "Interactive custom visual builder (Top 5/10 filter)",
-                  "Community Discord support"
+                  "Interactive custom visual builder (Top 5/10 filter)"
                 ].map((feature, idx) => (
                   <li key={idx} className="flex items-start text-neutral-400 leading-normal">
                     <Check className="w-4 h-4 text-neutral-500 mr-2.5 shrink-0 mt-0.5" />
@@ -292,7 +270,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Card 2: Data Analyst Lite (₹120/mo) - Featured Card */}
+          {/* Card 2: Data Analyst Lite (₹99/mo) - Featured Card */}
           <div className="bg-neutral-900/50 border border-blue-605/40 p-8 rounded-2xl backdrop-blur-md flex flex-col justify-between transition-all duration-300 hover:border-blue-500 shadow-[0_0_30px_rgba(37,99,235,0.15)] relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/5 rounded-full blur-2xl pointer-events-none -z-10 group-hover:bg-blue-500/10 transition-all duration-300"></div>
             
@@ -305,34 +283,23 @@ export default function LandingPage() {
                   <h3 className="text-xl font-bold text-white mt-3">Data Analyst Lite</h3>
                   <p className="text-xs text-neutral-400 mt-1 leading-relaxed">Tailored for professional business analysts and growing startups.</p>
                 </div>
-                {billingInterval === 'annually' && (
-                  <span className="text-[9px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded font-black font-mono">
-                    20% OFF
-                  </span>
-                )}
               </div>
 
               <div className="text-left flex items-baseline">
                 <span className="text-4xl font-black text-white">
-                  ₹{billingInterval === 'monthly' ? '120' : '99'}
+                  ₹99
                 </span>
-                <span className="text-neutral-400 text-xs ml-2 font-mono">/ user / month</span>
+                <span className="text-neutral-400 text-xs ml-2 font-mono">/ month</span>
               </div>
-              
-              {billingInterval === 'annually' && (
-                <div className="text-left text-[10px] text-blue-400 font-mono -mt-4">
-                  Billed annually at ₹1,188/yr
-                </div>
-              )}
 
               <ul className="text-left space-y-3.5 text-xs border-t border-neutral-850 pt-6">
                 {[
-                  "Dataset capacity up to 250,000 rows",
+                  "Unlimited dataset row capacity",
                   "15,000 AI compute credits / month",
+                  "Plan renewed automatically every 30 days",
                   "Advanced IQR outlier removals & imputation",
                   "Direct PostgreSQL & Supabase sync connect",
-                  "Custom analytical customizer themes",
-                  "Priority Email Support (under 12 hours)"
+                  "Custom analytical customizer themes"
                 ].map((feature, idx) => (
                   <li key={idx} className="flex items-start text-neutral-300 leading-normal">
                     <Check className="w-4 h-4 text-blue-400 mr-2.5 shrink-0 mt-0.5" />
@@ -344,7 +311,7 @@ export default function LandingPage() {
 
             <div className="pt-8">
               <Button
-                onClick={() => handlePlanSelect('Data Analyst Lite', billingInterval === 'monthly' ? 15000 : 18000)}
+                onClick={() => handlePlanSelect('Data Analyst Lite', 15000)}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-5 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all font-semibold"
               >
                 {isLoggedIn ? 'Go to Dashboard' : 'Upgrade to Analyst Lite'}
@@ -352,7 +319,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Card 3: Data Scientist Pro (₹259/mo) */}
+          {/* Card 3: Data Scientist Pro (₹210/mo) */}
           <div className="bg-neutral-900/30 border border-neutral-805 p-8 rounded-2xl backdrop-blur-md flex flex-col justify-between hover:border-purple-500/30 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-2xl pointer-events-none -z-10 group-hover:bg-purple-500/10 transition-all duration-300"></div>
 
@@ -365,33 +332,22 @@ export default function LandingPage() {
                   <h3 className="text-xl font-bold text-white mt-3">Data Scientist Pro</h3>
                   <p className="text-xs text-neutral-500 mt-1 leading-relaxed">For professional data scientists needing complex AutoML clusters.</p>
                 </div>
-                {billingInterval === 'annually' && (
-                  <span className="text-[9px] bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded font-black font-mono">
-                    20% OFF
-                  </span>
-                )}
               </div>
 
               <div className="text-left flex items-baseline">
                 <span className="text-4xl font-black text-white">
-                  ₹{billingInterval === 'monthly' ? '259' : '210'}
+                  ₹210
                 </span>
-                <span className="text-neutral-500 text-xs ml-2 font-mono">/ user / month</span>
+                <span className="text-neutral-500 text-xs ml-2 font-mono">/ month</span>
               </div>
-
-              {billingInterval === 'annually' && (
-                <div className="text-left text-[10px] text-purple-400 font-mono -mt-4">
-                  Billed annually at ₹2,520/yr
-                </div>
-              )}
 
               <ul className="text-left space-y-3.5 text-xs border-t border-neutral-850 pt-6">
                 {[
-                  "Dataset capacity up to 10,000,000 rows",
+                  "Unlimited dataset row capacity",
                   "75,000 AI compute credits / month",
+                  "Plan renewed automatically every 30 days",
                   "Full AutoML Random Forest prediction engine",
                   "Advanced DB Sync: Snowflake, BigQuery, MySQL",
-                  "High-performance parallel GPU server arrays",
                   "Dedicated 1-Hour SLA priority queue support"
                 ].map((feature, idx) => (
                   <li key={idx} className="flex items-start text-neutral-400 leading-normal">
@@ -404,7 +360,7 @@ export default function LandingPage() {
 
             <div className="pt-8">
               <Button
-                onClick={() => handlePlanSelect('Data Scientist Pro', billingInterval === 'monthly' ? 75000 : 90000)}
+                onClick={() => handlePlanSelect('Data Scientist Pro', 75000)}
                 className="w-full bg-neutral-800 hover:bg-purple-600/20 hover:text-purple-300 text-neutral-200 border border-neutral-700/50 hover:border-purple-500/40 rounded-xl py-5 shadow-lg transition-all"
               >
                 {isLoggedIn ? 'Go to Dashboard' : 'Upgrade to Scientist Pro'}

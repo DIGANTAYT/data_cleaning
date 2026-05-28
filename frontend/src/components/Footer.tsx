@@ -100,7 +100,7 @@ export default function Footer() {
               </li>
               <li>
                 <a 
-                  href="mailto:connect@magnetnode.com" 
+                  href="mailto:contact@magnetnode.com" 
                   className="text-neutral-400 hover:text-white transition-colors md:hover:translate-x-0.5 transform duration-150 block py-1"
                 >
                   Developer API
@@ -143,7 +143,7 @@ export default function Footer() {
               <span>•</span>
               <a href="/terms" className="hover:text-neutral-300 transition-colors py-0.5 cursor-pointer">Terms of Service</a>
               <span>•</span>
-              <a href="/terms" className="hover:text-neutral-300 transition-colors py-0.5 cursor-pointer">Cookies</a>
+              <a href="/cookies" className="hover:text-neutral-300 transition-colors py-0.5 cursor-pointer">Cookies</a>
             </div>
           </div>
 
