@@ -49,8 +49,8 @@ export default function DatasetDetail() {
     const storedCredits = localStorage.getItem('user_credits');
     const credits = storedCredits ? Number(storedCredits) : 500;
     
-    if (credits < 100) {
-      setMessage('⚠️ Credit Limit Reached: You need at least 100 AI compute credits to perform 1-Click AI Auto Clean. Please go back to the Home page and upgrade to Analyst Lite or Data Scientist Pro to get fresh credits!');
+    if (credits < 20) {
+      setMessage('⚠️ Credit Limit Reached: You need at least 20 AI compute credits to perform 1-Click AI Auto Clean. Please go back to the Home page and upgrade to Analyst Lite or Data Scientist Pro to get fresh credits!');
       return;
     }
     
@@ -78,7 +78,7 @@ export default function DatasetDetail() {
       });
       
       // Deduct credits and update
-      localStorage.setItem('user_credits', String(credits - 100));
+      localStorage.setItem('user_credits', String(credits - 20));
       window.dispatchEvent(new Event('credits-updated'));
       
       setMessage('Dataset cleaned successfully! Reloading...');

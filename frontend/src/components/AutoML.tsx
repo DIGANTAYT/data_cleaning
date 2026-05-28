@@ -41,8 +41,8 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
     const storedCredits = localStorage.getItem('user_credits');
     const credits = storedCredits ? Number(storedCredits) : 500;
     
-    if (credits < 500) {
-      setResult({ error: '⚠️ Credit Limit Reached: You need at least 500 AI compute credits to train an AutoML model. Please go back to the Home page and upgrade to Analyst Lite or Data Scientist Pro to get fresh credits!' });
+    if (credits < 50) {
+      setResult({ error: '⚠️ Credit Limit Reached: You need at least 50 AI compute credits to train an AutoML model. Please go back to the Home page and upgrade to Analyst Lite or Data Scientist Pro to get fresh credits!' });
       return;
     }
     
@@ -56,7 +56,7 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
       });
       
       // Deduct credits and update
-      localStorage.setItem('user_credits', String(credits - 500));
+      localStorage.setItem('user_credits', String(credits - 50));
       window.dispatchEvent(new Event('credits-updated'));
       
       setResult(response.data.result);

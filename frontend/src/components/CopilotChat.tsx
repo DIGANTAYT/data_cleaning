@@ -35,7 +35,7 @@ export function CopilotChat({ datasetId }: { datasetId: string }) {
     const storedCredits = localStorage.getItem('user_credits');
     const credits = storedCredits ? Number(storedCredits) : 500;
     
-    if (credits < 200) {
+    if (credits < 30) {
       setMessages(prev => [
         ...prev, 
         { role: 'user', content: input.trim() },
@@ -62,7 +62,7 @@ export function CopilotChat({ datasetId }: { datasetId: string }) {
       });
       
       // Deduct credits and update
-      localStorage.setItem('user_credits', String(credits - 200));
+      localStorage.setItem('user_credits', String(credits - 30));
       window.dispatchEvent(new Event('credits-updated'));
       
       setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }]);
