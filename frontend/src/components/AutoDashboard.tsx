@@ -146,8 +146,8 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
 
   const firstRow = safeDataPreview[0] || {};
 
-  let stringCols = safeColumns.filter(col => typeof firstRow[col] === 'string' && isNaN(Number(firstRow[col])));
-  let numCols = safeColumns.filter(col => typeof firstRow[col] === 'number' || !isNaN(Number(firstRow[col])));
+  let stringCols = safeColumns.filter(col => typeof firstRow[col] === 'string' && safeParseFloat(firstRow[col]) === -Infinity);
+  let numCols = safeColumns.filter(col => typeof firstRow[col] === 'number' || safeParseFloat(firstRow[col]) !== -Infinity);
 
   if (stringCols.length === 0) stringCols = safeColumns.length > 0 ? [safeColumns[0]] : [''];
   if (numCols.length === 0) numCols = safeColumns.length > 1 ? [safeColumns[1]] : (safeColumns.length > 0 ? [safeColumns[0]] : ['']);
@@ -417,7 +417,10 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       const source = result;
       result = source.map((row, idx) => {
         const windowRows = source.slice(Math.max(0, idx - movingAverageWindow + 1), idx + 1);
-        const sum = windowRows.reduce((acc, r) => acc + (Number(r[customY]) || 0), 0);
+        const sum = windowRows.reduce((acc, r) => {
+          const parsed = safeParseFloat(r[customY]);
+          return acc + (parsed !== -Infinity ? parsed : 0);
+        }, 0);
         const avg = sum / windowRows.length;
         return {
           ...row,
@@ -431,9 +434,11 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       const n = result.length;
       let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
       for (let i = 0; i < n; i++) {
+        const parsed = safeParseFloat(result[i][customY]);
+        const val = parsed !== -Infinity ? parsed : 0;
         sumX += i;
-        sumY += Number(result[i][customY]) || 0;
-        sumXY += i * (Number(result[i][customY]) || 0);
+        sumY += val;
+        sumXY += i * val;
         sumXX += i * i;
       }
       const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
@@ -476,8 +481,9 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       ? (cumulLimit > 0 && cumulY ? safeDataPreview.slice(0, cumulLimit) : safeDataPreview)
       : [];
     return slicedData.map(d => {
-      const val = cumulY ? (Number(d[cumulY]) || 0) : 0;
-      runningTotal += val;
+      const val = cumulY ? safeParseFloat(d[cumulY]) : 0;
+      const cleanVal = val !== -Infinity ? val : 0;
+      runningTotal += cleanVal;
       return {
         category: (cumulX && d[cumulX]) || 'Unknown',
         'Cumulative Sum': runningTotal
@@ -540,7 +546,8 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       const rawLoc = row[mapLocation];
       if (rawLoc === null || rawLoc === undefined || rawLoc === '') return;
       const locStr = String(rawLoc).trim();
-      const val = Number(row[mapMetric]) || 0;
+      const parsed = safeParseFloat(row[mapMetric]);
+      const val = parsed !== -Infinity ? parsed : 0;
       groups[locStr] = (groups[locStr] || 0) + val;
     });
 
@@ -572,11 +579,12 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     
     // Group and aggregate metrics by location
     const groups: Record<string, number> = {};
-    safeDataPreview.forEach(row => {
+    processedData.forEach(row => {
       const rawLoc = row[customX];
       if (rawLoc === null || rawLoc === undefined || rawLoc === '') return;
       const locStr = String(rawLoc).trim();
-      const val = Number(row[customY]) || 0;
+      const parsed = safeParseFloat(row[customY]);
+      const val = parsed !== -Infinity ? parsed : 0;
       groups[locStr] = (groups[locStr] || 0) + val;
     });
 
@@ -600,7 +608,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
         };
       })
       .sort((a, b) => b.value - a.value);
-  }, [safeDataPreview, customX, customY]);
+  }, [processedData, customX, customY]);
 
   // Update KPI column/operation
   const updateKpiConfig = (id: number, field: 'column' | 'operation', value: string) => {
@@ -638,7 +646,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       return `${pct.toFixed(1)}%`;
     }
 
-    const numericVals = rawVals.map(v => Number(v)).filter(v => !isNaN(v));
+    const numericVals = rawVals.map(v => safeParseFloat(v)).filter(v => v !== -Infinity);
     if (numericVals.length === 0) return '0.00';
 
     if (operation === 'mean') {
@@ -669,8 +677,12 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     setTimeout(() => {
       try {
         const pairs = dataPreview
-          .map(d => ({ x: Number(d[hypothesisX]), y: Number(d[hypothesisY]) }))
-          .filter(p => !isNaN(p.x) && !isNaN(p.y));
+          .map(d => {
+            const valX = safeParseFloat(d[hypothesisX]);
+            const valY = safeParseFloat(d[hypothesisY]);
+            return { x: valX, y: valY };
+          })
+          .filter(p => p.x !== -Infinity && p.y !== -Infinity);
 
         const n = pairs.length;
         if (n < 3) {
@@ -1556,7 +1568,8 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                 const aggregates: Record<string, number> = {};
                 dataPreview.forEach(row => {
                   const catVal = String(row[compCategory] === null || row[compCategory] === undefined || row[compCategory] === '' ? 'Unknown' : row[compCategory]);
-                  const numVal = Number(row[compMetric]) || 0;
+                  const parsedVal = safeParseFloat(row[compMetric]);
+                  const numVal = parsedVal !== -Infinity ? parsedVal : 0;
                   aggregates[catVal] = (aggregates[catVal] || 0) + numVal;
                 });
 
@@ -1682,7 +1695,10 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                           pieData.map((item, idx) => {
                             const grpValues = dataPreview
                               .filter(row => String(row[compCategory] === null || row[compCategory] === undefined || row[compCategory] === '' ? 'Unknown' : row[compCategory]) === item.name)
-                              .map(row => Number(row[compMetric]))
+                              .map(row => {
+                                const parsedVal = safeParseFloat(row[compMetric]);
+                                return parsedVal !== -Infinity ? parsedVal : 0;
+                              })
                               .filter(val => !isNaN(val));
 
                             const grpSum = grpValues.reduce((a, b) => a + b, 0);
@@ -1766,7 +1782,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                   {(() => {
                     const activeRadar = radarCols.length >= 3 ? radarCols : numCols.slice(0, 4);
                     const radarData = activeRadar.map(col => {
-                      const values = dataPreview.map(d => Number(d[col])).filter(v => !isNaN(v));
+                      const values = dataPreview.map(d => safeParseFloat(d[col])).filter(v => v !== -Infinity);
                       const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
                       return {
                         subject: col,
@@ -2139,12 +2155,12 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
               const missing = total - nonNull;
               const distinct = new Set(vals.filter(v => v !== null && v !== undefined && v !== '')).size;
               
-              const numericVals = vals.map(v => Number(v)).filter(v => !isNaN(v));
+              const numericVals = vals.map(v => safeParseFloat(v)).filter(v => v !== -Infinity);
               const isNumeric = numericVals.length > 0;
-              const avg = isNumeric ? numericVals.reduce((acc, b) => acc + Number(b), 0) / numericVals.length : 0;
+              const avg = isNumeric ? numericVals.reduce((acc, b) => acc + b, 0) / numericVals.length : 0;
               
               // Standard deviation
-              const variance = isNumeric ? numericVals.reduce((acc, b) => acc + Math.pow(Number(b) - avg, 2), 0) / numericVals.length : 0;
+              const variance = isNumeric ? numericVals.reduce((acc, b) => acc + Math.pow(b - avg, 2), 0) / numericVals.length : 0;
               const stdDev = isNumeric ? Math.sqrt(variance) : 0;
 
               return (
