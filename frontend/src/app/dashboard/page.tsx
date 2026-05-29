@@ -173,9 +173,28 @@ export default function DashboardPage() {
   // Editable Dynamic KPI Card states
   const [kpiCards, setKpiCards] = useState<any[]>([]);
   const [editingKpiId, setEditingKpiId] = useState<string | null>(null);
+  const loadedDatasetIdRef = useRef<string>('');
 
-  // Dynamic Dataset-Aware KPI Populator
+  // Dynamic Dataset-Aware KPI Populator (with persistent database/local storage integration)
   useEffect(() => {
+    if (!activeDatasetId) return;
+
+    // 1. Check if the user has custom KPI settings stored in local memory for this specific dataset
+    const savedKpis = localStorage.getItem(`metricsflow_kpis_${activeDatasetId}`);
+    if (savedKpis) {
+      try {
+        const parsed = JSON.parse(savedKpis);
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+          setKpiCards(parsed);
+          loadedDatasetIdRef.current = activeDatasetId;
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to parse saved dataset KPIs:', e);
+      }
+    }
+
+    // 2. Generate customized defaults based on the active dataset context
     let datasetKpis: any[] = [];
     
     if (selectedDataset) {
@@ -221,7 +240,16 @@ export default function DashboardPage() {
     }
 
     setKpiCards(datasetKpis);
-  }, [selectedDataset]);
+    loadedDatasetIdRef.current = activeDatasetId;
+    localStorage.setItem(`metricsflow_kpis_${activeDatasetId}`, JSON.stringify(datasetKpis));
+  }, [selectedDataset, activeDatasetId]);
+
+  // Real-time Auto-Save KPI adjustments back to dataset memory
+  useEffect(() => {
+    if (activeDatasetId && loadedDatasetIdRef.current === activeDatasetId && kpiCards && kpiCards.length > 0) {
+      localStorage.setItem(`metricsflow_kpis_${activeDatasetId}`, JSON.stringify(kpiCards));
+    }
+  }, [kpiCards, activeDatasetId]);
 
   // AI Quality Sync trigger
   useEffect(() => {
