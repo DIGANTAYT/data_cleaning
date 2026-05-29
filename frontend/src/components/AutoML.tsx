@@ -9,6 +9,30 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import axios from 'axios';
 import { API_URL } from '@/lib/api';
 
+// Suppress noisy Recharts ResponsiveContainer dimensions console warnings
+if (typeof window !== 'undefined') {
+  const filterWarning = (args: any[]) => {
+    return args[0] && 
+      typeof args[0] === 'string' && 
+      (args[0].includes('width(-1) and height(-1)') || 
+       args[0].includes('width(0) and height(0)') || 
+       args[0].includes('should be greater than 0') ||
+       args[0].includes('ResponsiveContainer'));
+  };
+
+  const originalWarn = console.warn;
+  console.warn = (...args) => {
+    if (filterWarning(args)) return;
+    originalWarn(...args);
+  };
+
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (filterWarning(args)) return;
+    originalError(...args);
+  };
+}
+
 interface AutoMLProps {
   datasetId: string;
   columns: string[];
