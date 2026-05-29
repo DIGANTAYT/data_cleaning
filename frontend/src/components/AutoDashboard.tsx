@@ -78,6 +78,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const [showTrendline, setShowTrendline] = useState(false);
   const [showGridlines, setShowGridlines] = useState(true);
   const [movingAverageWindow, setMovingAverageWindow] = useState(0);
+  const [graphHeight, setGraphHeight] = useState<number>(450);
 
   // Dynamic Category Composition State
   const [compCategory, setCompCategory] = useState('');
@@ -673,6 +674,21 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
                 </div>
+
+                <div className="space-y-1 pt-1">
+                  <div className="flex justify-between text-[11px] text-neutral-400">
+                    <span>Custom Graph Height</span>
+                    <span className="font-mono text-blue-400">{graphHeight}px</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="250" 
+                    max="700" 
+                    value={graphHeight}
+                    onChange={e => setGraphHeight(Number(e.target.value))}
+                    className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -683,7 +699,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
         </Card>
 
         {/* 💻 Custom Workbench Graph Screen */}
-        <Card className="lg:col-span-2 bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 shadow-2xl relative">
+        <Card className="lg:col-span-2 bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 shadow-2xl relative flex flex-col justify-between">
           <div className="absolute top-4 right-4 flex items-center space-x-1.5 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-full text-xs font-medium text-blue-400">
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
             <span>Custom Graph Preview</span>
@@ -693,8 +709,8 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
             <CardTitle className="text-lg">Interactive Display: {customY} by {customX}</CardTitle>
             <CardDescription className="text-neutral-400">Calculated custom visual mapping using active accents.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[310px] w-full">
+          <CardContent className="flex-1 flex flex-col justify-center">
+            <div style={{ height: `${graphHeight}px` }} className="w-full transition-all duration-200">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'bar' ? (
                   <BarChart data={processedData}>
@@ -800,16 +816,16 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="dark bg-neutral-900/60 backdrop-blur-md border border-neutral-800/80 text-neutral-50 shadow-xl">
-            <CardHeader className="pb-4 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-md flex items-center">
-                <BarChart2 className="w-4 h-4 mr-2 text-blue-400" />
-                Distribution: {distY} by {distX}
+            <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 space-y-0">
+              <CardTitle className="text-md flex items-center truncate max-w-xs sm:max-w-md" title={`Distribution: ${distY} by ${distX}`}>
+                <BarChart2 className="w-4 h-4 mr-2 text-blue-400 shrink-0" />
+                Distribution: <span className="text-neutral-350 ml-1 truncate">{distY} by {distX}</span>
               </CardTitle>
-              <div className="flex items-center space-x-1">
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                 <select
                   value={distX}
                   onChange={(e) => setDistX(e.target.value)}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
                   {columns.map(col => (
                     <option key={col} value={col}>{col}</option>
@@ -818,7 +834,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                 <select
                   value={distY}
                   onChange={(e) => setDistY(e.target.value)}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
                   {numCols.map(col => (
                     <option key={col} value={col}>{col}</option>
@@ -846,7 +862,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                       setDistLimit(15);
                     }
                   }}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer mr-1"
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
                   <option value="5">Top 5</option>
                   <option value="10">Top 10</option>
@@ -860,14 +876,14 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     max={dataPreview.length}
                     value={distLimit}
                     onChange={(e) => setDistLimit(Math.max(1, Number(e.target.value)))}
-                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1 py-0.5 focus:outline-none font-mono text-center"
+                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1.5 py-1 focus:outline-none font-mono text-center"
                     title="Custom Row Limit"
                   />
                 )}
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-72 w-full">
+              <div className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={processedDistData}>
                     <defs>
@@ -888,16 +904,16 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
           </Card>
 
           <Card className="dark bg-neutral-900/60 backdrop-blur-md border border-neutral-800/80 text-neutral-50 shadow-xl">
-            <CardHeader className="pb-4 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-md flex items-center">
-                <TrendingUp className="w-4 h-4 mr-2 text-emerald-400" />
-                Linear Trend: {trendY} over {trendX}
+            <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 space-y-0">
+              <CardTitle className="text-md flex items-center truncate max-w-xs sm:max-w-md" title={`Linear Trend: ${trendY} over ${trendX}`}>
+                <TrendingUp className="w-4 h-4 mr-2 text-emerald-400 shrink-0" />
+                Linear Trend: <span className="text-neutral-350 ml-1 truncate">{trendY} over {trendX}</span>
               </CardTitle>
-              <div className="flex items-center space-x-1">
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                 <select
                   value={trendX}
                   onChange={(e) => setTrendX(e.target.value)}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
                   {columns.map(col => (
                     <option key={col} value={col}>{col}</option>
@@ -906,7 +922,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                 <select
                   value={trendY}
                   onChange={(e) => setTrendY(e.target.value)}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
                   {numCols.map(col => (
                     <option key={col} value={col}>{col}</option>
@@ -934,7 +950,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                       setTrendLimit(15);
                     }
                   }}
-                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-1.5 py-0.5 focus:outline-none cursor-pointer mr-1"
+                  className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
                   <option value="5">Top 5</option>
                   <option value="10">Top 10</option>
@@ -948,14 +964,14 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     max={dataPreview.length}
                     value={trendLimit}
                     onChange={(e) => setTrendLimit(Math.max(1, Number(e.target.value)))}
-                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1 py-0.5 focus:outline-none font-mono text-center"
+                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1.5 py-1 focus:outline-none font-mono text-center"
                     title="Custom Row Limit"
                   />
                 )}
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-72 w-full">
+              <div className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={processedTrendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
