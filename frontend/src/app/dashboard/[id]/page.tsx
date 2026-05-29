@@ -363,7 +363,10 @@ export default function DatasetDetail() {
                 {healthGrade} Quality Rating
               </span>
               <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
-                {data?.rowCount || data?.preview?.length || 0} Total Records Evaluated
+                Total Rows: {data?.rowCount || data?.preview?.length || 0}
+              </span>
+              <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
+                Total Columns: {data?.columns?.length || 0}
               </span>
             </div>
           </div>
@@ -520,7 +523,9 @@ export default function DatasetDetail() {
                   <CardHeader className="border-b border-neutral-850 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <CardTitle>Data Explorer</CardTitle>
-                      <CardDescription className="text-neutral-400">First 5 rows of the dataset ({data?.rowCount} total rows)</CardDescription>
+                      <CardDescription className="text-neutral-400">
+                        First 5 rows of the dataset (Total Rows: {data?.rowCount || data?.preview?.length || 0} • Total Columns: {data?.columns?.length || 0})
+                      </CardDescription>
                     </div>
                     <div className="relative max-w-xs w-full">
                       <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
