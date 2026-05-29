@@ -282,7 +282,7 @@ const localProfileAndParse = (filePath: string): { columns: string[], preview: a
     }
   });
 
-  // Calculate outliers for numeric columns using IQR (Interquartile Range)
+  // Calculate outliers for numeric columns using IQR (Interquartile Range) with standard deviation fallback
   columns.forEach(col => {
     const numericValues = records
       .map(r => r[col])
@@ -293,8 +293,26 @@ const localProfileAndParse = (filePath: string): { columns: string[], preview: a
       const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
       const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
       const iqr = q3 - q1;
-      const lowerBound = q1 - 3.0 * iqr;
-      const upperBound = q3 + 3.0 * iqr;
+      
+      let lowerBound: number;
+      let upperBound: number;
+
+      if (iqr > 0) {
+        lowerBound = q1 - 3.0 * iqr;
+        upperBound = q3 + 3.0 * iqr;
+      } else {
+        const sum = numericValues.reduce((a, b) => a + b, 0);
+        const mean = sum / numericValues.length;
+        const variance = numericValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numericValues.length;
+        const std = Math.sqrt(variance);
+        if (std > 0) {
+          lowerBound = mean - 3.0 * std;
+          upperBound = mean + 3.0 * std;
+        } else {
+          lowerBound = -Infinity;
+          upperBound = Infinity;
+        }
+      }
 
       let outlierCount = 0;
       numericValues.forEach(v => {
@@ -439,8 +457,26 @@ const localClean = (filePath: string, operations: any[]): { rowCount: number, fi
         const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
         const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
         const iqr = q3 - q1;
-        const lowerBound = q1 - 3.0 * iqr;
-        const upperBound = q3 + 3.0 * iqr;
+        
+        let lowerBound: number;
+        let upperBound: number;
+
+        if (iqr > 0) {
+          lowerBound = q1 - 3.0 * iqr;
+          upperBound = q3 + 3.0 * iqr;
+        } else {
+          const sum = numericValues.reduce((a, b) => a + b, 0);
+          const mean = sum / numericValues.length;
+          const variance = numericValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numericValues.length;
+          const std = Math.sqrt(variance);
+          if (std > 0) {
+            lowerBound = mean - 3.0 * std;
+            upperBound = mean + 3.0 * std;
+          } else {
+            lowerBound = -Infinity;
+            upperBound = Infinity;
+          }
+        }
 
         cleanedRecords = cleanedRecords.filter(row => {
           const val = row[target];

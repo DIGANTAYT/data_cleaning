@@ -17,14 +17,24 @@ def detect_issues(df: pd.DataFrame):
     # Duplicates
     issues["duplicates"] = int(df.duplicated().sum())
     
-    # Outliers (using IQR for numeric columns)
+    # Outliers (using IQR for numeric columns with standard deviation fallback)
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     for col in numeric_cols:
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
         IQR = Q3 - Q1
-        lower_bound = Q1 - 3.0 * IQR
-        upper_bound = Q3 + 3.0 * IQR
+        if IQR > 0:
+            lower_bound = Q1 - 3.0 * IQR
+            upper_bound = Q3 + 3.0 * IQR
+        else:
+            std = df[col].std()
+            mean = df[col].mean()
+            if std > 0:
+                lower_bound = mean - 3.0 * std
+                upper_bound = mean + 3.0 * std
+            else:
+                lower_bound = -np.inf
+                upper_bound = np.inf
         outliers_count = int(((df[col] < lower_bound) | (df[col] > upper_bound)).sum())
         if outliers_count > 0:
             issues["outliers"][col] = outliers_count
@@ -67,8 +77,18 @@ def apply_cleaning(df: pd.DataFrame, operations: list):
                 Q1 = cleaned_df[target].quantile(0.25)
                 Q3 = cleaned_df[target].quantile(0.75)
                 IQR = Q3 - Q1
-                lower_bound = Q1 - 3.0 * IQR
-                upper_bound = Q3 + 3.0 * IQR
+                if IQR > 0:
+                    lower_bound = Q1 - 3.0 * IQR
+                    upper_bound = Q3 + 3.0 * IQR
+                else:
+                    std = cleaned_df[target].std()
+                    mean = cleaned_df[target].mean()
+                    if std > 0:
+                        lower_bound = mean - 3.0 * std
+                        upper_bound = mean + 3.0 * std
+                    else:
+                        lower_bound = -np.inf
+                        upper_bound = np.inf
                 # Exclude outliers while preserving NaN missing values in the same column
                 cleaned_df = cleaned_df[
                     ((cleaned_df[target] >= lower_bound) & (cleaned_df[target] <= upper_bound)) | 
