@@ -32,6 +32,7 @@ interface Widget {
   showGridlines?: boolean;
   showLegend?: boolean;
   lineType?: 'monotone' | 'linear' | 'step';
+  tab?: 'Summary' | 'Performance Analytics';
 }
 
 const PALETTES = [
@@ -181,12 +182,12 @@ export default function DashboardWorkspace() {
 
   // Interactive Widgets State
   const [widgets, setWidgets] = useState<Widget[]>([
-    { id: 'w-1', type: 'kpi', title: 'Total Enterprise Sales', w: 'col-span-1', metric: 'SalesAmount', category: '', color: '#3b82f6', starred: true },
-    { id: 'w-2', type: 'kpi', title: 'Average Deal Size', w: 'col-span-1', metric: 'DealSize', category: '', color: '#10b981' },
-    { id: 'w-3', type: 'kpi', title: 'Customer Health Score', w: 'col-span-1', metric: 'HealthIndex', category: '', color: '#8b5cf6' },
-    { id: 'w-4', type: 'bar', title: 'Revenue Share by Category', w: 'col-span-2', metric: 'Revenue', category: 'Category', color: '#3b82f6' },
-    { id: 'w-5', type: 'pie', title: 'Client Geolocation Density', w: 'col-span-1', metric: 'UsersCount', category: 'Region', color: '#8b5cf6' },
-    { id: 'w-6', type: 'line', title: 'Sales Run-Rate Trajectory', w: 'col-span-3', metric: 'SalesAmount', category: 'Date', color: '#10b981' }
+    { id: 'w-1', type: 'kpi', title: 'Total Enterprise Sales', w: 'col-span-1', metric: 'SalesAmount', category: '', color: '#3b82f6', starred: true, tab: 'Summary' },
+    { id: 'w-2', type: 'kpi', title: 'Average Deal Size', w: 'col-span-1', metric: 'DealSize', category: '', color: '#10b981', tab: 'Summary' },
+    { id: 'w-3', type: 'kpi', title: 'Customer Health Score', w: 'col-span-1', metric: 'HealthIndex', category: '', color: '#8b5cf6', tab: 'Summary' },
+    { id: 'w-4', type: 'bar', title: 'Revenue Share by Category', w: 'col-span-2', metric: 'Revenue', category: 'Category', color: '#3b82f6', tab: 'Summary' },
+    { id: 'w-5', type: 'pie', title: 'Client Geolocation Density', w: 'col-span-1', metric: 'UsersCount', category: 'Region', color: '#8b5cf6', tab: 'Performance Analytics', showGridlines: false, showLegend: true },
+    { id: 'w-6', type: 'line', title: 'Sales Run-Rate Trajectory', w: 'col-span-3', metric: 'SalesAmount', category: 'Date', color: '#10b981', tab: 'Performance Analytics', showGridlines: true, showLegend: true }
   ]);
 
   // Mock Datasets
@@ -405,7 +406,10 @@ export default function DashboardWorkspace() {
       metric: defaultY,
       category: defaultX,
       color: PALETTES[widgets.length % PALETTES.length].primary,
-      aggregation: 'sum'
+      aggregation: 'sum',
+      tab: activeCanvasTab,
+      showGridlines: true,
+      showLegend: true
     };
 
     setWidgets(prev => [...prev, newWidget]);
@@ -519,6 +523,10 @@ export default function DashboardWorkspace() {
       }
     }, 1000);
   };
+
+  const tabFilteredWidgets = useMemo(() => {
+    return widgets.filter(w => (w.tab || 'Summary') === activeCanvasTab);
+  }, [widgets, activeCanvasTab]);
 
   return (
     <div className="bg-neutral-950 text-neutral-50 min-h-screen flex flex-col font-sans select-none antialiased">
@@ -909,17 +917,17 @@ export default function DashboardWorkspace() {
             </div>
 
             {/* RENDER DYNAMIC CANVAS WIDGETS */}
-            {widgets.length === 0 ? (
+            {tabFilteredWidgets.length === 0 ? (
               <div className="border border-dashed border-neutral-850 rounded-2xl p-24 text-center text-neutral-400 flex flex-col items-center justify-center space-y-4 max-w-xl mx-auto mt-12 bg-neutral-950/40">
                 <LayoutDashboard className="w-10 h-10 text-neutral-600 animate-pulse" />
-                <h4 className="text-md font-bold text-neutral-200">The Canvas is Empty</h4>
-                <p className="text-xs text-neutral-500 leading-relaxed">Drag or click on elements in the left Component Palette to add resizable KPI metrics and interactive charts to your workspace!</p>
+                <h4 className="text-md font-bold text-neutral-200">The Canvas Tab is Empty</h4>
+                <p className="text-xs text-neutral-500 leading-relaxed">No widgets have been added to the active tab "{activeCanvasTab}" yet. Click elements in the left palette to add resizable KPI metrics and charts!</p>
               </div>
             ) : (
               <div className={`grid grid-cols-1 gap-6 ${
                 gridColumns === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'
               }`}>
-                {widgets.map((widget) => {
+                {tabFilteredWidgets.map((widget) => {
                   const isSelected = selectedWidgetId === widget.id;
                   
                   return (
@@ -1223,6 +1231,19 @@ export default function DashboardWorkspace() {
                     <option value="table">Data Table</option>
                     <option value="scatter">Scatter Graph</option>
                     <option value="text">Text Insights</option>
+                  </select>
+                </div>
+
+                {/* Target Dashboard Page/Tab selector */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-450 font-semibold uppercase tracking-wider">Target Dashboard Tab</label>
+                  <select
+                    value={selectedWidget.tab || 'Summary'}
+                    onChange={(e) => updateWidget({ ...selectedWidget, tab: e.target.value as any })}
+                    className="w-full bg-neutral-955 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer font-semibold"
+                  >
+                    <option value="Summary">Summary</option>
+                    <option value="Performance Analytics">Performance Analytics</option>
                   </select>
                 </div>
 
