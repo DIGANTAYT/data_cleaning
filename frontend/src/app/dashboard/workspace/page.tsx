@@ -7,7 +7,7 @@ import {
   LayoutDashboard, BarChart3, PieChart, TrendingUp, Activity, Grid, Trash2, 
   Copy, Sliders, Settings, Search, ArrowUpDown, Check, FileSpreadsheet, 
   FileImage, FileText, Eye, Star, Folder, Calendar, Info, Send, Terminal, 
-  ChevronRight, Maximize2, Palette, Shield, Lock, Layers
+  ChevronRight, Maximize2, Palette, Shield, Lock, Layers, GripVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,6 +68,43 @@ export default function DashboardWorkspace() {
   const [cardGapSize, setCardGapSize] = useState<'gap-3' | 'gap-6' | 'gap-8'>('gap-6');
   const [cardRoundedMode, setCardRoundedMode] = useState<'rounded-none' | 'rounded-xl' | 'rounded-3xl'>('rounded-xl');
   const [showBorderGlow, setShowBorderGlow] = useState(true);
+
+  // Drag and Drop Widget Reordering
+  const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedWidgetId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (sourceId === targetId) return;
+
+    setWidgets(prev => {
+      const sourceIndex = prev.findIndex(w => w.id === sourceId);
+      const targetIndex = prev.findIndex(w => w.id === targetId);
+      if (sourceIndex === -1 || targetIndex === -1) return prev;
+
+      const reordered = [...prev];
+      const [removed] = reordered.splice(sourceIndex, 1);
+      reordered.splice(targetIndex, 0, removed);
+      
+      saveToUndo(prev);
+      return reordered;
+    });
+
+    setDraggedWidgetId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedWidgetId(null);
+  };
 
   // Database active states
   const [activeDashboardId, setActiveDashboardId] = useState<string | null>(null);
@@ -1122,12 +1159,23 @@ export default function DashboardWorkspace() {
                     <Card
                       key={widget.id}
                       onClick={(e) => { e.stopPropagation(); setSelectedWidgetId(widget.id); }}
+                      draggable={canvasViewMode === 'builder'}
+                      onDragStart={(e) => handleDragStart(e, widget.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, widget.id)}
+                      onDragEnd={handleDragEnd}
                       className={`backdrop-blur-sm border transition-all duration-300 relative group flex flex-col justify-between select-none ${
                         widget.w
                       } ${cardRoundedMode} ${
                         isSelected 
                           ? 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.15)] bg-neutral-900/90' 
                           : `${themeStyles.cardBg}`
+                      } ${
+                        draggedWidgetId === widget.id
+                          ? 'opacity-40 border-dashed border-blue-500 scale-[0.98] blur-[0.5px] cursor-grabbing'
+                          : canvasViewMode === 'builder'
+                            ? 'cursor-grab hover:shadow-lg'
+                            : ''
                       }`}
                       style={
                         showBorderGlow && !isSelected
@@ -1153,12 +1201,15 @@ export default function DashboardWorkspace() {
                         </button>
                       </div>
 
-                      <CardHeader className={`pb-3 pt-4 px-5 border-b ${themeStyles.cardHeader}`}>
-                        <div className="flex items-center space-x-1.5">
+                      <CardHeader className={`pb-3 pt-4 px-5 border-b ${themeStyles.cardHeader} flex flex-row items-center justify-between space-y-0`}>
+                        <div className="flex items-center space-x-2 min-w-0">
+                          {canvasViewMode === 'builder' && (
+                            <GripVertical className="w-3.5 h-3.5 text-neutral-500 hover:text-neutral-300 cursor-grab active:cursor-grabbing shrink-0" />
+                          )}
                           {widget.starred && (
                             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                           )}
-                          <CardTitle className={`text-xs font-bold truncate max-w-[200px] ${themeStyles.headingText}`} title={widget.title}>
+                          <CardTitle className={`text-xs font-bold truncate max-w-[150px] sm:max-w-[200px] ${themeStyles.headingText}`} title={widget.title}>
                             {widget.title}
                           </CardTitle>
                         </div>
