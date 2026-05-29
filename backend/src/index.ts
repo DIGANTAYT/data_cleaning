@@ -1,11 +1,17 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Programmatically bypass Prisma TLS self-signed certificate chain validation
+if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('sslaccept=')) {
+  const separator = process.env.DATABASE_URL.includes('?') ? '&' : '?';
+  process.env.DATABASE_URL = `${process.env.DATABASE_URL}${separator}sslaccept=accept_invalid_certs`;
+}
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import authRoutes from './routes/auth.routes';
 import datasetRoutes from './routes/dataset.routes';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
