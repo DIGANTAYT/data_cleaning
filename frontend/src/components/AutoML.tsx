@@ -99,7 +99,17 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
       });
       
       // Deduct credits and update
-      localStorage.setItem('user_credits', String(credits - 70));
+      const newCredits = credits - 70;
+      localStorage.setItem('user_credits', String(newCredits));
+      try {
+        if (token) {
+          await axios.put(`${API_URL}/api/auth/profile`, { credits: newCredits }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      } catch (profileErr) {
+        console.warn('Could not sync AutoML credits to backend:', profileErr);
+      }
       window.dispatchEvent(new Event('credits-updated'));
       
       setResult(response.data.result);

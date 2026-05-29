@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = exports.register = void 0;
+exports.updateProfile = exports.getProfile = exports.login = exports.register = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../prisma"));
@@ -47,13 +47,24 @@ const register = async (req, res) => {
                 id: mockId,
                 email,
                 passwordHash,
-                name: name || email.split('@')[0]
+                name: name || email.split('@')[0],
+                credits: 500,
+                plan: 'Developer Sandbox'
             };
             localUsers.push(newMockUser);
-            user = { id: mockId, email, name: newMockUser.name };
+            user = { id: mockId, email, name: newMockUser.name, credits: 500, plan: 'Developer Sandbox' };
             token = jsonwebtoken_1.default.sign({ userId: mockId }, JWT_SECRET, { expiresIn: '7d' });
         }
-        res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+        res.status(201).json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                credits: user.credits,
+                plan: user.plan
+            }
+        });
     }
     catch (error) {
         console.error('Register error:', error?.message || String(error));
@@ -93,7 +104,9 @@ const login = async (req, res) => {
                     id: `mock-usr-${email.split('@')[0]}`,
                     email,
                     passwordHash: mockHash,
-                    name: email === 'aritra@sen.com' ? 'Aritra Sen' : email.split('@')[0]
+                    name: email === 'aritra@sen.com' ? 'Aritra Sen' : email.split('@')[0],
+                    credits: 500,
+                    plan: 'Developer Sandbox'
                 };
                 localUsers.push(localUser);
                 console.log(`Auto-provisioned sandbox account locally in memory: ${email}`);
@@ -110,10 +123,25 @@ const login = async (req, res) => {
                 res.status(400).json({ error: 'Invalid email or password' });
                 return;
             }
-            user = { id: localUser.id, email: localUser.email, name: localUser.name };
+            user = {
+                id: localUser.id,
+                email: localUser.email,
+                name: localUser.name,
+                credits: localUser.credits ?? 500,
+                plan: localUser.plan ?? 'Developer Sandbox'
+            };
             token = jsonwebtoken_1.default.sign({ userId: localUser.id }, JWT_SECRET, { expiresIn: '7d' });
         }
-        res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+        res.status(200).json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                credits: user.credits,
+                plan: user.plan
+            }
+        });
     }
     catch (error) {
         console.error('Login error:', error?.message || String(error));
@@ -121,3 +149,109 @@ const login = async (req, res) => {
     }
 };
 exports.login = login;
+const getProfile = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            res.status(400).json({ error: 'User ID is missing' });
+            return;
+        }
+        try {
+            const user = await prisma_1.default.user.findUnique({ where: { id: userId } });
+            if (user) {
+                res.status(200).json({
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        credits: user.credits,
+                        plan: user.plan
+                    }
+                });
+                return;
+            }
+        }
+        catch (dbError) {
+            console.warn('Database error during getProfile, falling back to local memory:', dbError.message);
+        }
+        const localUser = localUsers.find(u => u.id === userId);
+        if (!localUser) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        res.status(200).json({
+            user: {
+                id: localUser.id,
+                email: localUser.email,
+                name: localUser.name,
+                credits: localUser.credits ?? 500,
+                plan: localUser.plan ?? 'Developer Sandbox'
+            }
+        });
+    }
+    catch (error) {
+        console.error('getProfile error:', error?.message || String(error));
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+exports.getProfile = getProfile;
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { credits, plan } = req.body;
+        if (!userId) {
+            res.status(400).json({ error: 'User ID is missing' });
+            return;
+        }
+        const updateData = {};
+        if (credits !== undefined)
+            updateData.credits = Number(credits);
+        if (plan !== undefined)
+            updateData.plan = String(plan);
+        try {
+            const user = await prisma_1.default.user.update({
+                where: { id: userId },
+                data: updateData
+            });
+            if (user) {
+                res.status(200).json({
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        credits: user.credits,
+                        plan: user.plan
+                    }
+                });
+                return;
+            }
+        }
+        catch (dbError) {
+            console.warn('Database error during updateProfile, falling back to local memory:', dbError.message);
+        }
+        const localUserIndex = localUsers.findIndex(u => u.id === userId);
+        if (localUserIndex === -1) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        if (credits !== undefined)
+            localUsers[localUserIndex].credits = Number(credits);
+        if (plan !== undefined)
+            localUsers[localUserIndex].plan = String(plan);
+        const updatedLocalUser = localUsers[localUserIndex];
+        res.status(200).json({
+            user: {
+                id: updatedLocalUser.id,
+                email: updatedLocalUser.email,
+                name: updatedLocalUser.name,
+                credits: updatedLocalUser.credits ?? 500,
+                plan: updatedLocalUser.plan ?? 'Developer Sandbox'
+            }
+        });
+    }
+    catch (error) {
+        console.error('updateProfile error:', error?.message || String(error));
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+exports.updateProfile = updateProfile;

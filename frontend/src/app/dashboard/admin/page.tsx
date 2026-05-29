@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { API_URL } from '@/lib/api';
 
 interface SimulatedUser {
   id: string;
@@ -49,7 +51,7 @@ export default function AdminPanel() {
     }
   }, []);
 
-  const handleUpdatePlan = (userId: string, newPlan: string) => {
+  const handleUpdatePlan = async (userId: string, newPlan: string) => {
     let baseCredits = 500;
     if (newPlan === 'Data Scientist Pro') baseCredits = 75000;
     else if (newPlan === 'Data Analyst Lite') baseCredits = 15000;
@@ -61,6 +63,13 @@ export default function AdminPanel() {
           localStorage.setItem('user_plan', newPlan);
           localStorage.setItem('user_credits', String(baseCredits));
           window.dispatchEvent(new Event('credits-updated'));
+          
+          const token = localStorage.getItem('token');
+          if (token) {
+            axios.put(`${API_URL}/api/auth/profile`, { plan: newPlan, credits: baseCredits }, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch(err => console.warn('Could not sync admin plan change to database:', err));
+          }
         }
         return { ...u, plan: newPlan, credits: baseCredits };
       }
@@ -82,13 +91,20 @@ export default function AdminPanel() {
     toast.success(`User role set to ${newRole}`);
   };
 
-  const handleGrantCredits = (userId: string, amount: number) => {
+  const handleGrantCredits = async (userId: string, amount: number) => {
     setUsers(prev => prev.map(u => {
       if (u.id === userId) {
         const updatedCredits = u.credits + amount;
         if (u.email === 'sarkardiganta04@gmail.com') {
           localStorage.setItem('user_credits', String(updatedCredits));
           window.dispatchEvent(new Event('credits-updated'));
+          
+          const token = localStorage.getItem('token');
+          if (token) {
+            axios.put(`${API_URL}/api/auth/profile`, { credits: updatedCredits }, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch(err => console.warn('Could not sync admin granted credits to database:', err));
+          }
         }
         return { ...u, credits: updatedCredits };
       }

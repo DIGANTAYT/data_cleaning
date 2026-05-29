@@ -23,11 +23,12 @@ export default function RegisterPage() {
     try {
       const response = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
       if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
         localStorage.setItem('user_email', email);
-        localStorage.setItem('user_name', name);
-        localStorage.setItem('user_plan', 'Developer Sandbox');
-        localStorage.setItem('user_credits', '500');
+        localStorage.setItem('user_name', user?.name || name);
+        localStorage.setItem('user_plan', user?.plan || 'Developer Sandbox');
+        localStorage.setItem('user_credits', String(user?.credits ?? 500));
         if (email === 'sarkardiganta04@gmail.com') {
           localStorage.setItem('user_role', 'admin');
         } else {

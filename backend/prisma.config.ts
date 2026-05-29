@@ -3,12 +3,28 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+let dbUrl = process.env["DATABASE_URL"] || "";
+if (dbUrl) {
+  dbUrl = dbUrl.replace(":6543", ":5432");
+  if (dbUrl.includes("sslmode=require")) {
+    dbUrl = dbUrl.replace("sslmode=require", "sslmode=no-verify");
+  } else if (!dbUrl.includes("sslmode=")) {
+    const separator = dbUrl.includes("?") ? "&" : "?";
+    dbUrl = `${dbUrl}${separator}sslmode=no-verify`;
+  }
+  if (!dbUrl.includes("sslaccept=")) {
+    const separator = dbUrl.includes("?") ? "&" : "?";
+    dbUrl = `${dbUrl}${separator}sslaccept=accept_invalid_certs`;
+  }
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: dbUrl,
   },
 });
+

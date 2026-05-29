@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { API_URL } from '@/lib/api';
 
 export default function SettingsPage() {
   // Tab control
@@ -81,12 +83,24 @@ export default function SettingsPage() {
     toast.success('Developer API token regenerated.');
   };
 
-  const handlePlanChange = (plan: string, initialCredits: number) => {
+  const handlePlanChange = async (plan: string, initialCredits: number) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('user_plan', plan);
       localStorage.setItem('user_credits', String(initialCredits));
       setCurrentPlan(plan);
       setCredits(initialCredits);
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await axios.put(`${API_URL}/api/auth/profile`, { plan, credits: initialCredits }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      } catch (err) {
+        console.warn('Could not sync plan change to backend:', err);
+      }
+
       window.dispatchEvent(new Event('credits-updated'));
       toast.success(`Plan updated to ${plan}. Quota: ${initialCredits.toLocaleString()} credits.`);
     }

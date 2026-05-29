@@ -10,9 +10,15 @@ interface LocalUser {
   email: string;
   passwordHash: string;
   name: string;
+  credits?: number;
+  plan?: string;
 }
 
 const localUsers: LocalUser[] = [];
+
+export interface AuthRequest extends Request {
+  userId?: string;
+}
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -57,15 +63,26 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         id: mockId,
         email,
         passwordHash,
-        name: name || email.split('@')[0]
+        name: name || email.split('@')[0],
+        credits: 500,
+        plan: 'Developer Sandbox'
       };
       localUsers.push(newMockUser);
       
-      user = { id: mockId, email, name: newMockUser.name };
+      user = { id: mockId, email, name: newMockUser.name, credits: 500, plan: 'Developer Sandbox' };
       token = jwt.sign({ userId: mockId }, JWT_SECRET, { expiresIn: '7d' });
     }
 
-    res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.status(201).json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name,
+        credits: user.credits,
+        plan: user.plan
+      } 
+    });
   } catch (error: any) {
     console.error('Register error:', error?.message || String(error));
     res.status(500).json({ error: 'Internal server error' });
@@ -110,7 +127,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           id: `mock-usr-${email.split('@')[0]}`,
           email,
           passwordHash: mockHash,
-          name: email === 'aritra@sen.com' ? 'Aritra Sen' : email.split('@')[0]
+          name: email === 'aritra@sen.com' ? 'Aritra Sen' : email.split('@')[0],
+          credits: 500,
+          plan: 'Developer Sandbox'
         };
         localUsers.push(localUser);
         console.log(`Auto-provisioned sandbox account locally in memory: ${email}`);
@@ -131,13 +150,136 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      user = { id: localUser.id, email: localUser.email, name: localUser.name };
+      user = { 
+        id: localUser.id, 
+        email: localUser.email, 
+        name: localUser.name,
+        credits: localUser.credits ?? 500,
+        plan: localUser.plan ?? 'Developer Sandbox'
+      };
       token = jwt.sign({ userId: localUser.id }, JWT_SECRET, { expiresIn: '7d' });
     }
 
-    res.status(200).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.status(200).json({ 
+      token, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name,
+        credits: user.credits,
+        plan: user.plan
+      } 
+    });
   } catch (error: any) {
     console.error('Login error:', error?.message || String(error));
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(400).json({ error: 'User ID is missing' });
+      return;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        res.status(200).json({
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            credits: user.credits,
+            plan: user.plan
+          }
+        });
+        return;
+      }
+    } catch (dbError: any) {
+      console.warn('Database error during getProfile, falling back to local memory:', dbError.message);
+    }
+
+    const localUser = localUsers.find(u => u.id === userId);
+    if (!localUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({
+      user: {
+        id: localUser.id,
+        email: localUser.email,
+        name: localUser.name,
+        credits: localUser.credits ?? 500,
+        plan: localUser.plan ?? 'Developer Sandbox'
+      }
+    });
+  } catch (error: any) {
+    console.error('getProfile error:', error?.message || String(error));
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    const { credits, plan } = req.body;
+
+    if (!userId) {
+      res.status(400).json({ error: 'User ID is missing' });
+      return;
+    }
+
+    const updateData: any = {};
+    if (credits !== undefined) updateData.credits = Number(credits);
+    if (plan !== undefined) updateData.plan = String(plan);
+
+    try {
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: updateData
+      });
+      if (user) {
+        res.status(200).json({
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            credits: user.credits,
+            plan: user.plan
+          }
+        });
+        return;
+      }
+    } catch (dbError: any) {
+      console.warn('Database error during updateProfile, falling back to local memory:', dbError.message);
+    }
+
+    const localUserIndex = localUsers.findIndex(u => u.id === userId);
+    if (localUserIndex === -1) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (credits !== undefined) localUsers[localUserIndex].credits = Number(credits);
+    if (plan !== undefined) localUsers[localUserIndex].plan = String(plan);
+
+    const updatedLocalUser = localUsers[localUserIndex];
+    res.status(200).json({
+      user: {
+        id: updatedLocalUser.id,
+        email: updatedLocalUser.email,
+        name: updatedLocalUser.name,
+        credits: updatedLocalUser.credits ?? 500,
+        plan: updatedLocalUser.plan ?? 'Developer Sandbox'
+      }
+    });
+  } catch (error: any) {
+    console.error('updateProfile error:', error?.message || String(error));
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+

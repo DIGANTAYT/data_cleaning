@@ -120,7 +120,17 @@ export default function DatasetDetail() {
       });
       
       // Deduct credits and update
-      localStorage.setItem('user_credits', String(credits - 20));
+      const newCredits = credits - 20;
+      localStorage.setItem('user_credits', String(newCredits));
+      try {
+        if (token) {
+          await axios.put(`${API_URL}/api/auth/profile`, { credits: newCredits }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      } catch (profileErr) {
+        console.warn('Could not sync credits to backend:', profileErr);
+      }
       window.dispatchEvent(new Event('credits-updated'));
       
       setSuccessMessage('Dataset cleaned successfully! Syncing live changes...');
@@ -153,7 +163,18 @@ export default function DatasetDetail() {
       };
 
       // Deduct credits locally and trigger update events
-      localStorage.setItem('user_credits', String(credits - 20));
+      const newCredits = credits - 20;
+      localStorage.setItem('user_credits', String(newCredits));
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await axios.put(`${API_URL}/api/auth/profile`, { credits: newCredits }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      } catch (profileErr) {
+        console.warn('Could not sync local credits to backend:', profileErr);
+      }
       window.dispatchEvent(new Event('credits-updated'));
 
       setSuccessMessage('Sandbox Clean Success: AI Engine successfully resolved missing records, dropped duplicate indices, and trimmed outliers locally!');
