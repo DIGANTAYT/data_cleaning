@@ -43,6 +43,7 @@ const THEME_COLORS = [
 ];
 
 export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardProps) {
+  const [isMounted, setIsMounted] = useState(false);
   // Find columns safely using fallback values to avoid TypeErrors during initial render
   const safeDataPreview = dataPreview || [];
   const safeColumns = columns || [];
@@ -120,6 +121,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
 
   // Synchronize column selection states when columns load asynchronously
   React.useEffect(() => {
+    setIsMounted(true);
     if (safeDataPreview.length > 0 && safeColumns.length > 0) {
       setCustomX(prev => prev || xCol);
       setCustomY(prev => prev || yCol1);
@@ -400,6 +402,15 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50 p-6 text-center text-neutral-400">
         No preview data available for auto-insights.
       </Card>
+    );
+  }
+
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] w-full text-neutral-400 bg-neutral-950/20 backdrop-blur-md rounded-2xl border border-neutral-850 p-12">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-mono text-neutral-500 uppercase tracking-widest animate-pulse">Initializing display canvas...</p>
+      </div>
     );
   }
 

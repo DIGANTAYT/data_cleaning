@@ -16,6 +16,7 @@ interface AutoMLProps {
 }
 
 export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const dateCols = columns?.filter(col => {
     const lower = col.toLowerCase();
     return lower.includes('date') || lower.includes('time') || lower.includes('year') || lower.includes('month') || lower.includes('day') || lower.includes('created') || lower.includes('stamp');
@@ -28,6 +29,7 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
   const [selectedTimeCol, setSelectedTimeCol] = useState(defaultDateCol);
 
   React.useEffect(() => {
+    setIsMounted(true);
     if (columns && columns.length > 0) {
       setTargetCol(prev => prev || columns[columns.length - 1] || '');
       setSelectedTimeCol(prev => prev || defaultDateCol || '');
@@ -88,6 +90,15 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
   const topFeature = result?.top_features?.[0]?.feature;
   const target = result?.target;
   const isRegression = result?.task === 'regression';
+
+  if (!isMounted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] w-full text-neutral-400 bg-neutral-950/20 backdrop-blur-md rounded-2xl border border-neutral-850 p-12 mt-8">
+        <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-mono text-neutral-500 uppercase tracking-widest animate-pulse">Initializing AutoML Studio...</p>
+      </div>
+    );
+  }
 
   return (
     <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 backdrop-blur-md border border-neutral-800/80 shadow-2xl relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300 mt-8">
