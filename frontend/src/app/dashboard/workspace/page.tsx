@@ -23,12 +23,15 @@ interface Widget {
   id: string;
   type: 'kpi' | 'bar' | 'pie' | 'line' | 'area' | 'table' | 'scatter' | 'text' | 'filter';
   title: string;
-  w: string; // width class e.g. 'col-span-1', 'col-span-2', 'col-span-3'
+  w: string; // width class e.g. 'col-span-1', 'col-span-2', 'col-span-3', 'col-span-4'
   metric: string;
   category: string;
   color: string;
   starred?: boolean;
   aggregation?: 'sum' | 'avg' | 'min' | 'max' | 'count';
+  showGridlines?: boolean;
+  showLegend?: boolean;
+  lineType?: 'monotone' | 'linear' | 'step';
 }
 
 const PALETTES = [
@@ -36,7 +39,10 @@ const PALETTES = [
   { name: 'Emerald Mint', primary: '#10b981', secondary: '#34d399' },
   { name: 'Cyberpunk Violet', primary: '#8b5cf6', secondary: '#ec4899' },
   { name: 'Golden Amber', primary: '#f59e0b', secondary: '#fbbf24' },
-  { name: 'Crimson Rose', primary: '#f43f5e', secondary: '#fda4af' }
+  { name: 'Crimson Rose', primary: '#f43f5e', secondary: '#fda4af' },
+  { name: 'Teal Lagoon', primary: '#14b8a6', secondary: '#5eead4' },
+  { name: 'Sunset Orange', primary: '#f97316', secondary: '#fdba74' },
+  { name: 'Midnight Indigo', primary: '#4f46e5', secondary: '#818cf8' }
 ];
 
 export default function DashboardWorkspace() {
@@ -53,6 +59,7 @@ export default function DashboardWorkspace() {
   const [activeCanvasTab, setActiveCanvasTab] = useState<'Summary' | 'Performance Analytics'>('Summary');
   const [activeTheme, setActiveTheme] = useState<'dark' | 'light' | 'corporate'>('dark');
   const [globalDateFilter, setGlobalDateFilter] = useState('Last 30 Days');
+  const [gridColumns, setGridColumns] = useState<number>(3);
 
   // Database active states
   const [activeDashboardId, setActiveDashboardId] = useState<string | null>(null);
@@ -909,7 +916,9 @@ export default function DashboardWorkspace() {
                 <p className="text-xs text-neutral-500 leading-relaxed">Drag or click on elements in the left Component Palette to add resizable KPI metrics and interactive charts to your workspace!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className={`grid grid-cols-1 gap-6 ${
+                gridColumns === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'
+              }`}>
                 {widgets.map((widget) => {
                   const isSelected = selectedWidgetId === widget.id;
                   
@@ -976,10 +985,13 @@ export default function DashboardWorkspace() {
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={filteredChartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} vertical={false} />
+                                {widget.showGridlines !== false && (
+                                  <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} vertical={false} />
+                                )}
                                 <XAxis dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <YAxis stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
+                                {widget.showLegend === true && <Legend verticalAlign="top" height={24} iconSize={8} wrapperStyle={{ fontSize: '9px' }} />}
                                 <Bar dataKey={widget.metric} fill={widget.color} radius={[3, 3, 0, 0]} />
                               </BarChart>
                             </ResponsiveContainer>
@@ -1002,10 +1014,11 @@ export default function DashboardWorkspace() {
                                   paddingAngle={2}
                                 >
                                   {filteredChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={PALETTES[index % PALETTES.length].primary} />
+                                    <Cell key={`cell-${index}`} fill={entry.color || widget.color || PALETTES[index % PALETTES.length].primary} />
                                   ))}
                                 </Pie>
                                 <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
+                                {widget.showLegend === true && <Legend verticalAlign="bottom" height={24} iconSize={8} wrapperStyle={{ fontSize: '9px' }} />}
                               </RechartsPieChart>
                             </ResponsiveContainer>
                           </div>
@@ -1016,11 +1029,14 @@ export default function DashboardWorkspace() {
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={filteredChartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} />
+                                {widget.showGridlines !== false && (
+                                  <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} />
+                                )}
                                 <XAxis dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <YAxis stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
-                                <Line type="monotone" dataKey={widget.metric} stroke={widget.color} strokeWidth={2} dot={{ r: 3 }} />
+                                {widget.showLegend === true && <Legend verticalAlign="top" height={24} iconSize={8} wrapperStyle={{ fontSize: '9px' }} />}
+                                <Line type={widget.lineType || 'monotone'} dataKey={widget.metric} stroke={widget.color} strokeWidth={2} dot={{ r: 3 }} />
                               </LineChart>
                             </ResponsiveContainer>
                           </div>
@@ -1037,11 +1053,14 @@ export default function DashboardWorkspace() {
                                     <stop offset="95%" stopColor={widget.color} stopOpacity={0.0}/>
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} />
+                                {widget.showGridlines !== false && (
+                                  <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} />
+                                )}
                                 <XAxis dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <YAxis stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
-                                <Area type="monotone" dataKey={widget.metric} stroke={widget.color} fillOpacity={1} fill={`url(#areaGrad-${widget.id})`} />
+                                {widget.showLegend === true && <Legend verticalAlign="top" height={24} iconSize={8} wrapperStyle={{ fontSize: '9px' }} />}
+                                <Area type={widget.lineType || 'monotone'} dataKey={widget.metric} stroke={widget.color} fillOpacity={1} fill={`url(#areaGrad-${widget.id})`} />
                               </AreaChart>
                             </ResponsiveContainer>
                           </div>
@@ -1052,10 +1071,13 @@ export default function DashboardWorkspace() {
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <ScatterChart>
-                                <CartesianGrid stroke={themeStyles.gridLine} />
+                                {widget.showGridlines !== false && (
+                                  <CartesianGrid stroke={themeStyles.gridLine} />
+                                )}
                                 <XAxis type="category" dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <YAxis type="number" dataKey={widget.metric} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
                                 <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
+                                {widget.showLegend === true && <Legend verticalAlign="top" height={24} iconSize={8} wrapperStyle={{ fontSize: '9px' }} />}
                                 <Scatter name={widget.metric} data={filteredChartData} fill={widget.color} />
                               </ScatterChart>
                             </ResponsiveContainer>
@@ -1128,6 +1150,29 @@ export default function DashboardWorkspace() {
               </div>
             </div>
 
+            {/* Grid Density Selector */}
+            <div className="space-y-2">
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Canvas Grid Columns</label>
+              <div className="flex gap-2">
+                {[
+                  { id: 3, label: '3-Column Grid' },
+                  { id: 4, label: '4-Column Grid' }
+                ].map(colOpt => (
+                  <button
+                    key={colOpt.id}
+                    onClick={() => setGridColumns(colOpt.id)}
+                    className={`flex-1 py-2 px-1.5 border rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                      gridColumns === colOpt.id
+                        ? 'bg-blue-600 border-blue-555 text-white shadow-md'
+                        : 'bg-neutral-900 border-neutral-850 text-neutral-450 hover:bg-neutral-850/50 hover:text-neutral-200'
+                    }`}
+                  >
+                    {colOpt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="h-[1px] bg-neutral-900 w-full" />
 
             <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-widest font-mono">
@@ -1157,7 +1202,8 @@ export default function DashboardWorkspace() {
                   >
                     <option value="col-span-1">Narrow (1 Column)</option>
                     <option value="col-span-2">Medium (2 Columns)</option>
-                    <option value="col-span-3">Full Width (3 Columns)</option>
+                    <option value="col-span-3">Large (3 Columns)</option>
+                    <option value="col-span-4">Full Width (4 Columns - High Res)</option>
                   </select>
                 </div>
 
@@ -1248,7 +1294,62 @@ export default function DashboardWorkspace() {
                       </button>
                     ))}
                   </div>
+                  
+                  {/* Custom Hex Color Accent chooser */}
+                  <div className="space-y-1 pt-2">
+                    <label className="text-[9px] text-neutral-450 uppercase font-semibold">Custom Hex Color</label>
+                    <input
+                      type="text"
+                      placeholder="#3b82f6"
+                      value={selectedWidget.color}
+                      onChange={(e) => updateWidget({ ...selectedWidget, color: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-850 rounded-lg px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
                 </div>
+
+                {/* Advanced Chart Customizations */}
+                {selectedWidget.type !== 'kpi' && selectedWidget.type !== 'text' && selectedWidget.type !== 'table' && (
+                  <div className="space-y-3 pt-3 border-t border-neutral-900">
+                    <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Chart Customizations</label>
+                    <div className="flex flex-col space-y-2.5">
+                      <label className="flex items-center space-x-2 text-xs text-neutral-350 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={selectedWidget.showGridlines !== false}
+                          onChange={(e) => updateWidget({ ...selectedWidget, showGridlines: e.target.checked })}
+                          className="rounded bg-neutral-955 border-neutral-850 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span>Show Gridlines</span>
+                      </label>
+                      
+                      <label className="flex items-center space-x-2 text-xs text-neutral-350 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={selectedWidget.showLegend === true}
+                          onChange={(e) => updateWidget({ ...selectedWidget, showLegend: e.target.checked })}
+                          className="rounded bg-neutral-955 border-neutral-850 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span>Show Legend</span>
+                      </label>
+                      
+                      {(selectedWidget.type === 'line' || selectedWidget.type === 'area') && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[9px] text-neutral-455 uppercase font-semibold block">Line Smoothing Mode</span>
+                          <select
+                            value={selectedWidget.lineType || 'monotone'}
+                            onChange={(e) => updateWidget({ ...selectedWidget, lineType: e.target.value as any })}
+                            className="w-full bg-neutral-955 border border-neutral-850 text-[10px] text-neutral-350 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer font-semibold"
+                          >
+                            <option value="monotone">Monotone Curve (Smooth)</option>
+                            <option value="linear">Linear Segments (Straight)</option>
+                            <option value="step">Step-wise Lines (Discrete)</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Starred */}
                 <div className="flex items-center justify-between pt-3 border-t border-neutral-900">
