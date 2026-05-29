@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, LogOut, Database, User, Home, Shield, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, Database, User, Home, Shield, LifeBuoy, BarChart3 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -89,6 +89,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!mounted) return null;
 
+  const isDatasetsActive = pathname === '/dashboard' || (
+    pathname.startsWith('/dashboard/') && 
+    !pathname.startsWith('/dashboard/settings') && 
+    !pathname.startsWith('/dashboard/workspace') && 
+    !pathname.startsWith('/dashboard/help') && 
+    !pathname.startsWith('/dashboard/admin')
+  );
+
+  const isWorkspaceActive = pathname === '/dashboard/workspace' || pathname.startsWith('/dashboard/workspace/');
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user_email');
@@ -124,10 +134,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <button 
             onClick={() => router.push('/dashboard')}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${pathname === '/dashboard' || pathname.startsWith('/dashboard/') ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isDatasetsActive ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}
           >
             <LayoutDashboard className="w-5 h-5" />
             <span>Datasets</span>
+          </button>
+          <button 
+            onClick={() => router.push('/dashboard/workspace')}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isWorkspaceActive ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}
+          >
+            <BarChart3 className="w-5 h-5 text-blue-400" />
+            <span>Dashboards</span>
           </button>
           <button 
             onClick={() => router.push('/dashboard/settings')}
