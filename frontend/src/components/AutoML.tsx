@@ -224,7 +224,7 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
                   </p>
 
                   <div className="h-44 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       {isRegression ? (
                         <AreaChart data={dataPreview}>
                           <defs>
@@ -288,7 +288,7 @@ export function AutoML({ datasetId, columns, dataPreview }: AutoMLProps) {
                 </p>
 
                 <div className="h-56 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart data={dataPreview.slice(0, 30)}>
                       <defs>
                         <linearGradient id="timeColorGrad" x1="0" y1="0" x2="0" y2="1">

@@ -711,7 +711,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center">
             <div style={{ height: `${graphHeight}px` }} className="w-full transition-all duration-200">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 {chartType === 'bar' ? (
                   <BarChart data={processedData}>
                     <defs>
@@ -884,7 +884,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
             </CardHeader>
             <CardContent>
               <div className="h-96 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <BarChart data={processedDistData}>
                     <defs>
                       <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
@@ -972,7 +972,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
             </CardHeader>
             <CardContent>
               <div className="h-96 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <LineChart data={processedTrendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
                     <XAxis dataKey={trendX} stroke="#737373" fontSize={11} />
@@ -1098,7 +1098,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                         </div>
                       )}
                       
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         {compChartType === 'radial' ? (
                           <BarChart data={pieData} layout="vertical" barCategoryGap="20%">
                             <CartesianGrid stroke="#262626" horizontal={false} />
@@ -1282,7 +1282,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     });
 
                     return (
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                           <PolarGrid stroke="#262626" />
                           <PolarAngleAxis dataKey="subject" stroke="#737373" fontSize={10} />
@@ -1368,7 +1368,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
             </CardHeader>
             <CardContent>
               <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <AreaChart data={processedCumulativeData}>
                     <defs>
                       <linearGradient id="cumulGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1494,7 +1494,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                   </div>
 
                   <div className="lg:col-span-3 h-52 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       {auditChartType === 'bar' ? (
                         <BarChart data={dataPreview.slice(0, 15)}>
                           <XAxis dataKey={auditX} stroke="#737373" fontSize={9} />
