@@ -191,10 +191,18 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const processedData = React.useMemo(() => {
     let result = safeDataPreview;
     
-    if (customLimit > 0 && safeDataPreview.length > 0 && customY) {
-      result = [...safeDataPreview]
-        .sort((a, b) => (Number(b[customY]) || 0) - (Number(a[customY]) || 0))
-        .slice(0, customLimit);
+    if (customLimit > 0 && safeDataPreview.length > 0) {
+      result = [...safeDataPreview].sort((a, b) => {
+        if (!customY) return 0;
+        const valA = a[customY];
+        const valB = b[customY];
+        const numA = Number(valA);
+        const numB = Number(valB);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numB - numA;
+        }
+        return String(valB || '').localeCompare(String(valA || ''));
+      }).slice(0, customLimit);
     }
 
     if (movingAverageWindow > 0 && result.length > 0 && customY) {
@@ -233,19 +241,35 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   }, [safeDataPreview, customY, movingAverageWindow, showTrendline, customLimit]);
 
   const processedDistData = React.useMemo(() => {
-    if (distLimit > 0 && safeDataPreview.length > 0 && distY) {
-      return [...safeDataPreview]
-        .sort((a, b) => (Number(b[distY]) || 0) - (Number(a[distY]) || 0))
-        .slice(0, distLimit);
+    if (distLimit > 0 && safeDataPreview.length > 0) {
+      return [...safeDataPreview].sort((a, b) => {
+        if (!distY) return 0;
+        const valA = a[distY];
+        const valB = b[distY];
+        const numA = Number(valA);
+        const numB = Number(valB);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numB - numA;
+        }
+        return String(valB || '').localeCompare(String(valA || ''));
+      }).slice(0, distLimit);
     }
     return safeDataPreview;
   }, [safeDataPreview, distY, distLimit]);
 
   const processedTrendData = React.useMemo(() => {
-    if (trendLimit > 0 && safeDataPreview.length > 0 && trendY) {
-      return [...safeDataPreview]
-        .sort((a, b) => (Number(b[trendY]) || 0) - (Number(a[trendY]) || 0))
-        .slice(0, trendLimit);
+    if (trendLimit > 0 && safeDataPreview.length > 0) {
+      return [...safeDataPreview].sort((a, b) => {
+        if (!trendY) return 0;
+        const valA = a[trendY];
+        const valB = b[trendY];
+        const numA = Number(valA);
+        const numB = Number(valB);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numB - numA;
+        }
+        return String(valB || '').localeCompare(String(valA || ''));
+      }).slice(0, trendLimit);
     }
     return safeDataPreview;
   }, [safeDataPreview, trendY, trendLimit]);
