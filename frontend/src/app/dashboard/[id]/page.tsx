@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Sparkles, AlertTriangle, CheckCircle, Download, History, GitCommit, Table, Database, Search, Info } from 'lucide-react';
+import { Sparkles, AlertTriangle, CheckCircle, Download, History, GitCommit, Table, Database, Search, Info, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AutoDashboard } from '@/components/AutoDashboard';
@@ -276,109 +276,136 @@ export default function DatasetDetail() {
     );
   }
 
-  return (
+   return (
     <motion.div 
       initial="hidden"
       animate="visible"
       variants={{
         hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+        visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
       }}
-      className="bg-neutral-950 text-neutral-50 p-8"
+      className="min-h-screen bg-neutral-950 text-neutral-50 p-6 md:p-8 space-y-8 relative overflow-hidden font-sans selection:bg-indigo-500/30"
     >
-      <div className="max-w-6xl mx-auto space-y-8">
+      {/* Background Accent Gradients */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[130px] pointer-events-none -z-10 animate-pulse duration-4000" />
+      <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-purple-900/10 rounded-full blur-[110px] pointer-events-none -z-10 animate-pulse duration-3000" />
+
+      <div className="max-w-7xl mx-auto space-y-8">
         
+        {/* Top Navigation & Actions Bar */}
         <motion.div 
           variants={{
-            hidden: { opacity: 0, y: -10 },
-            visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+            hidden: { opacity: 0, y: -12 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } }
           }}
-          className="flex justify-between items-center"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-900/60"
         >
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Data Cleaning Studio</h1>
-            <p className="text-neutral-400">AI-powered anomaly detection and resolution.</p>
+            <div className="flex items-center space-x-2 text-xs text-neutral-450 font-mono font-semibold uppercase tracking-wider mb-1">
+              <span>Studio Workspace</span>
+              <span className="text-neutral-700">/</span>
+              <span className="text-indigo-400 truncate max-w-[150px]">{data?.name}</span>
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-2">
+              Data Cleaning Studio
+              <span className="inline-flex items-center bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded">
+                Active Sandbox
+              </span>
+            </h1>
+            <p className="text-xs text-neutral-400 mt-0.5">Diagnose structural anomalies, interpolate missing rows, and evaluate features using our AI Engine.</p>
           </div>
-          <div className="flex space-x-2">
+          
+          <div className="flex items-center gap-3.5 shrink-0">
             <Button 
               onClick={() => {
                 const token = localStorage.getItem('token');
                 window.open(`${API_URL}/api/datasets/${id}/download?token=${token}`, '_blank');
               }} 
-              className="bg-green-600 text-white hover:bg-green-500 flex items-center"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs py-5 px-5 rounded-xl transition-all duration-300 flex items-center gap-1.5 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/25 border border-emerald-555 cursor-pointer"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export Report & Data
+              <Download className="w-4 h-4" />
+              Export Clean Dataset
             </Button>
-            <Button onClick={() => router.push('/dashboard')} className="bg-neutral-800 text-white hover:bg-neutral-700">
-              Back to Datasets
+            <Button 
+              onClick={() => router.push('/dashboard')} 
+              className="bg-neutral-900 hover:bg-neutral-850 text-neutral-300 border border-neutral-800 hover:border-neutral-700 font-semibold text-xs py-5 px-5 rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
+            >
+              Back to Directory
             </Button>
           </div>
         </motion.div>
 
-        {successMessage && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-4 rounded-md bg-green-500/10 text-green-400 border border-green-500/20 flex items-center"
-          >
-            <CheckCircle className="w-5 h-5 mr-2 shrink-0" /> {successMessage}
-          </motion.div>
-        )}
+        {/* Global Notifications & Messages Drawer */}
+        <AnimatePresence>
+          {successMessage && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -8 }}
+              className="p-4 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 backdrop-blur-sm flex items-center shadow-lg shadow-emerald-500/5 animate-fade-in"
+            >
+              <CheckCircle className="w-5 h-5 mr-3 shrink-0 text-emerald-400" /> 
+              <span className="text-xs font-semibold">{successMessage}</span>
+            </motion.div>
+          )}
 
-        {errorMessage && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-4 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center"
-          >
-            <Info className="w-5 h-5 mr-2 shrink-0 text-blue-400" /> {errorMessage}
-          </motion.div>
-        )}
+          {errorMessage && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -8 }}
+              className="p-4 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 backdrop-blur-sm flex items-center shadow-lg shadow-indigo-500/5 animate-fade-in"
+            >
+              <Info className="w-5 h-5 mr-3 shrink-0 text-indigo-400" /> 
+              <span className="text-xs font-medium">{errorMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
 
         {/* Data Quality Hero Banner */}
         <motion.div 
           variants={{
-            hidden: { opacity: 0, scale: 0.98, y: 15 },
+            hidden: { opacity: 0, scale: 0.99, y: 15 },
             visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
           }}
-          className="relative overflow-hidden bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl"
+          className="relative overflow-hidden bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-md"
         >
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none -z-10"></div>
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[90px] pointer-events-none -z-10" />
           
-          <div className="space-y-3 max-w-xl">
-            <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full text-xs font-semibold text-blue-400">
-              <CheckCircle className="w-3.5 h-3.5 mr-1" />
-              Dataset Quality Audit Complete
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <div className="space-y-4 max-w-xl text-left">
+            <span className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-xs font-semibold text-indigo-400">
+              <CheckCircle className="w-3.5 h-3.5 mr-1 text-indigo-400 animate-pulse" />
+              Automated Profiling Analysis Complete
+            </span>
+            <h2 className="text-xl font-bold tracking-tight text-white">
               Overall Data Health Profile
             </h2>
-            <p className="text-neutral-400 text-sm leading-relaxed">
-              We completed an automatic schema evaluation and profiling check. Below is the health assessment based on completeness, uniqueness, and metric distribution stability.
+            <p className="text-neutral-400 text-xs leading-relaxed">
+              We completed an automatic schema integrity check. Below is the parsed metrics profile based on column completeness, structural uniqueness, and outlier thresholds.
             </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <span className={`text-xs px-2.5 py-1 rounded-md font-semibold border ${healthColor}`}>
-                {healthGrade} Quality Rating
+            
+            <div className="flex flex-wrap gap-2.5 pt-2">
+              <span className={`text-[10px] px-3 py-1.5 rounded-lg font-bold border uppercase tracking-wider font-mono ${healthColor}`}>
+                {healthGrade} Quality Score
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
+              <span className="text-[10px] px-3 py-1.5 rounded-lg font-bold border border-neutral-800 bg-neutral-900/60 text-neutral-300 font-mono">
                 Total Rows: {data?.rowCount || data?.preview?.length || 0}
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
-                Total Columns: {data?.columns?.length || 0}
+              <span className="text-[10px] px-3 py-1.5 rounded-lg font-bold border border-neutral-800 bg-neutral-900/60 text-neutral-300 font-mono">
+                Columns: {data?.columns?.length || 0}
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
-                Sample: 5
+              <span className="text-[10px] px-3 py-1.5 rounded-lg font-bold border border-neutral-800 bg-neutral-900/60 text-neutral-300 font-mono">
+                Sample Checked: 5
               </span>
             </div>
           </div>
 
           {/* Dynamic Score Ring */}
-          <div className="flex flex-col items-center justify-center shrink-0 bg-neutral-900/40 border border-neutral-850 p-5 rounded-2xl w-44">
+          <div className="flex flex-col items-center justify-center shrink-0 bg-neutral-950/40 border border-neutral-850 p-5 rounded-2xl w-44 hover:border-indigo-500/20 transition-all">
             <div className="relative w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" stroke="#1f2937" strokeWidth="8" fill="transparent" />
+                <circle cx="50" cy="50" r="40" stroke="#171717" strokeWidth="8" fill="transparent" />
                 <motion.circle 
                   cx="50" 
                   cy="50" 
@@ -389,19 +416,20 @@ export default function DatasetDetail() {
                   strokeDasharray="251.2" 
                   initial={{ strokeDashoffset: 251.2 }}
                   animate={{ strokeDashoffset: 251.2 - (251.2 * healthScore) / 100 }}
-                  transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                  transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
                 <span className="text-2xl font-black text-white">{healthScore.toFixed(0)}%</span>
-                <span className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Health</span>
+                <span className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold font-mono">Health</span>
               </div>
             </div>
-            <div className="mt-3 text-xs text-neutral-400 font-medium">Status: <span className="font-semibold text-white">{healthStatus}</span></div>
+            <div className="mt-3.5 text-xs text-neutral-400 font-medium">Status: <span className="font-semibold text-white font-mono">{healthStatus}</span></div>
           </div>
         </motion.div>
 
+        {/* 3 Grid KPI Cards */}
         <motion.div 
           variants={{
             hidden: { opacity: 0, y: 12 },
@@ -409,170 +437,218 @@ export default function DatasetDetail() {
           }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <AlertTriangle className="w-5 h-5 text-yellow-400 mr-2" />
-                Missing Values
+          {/* Missing Values Card */}
+          <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl overflow-hidden hover:border-yellow-500/20 transition-all duration-300 group">
+            <CardHeader className="pb-3 border-b border-neutral-900/40 bg-neutral-950/20">
+              <CardTitle className="text-sm font-bold flex items-center justify-between text-neutral-300">
+                <span className="flex items-center">
+                  <AlertTriangle className="w-4.5 h-4.5 text-yellow-500 mr-2 group-hover:scale-110 transition-transform" />
+                  Missing Values
+                </span>
+                <span className="text-[9px] bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-bold font-mono uppercase tracking-wider">
+                  Null Check
+                </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {Object.keys(data?.issues?.missing_values || {}).length === 0 ? (
-                <p className="text-sm text-green-400">No missing values detected.</p>
+                <div className="py-2 text-left">
+                  <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">✓ 100% Complete records</p>
+                  <p className="text-[11px] text-neutral-450 mt-1">No missing cell instances detected in any index columns.</p>
+                </div>
               ) : (
-                <ul className="text-sm text-neutral-400 space-y-1 mt-2">
-                  {Object.entries(data.issues.missing_values).map(([col, count]) => (
-                    <li key={col} className="flex justify-between">
-                      <span>{col}</span> <span className="text-yellow-400">{String(count)} missing</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-3">
+                  <ul className="text-xs font-mono text-neutral-400 divide-y divide-neutral-900/40 max-h-24 overflow-y-auto scrollbar-thin">
+                    {Object.entries(data.issues.missing_values).map(([col, count]) => (
+                      <li key={col} className="flex justify-between py-1.5 first:pt-0 last:pb-0">
+                        <span className="text-neutral-350 truncate pr-4">{col}</span> 
+                        <span className="text-yellow-400 font-bold shrink-0">{String(count)} nulls</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <AlertTriangle className="w-5 h-5 text-orange-400 mr-2" />
-                Outliers Detected
+          {/* Outliers Card */}
+          <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl overflow-hidden hover:border-orange-500/20 transition-all duration-300 group">
+            <CardHeader className="pb-3 border-b border-neutral-900/40 bg-neutral-950/20">
+              <CardTitle className="text-sm font-bold flex items-center justify-between text-neutral-300">
+                <span className="flex items-center">
+                  <AlertTriangle className="w-4.5 h-4.5 text-orange-500 mr-2 group-hover:scale-110 transition-transform" />
+                  Outliers Detected
+                </span>
+                <span className="text-[9px] bg-orange-500/10 border border-orange-500/20 text-orange-400 px-2 py-0.5 rounded font-bold font-mono uppercase tracking-wider">
+                  IQR Bounds
+                </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {Object.keys(data?.issues?.outliers || {}).length === 0 ? (
-                <p className="text-sm text-green-400">No extreme outliers detected.</p>
+                <div className="py-2 text-left">
+                  <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">✓ Standard Distribution</p>
+                  <p className="text-[11px] text-neutral-450 mt-1">Values lie within 3.0 standard deviation thresholds.</p>
+                </div>
               ) : (
-                <ul className="text-sm text-neutral-400 space-y-1 mt-2">
-                  {Object.entries(data.issues.outliers).map(([col, count]) => (
-                    <li key={col} className="flex justify-between">
-                      <span>{col}</span> <span className="text-orange-400">{String(count)} outliers</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-3">
+                  <ul className="text-xs font-mono text-neutral-400 divide-y divide-neutral-900/40 max-h-24 overflow-y-auto scrollbar-thin">
+                    {Object.entries(data.issues.outliers).map(([col, count]) => (
+                      <li key={col} className="flex justify-between py-1.5 first:pt-0 last:pb-0">
+                        <span className="text-neutral-350 truncate pr-4">{col}</span> 
+                        <span className="text-orange-400 font-bold shrink-0">{String(count)} outliers</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <AlertTriangle className="w-5 h-5 text-red-400 mr-2" />
-                Duplicate Rows
+          {/* Duplicate Rows Card */}
+          <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl overflow-hidden hover:border-red-500/20 transition-all duration-300 group">
+            <CardHeader className="pb-3 border-b border-neutral-900/40 bg-neutral-950/20">
+              <CardTitle className="text-sm font-bold flex items-center justify-between text-neutral-300">
+                <span className="flex items-center">
+                  <AlertTriangle className="w-4.5 h-4.5 text-red-500 mr-2 group-hover:scale-110 transition-transform" />
+                  Duplicate Row Indices
+                </span>
+                <span className="text-[9px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded font-bold font-mono uppercase tracking-wider">
+                  Deduplication
+                </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className={`text-2xl font-bold ${data?.issues?.duplicates > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                {data?.issues?.duplicates || 0}
+            <CardContent className="pt-4">
+              <div className="flex items-baseline space-x-2">
+                <p className={`text-3xl font-black font-mono tracking-tight ${data?.issues?.duplicates > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                  {data?.issues?.duplicates || 0}
+                </p>
+                <span className="text-neutral-400 text-xs">records</span>
+              </div>
+              <p className="text-[11px] text-neutral-450 mt-2">
+                {data?.issues?.duplicates > 0 
+                  ? 'Redundant, completely identical row vectors occupying database space.' 
+                  : 'All mapped database rows are structurally unique.'}
               </p>
-              <p className="text-sm text-neutral-400 mt-1">Identical rows found in dataset</p>
             </CardContent>
           </Card>
         </motion.div>
 
-        <div className="flex justify-end">
+        {/* 1-Click Clean Trigger Row */}
+        <div className="flex justify-end pt-2">
           <Button 
             onClick={handleAutoClean} 
             disabled={cleaning}
-            className="flex items-center transition-all cursor-pointer font-semibold bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold tracking-tight shadow-[0_0_20px_rgba(99,102,241,0.2)] hover:shadow-[0_0_30px_rgba(99,102,241,0.45)] transition-all duration-300 rounded-xl px-6 py-6 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
           >
             {cleaning ? (
-              'Cleaning Dataset...'
+              <span className="flex items-center gap-2 text-xs font-semibold">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Executing AI Engine cleaning algorithms...
+              </span>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                1-Click AI Auto Clean
+                <Sparkles className="w-4.5 h-4.5 text-white" />
+                Trigger 1-Click AI Auto Clean
               </>
             )}
           </Button>
         </div>
 
         {/* Tab Selection */}
-        <div className="flex space-x-1 bg-neutral-900 p-1.5 rounded-xl border border-neutral-800 max-w-sm mt-4">
+        <div className="flex space-x-1.5 bg-neutral-900/60 p-1.5 rounded-xl border border-neutral-850 max-w-sm mt-4 backdrop-blur-sm">
           <button
             onClick={() => setActiveTab('explorer')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer ${
               activeTab === 'explorer'
                 ? 'bg-neutral-800 text-white shadow-md'
-                : 'text-neutral-400 hover:text-neutral-200'
+                : 'text-neutral-450 hover:text-neutral-250'
             }`}
           >
-            <Table className="w-3.5 h-3.5" />
-            Interactive Data Explorer
+            <Table className="w-4 h-4" />
+            Data Explorer Grid
           </button>
           <button
             onClick={() => setActiveTab('schema')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer ${
               activeTab === 'schema'
                 ? 'bg-neutral-800 text-white shadow-md'
-                : 'text-neutral-400 hover:text-neutral-200'
+                : 'text-neutral-450 hover:text-neutral-250'
             }`}
           >
-            <Database className="w-3.5 h-3.5" />
-            Schema Profile
+            <Database className="w-4 h-4" />
+            Schema Audit Profile
           </button>
         </div>
 
+        {/* Main Tab Render Canvas */}
         <div className="mt-4">
           <AnimatePresence mode="wait">
             {activeTab === 'explorer' ? (
               <motion.div
                 key="explorer"
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50 overflow-hidden shadow-xl">
-                  <CardHeader className="border-b border-neutral-850 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <CardTitle>Data Explorer</CardTitle>
-                      <CardDescription className="text-neutral-400">
-                        First 5 rows of the dataset (Total Rows: {data?.rowCount || data?.preview?.length || 0} • Total Columns: {data?.columns?.length || 0} • Sample: 5)
+                <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 overflow-hidden shadow-2xl rounded-2xl backdrop-blur-sm">
+                  <CardHeader className="border-b border-neutral-900/60 pb-5 bg-neutral-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="text-left">
+                      <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
+                        <Table className="w-5 h-5 text-indigo-400" /> Interactive Database Visualizer
+                      </CardTitle>
+                      <CardDescription className="text-neutral-400 text-xs mt-1">
+                        First 5 rows of the dataset (Total Rows: {data?.rowCount || data?.preview?.length || 0} • Columns: {data?.columns?.length || 0} • Sample: 5)
                       </CardDescription>
                     </div>
                     <div className="relative max-w-xs w-full">
-                      <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
-                        placeholder="Search preview rows..."
+                        placeholder="Filter rows..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-neutral-950 border border-neutral-805 text-xs rounded-lg pl-9 pr-3 py-2 text-neutral-200 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-neutral-500"
+                        className="w-full bg-neutral-950/60 border border-neutral-800 text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-neutral-250 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-neutral-550 font-medium"
                       />
                     </div>
                   </CardHeader>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto max-w-full">
                     <table className="w-full text-sm text-left border-collapse">
-                      <thead className="text-xs text-neutral-400 uppercase bg-neutral-950 border-b border-neutral-800">
+                      <thead className="text-[10px] text-neutral-450 uppercase bg-neutral-950/40 border-b border-neutral-900/60">
                         <tr>
-                          <th className="px-4 py-3 border-r border-neutral-850 w-12 text-center text-neutral-600">#</th>
+                          <th className="px-4 py-3.5 border-r border-neutral-900/50 w-12 text-center text-neutral-650 font-bold font-mono">#</th>
                           {data?.columns?.map((col: string) => (
-                            <th key={col} className="px-6 py-3 font-semibold tracking-wider">{col}</th>
+                            <th key={col} className="px-6 py-3.5 font-bold tracking-wider">{col}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-neutral-900/40">
                         {filteredPreview.length === 0 ? (
                           <tr>
-                            <td colSpan={(data?.columns?.length || 0) + 1} className="text-center py-8 text-neutral-500 text-xs">
-                              No rows matching search query found.
+                            <td colSpan={(data?.columns?.length || 0) + 1} className="text-center py-10 text-neutral-500 text-xs font-medium">
+                              No rows matching active filter query found.
                             </td>
                           </tr>
                         ) : (
                           filteredPreview.slice(0, 5).map((row: any, i: number) => (
-                            <tr key={i} className="border-b border-neutral-850 hover:bg-neutral-850/40 transition-colors">
-                              <td className="px-4 py-4 border-r border-neutral-850 text-center font-mono text-[10px] text-neutral-500 bg-neutral-950/20">{i + 1}</td>
+                            <tr key={i} className="hover:bg-neutral-900/25 transition-colors duration-200">
+                              <td className="px-4 py-4 border-r border-neutral-900/50 text-center font-mono text-[9px] text-neutral-500 bg-neutral-950/15 font-bold">{i + 1}</td>
                               {data.columns.map((col: string) => {
                                 const val = row[col];
                                 const isNull = val === null || val === undefined || val === '';
                                 return (
                                   <td 
                                     key={col} 
-                                    className={`px-6 py-4 truncate max-w-xs text-xs font-mono ${
-                                      isNull ? 'bg-red-500/5 text-red-400/70 italic font-sans' : 'text-neutral-200'
-                                    }`}
+                                    className={`px-6 py-4 truncate max-w-xs text-xs font-mono`}
                                   >
-                                    {isNull ? 'NULL' : String(val)}
+                                    {isNull ? (
+                                      <span className="bg-red-950/30 text-red-400 border border-red-900/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
+                                        NULL
+                                      </span>
+                                    ) : (
+                                      <span className="text-neutral-250">{String(val)}</span>
+                                    )}
                                   </td>
                                 );
                               })}
@@ -587,91 +663,95 @@ export default function DatasetDetail() {
             ) : (
               <motion.div
                 key="schema"
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                <Card className="dark bg-neutral-900 border-neutral-800 text-neutral-50 overflow-hidden shadow-xl">
-                  <CardHeader className="border-b border-neutral-850 pb-4">
-                    <CardTitle>Schema Profile & Quality Metrics</CardTitle>
-                    <CardDescription className="text-neutral-400">
-                      Detailed metadata audit and anomaly checks per feature column.
+                <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 overflow-hidden shadow-2xl rounded-2xl backdrop-blur-sm">
+                  <CardHeader className="border-b border-neutral-900/60 pb-5 bg-neutral-950/20">
+                    <CardTitle className="text-lg font-bold text-white flex items-center gap-2 text-left">
+                      <Database className="w-5 h-5 text-indigo-400" /> Schema & Data Quality Audits
+                    </CardTitle>
+                    <CardDescription className="text-neutral-400 text-xs mt-1 text-left">
+                      Detailed type inferences, quality percentages, and anomaly logs per feature key.
                     </CardDescription>
                   </CardHeader>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-neutral-400 uppercase bg-neutral-950 border-b border-neutral-800">
+                  <div className="overflow-x-auto max-w-full">
+                    <table className="w-full text-sm text-left border-collapse">
+                      <thead className="text-[10px] text-neutral-450 uppercase bg-neutral-950/40 border-b border-neutral-900/60">
                         <tr>
-                          <th className="px-6 py-3 font-semibold tracking-wider">Column Feature</th>
-                          <th className="px-6 py-3 font-semibold tracking-wider">Inferred Type</th>
-                          <th className="px-6 py-3 font-semibold tracking-wider">Quality Score</th>
-                          <th className="px-6 py-3 font-semibold tracking-wider text-center">Missing</th>
-                          <th className="px-6 py-3 font-semibold tracking-wider text-center">Outliers</th>
-                          <th className="px-6 py-3 font-semibold tracking-wider">Health Flag</th>
+                          <th className="px-6 py-3.5 font-bold tracking-wider">Column Feature</th>
+                          <th className="px-6 py-3.5 font-bold tracking-wider">Inferred Type</th>
+                          <th className="px-6 py-3.5 font-bold tracking-wider">Completeness</th>
+                          <th className="px-6 py-3.5 font-bold tracking-wider text-center">Nulls</th>
+                          <th className="px-6 py-3.5 font-bold tracking-wider text-center">Outliers</th>
+                          <th className="px-6 py-3.5 font-bold tracking-wider">Diagnostic Flag</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-neutral-850">
+                      <tbody className="divide-y divide-neutral-900/40">
                         {data?.columns?.map((col: string) => {
-                          const sampleVal = data.preview?.[0]?.[col];
-                          const type = typeof sampleVal === 'number' || !isNaN(Number(sampleVal)) ? 'Numeric' : 'Text/Categorical';
-                          
-                          const missingCount = data.issues?.missing_values?.[col] || 0;
-                          const outliersCount = data.issues?.outliers?.[col] || 0;
-                          
-                          const rowCount = data.rowCount || data.preview?.length || 100;
-                          const completeness = ((rowCount - missingCount) / rowCount) * 100;
-                          
-                          const hasAnomalies = missingCount > 0 || outliersCount > 0;
-                          
-                          return (
-                            <tr key={col} className="hover:bg-neutral-850/20 transition-colors">
-                              <td className="px-6 py-4 font-semibold text-neutral-200">{col}</td>
-                              <td className="px-6 py-4 text-xs">
-                                <span className={`px-2 py-0.5 rounded-full font-mono font-bold text-[10px] ${
-                                  type === 'Numeric' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/25' : 'bg-purple-500/10 text-purple-400 border border-purple-500/25'
-                                }`}>
-                                  {type}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="space-y-1">
-                                  <div className="flex justify-between items-center text-[10px] text-neutral-400 font-bold">
-                                    <span>Completeness</span>
-                                    <span className={completeness === 100 ? 'text-green-400' : 'text-yellow-400'}>
-                                      {completeness.toFixed(1)}%
-                                    </span>
-                                  </div>
-                                  <div className="w-32 h-1.5 bg-neutral-950 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`h-full rounded-full ${completeness === 100 ? 'bg-green-500' : 'bg-yellow-500'}`}
-                                      style={{ width: `${completeness}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className={`px-6 py-4 text-center text-xs font-mono font-semibold ${missingCount > 0 ? 'text-yellow-400' : 'text-neutral-500'}`}>
-                                {missingCount}
-                              </td>
-                              <td className={`px-6 py-4 text-center text-xs font-mono font-semibold ${outliersCount > 0 ? 'text-orange-400' : 'text-neutral-500'}`}>
-                                {outliersCount}
-                              </td>
-                              <td className="px-6 py-4">
-                                {hasAnomalies ? (
-                                  <span className="flex items-center gap-1 text-[11px] text-yellow-400/90 font-medium bg-yellow-500/5 px-2.5 py-1 border border-yellow-500/10 rounded-md w-fit">
-                                    <AlertTriangle className="w-3 h-3 text-yellow-400" />
-                                    Action Advised
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-1 text-[11px] text-green-400 font-medium bg-green-500/5 px-2.5 py-1 border border-green-500/10 rounded-md w-fit">
-                                    <CheckCircle className="w-3 h-3 text-green-400" />
-                                    Verified clean
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                           const sampleVal = data.preview?.[0]?.[col];
+                           const type = typeof sampleVal === 'number' || !isNaN(Number(sampleVal)) ? 'Numeric' : 'Text/Categorical';
+                           
+                           const missingCount = data.issues?.missing_values?.[col] || 0;
+                           const outliersCount = data.issues?.outliers?.[col] || 0;
+                           
+                           const rowCount = data.rowCount || data.preview?.length || 100;
+                           const completeness = ((rowCount - missingCount) / rowCount) * 100;
+                           
+                           const hasAnomalies = missingCount > 0 || outliersCount > 0;
+                           
+                           return (
+                             <tr key={col} className="hover:bg-neutral-900/25 transition-colors duration-200">
+                               <td className="px-6 py-4.5 font-bold text-neutral-250">{col}</td>
+                               <td className="px-6 py-4.5">
+                                 <span className={`px-2.5 py-1 rounded-lg font-mono font-bold text-[9px] border ${
+                                   type === 'Numeric' 
+                                     ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                                     : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                 }`}>
+                                   {type}
+                                 </span>
+                               </td>
+                               <td className="px-6 py-4.5">
+                                 <div className="space-y-1.5">
+                                   <div className="flex justify-between items-center text-[10px] text-neutral-450 font-bold font-mono">
+                                     <span>Row Ratio</span>
+                                     <span className={completeness === 100 ? 'text-emerald-400' : 'text-yellow-400'}>
+                                       {completeness.toFixed(1)}%
+                                     </span>
+                                   </div>
+                                   <div className="w-32 h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-900">
+                                     <div 
+                                       className={`h-full rounded-full ${completeness === 100 ? 'bg-emerald-500' : 'bg-yellow-500'}`}
+                                       style={{ width: `${completeness}%` }}
+                                     ></div>
+                                   </div>
+                                 </div>
+                               </td>
+                               <td className={`px-6 py-4.5 text-center text-xs font-mono font-bold ${missingCount > 0 ? 'text-yellow-400' : 'text-neutral-500'}`}>
+                                 {missingCount}
+                               </td>
+                               <td className={`px-6 py-4.5 text-center text-xs font-mono font-bold ${outliersCount > 0 ? 'text-orange-400' : 'text-neutral-500'}`}>
+                                 {outliersCount}
+                               </td>
+                               <td className="px-6 py-4.5">
+                                 {hasAnomalies ? (
+                                   <span className="inline-flex items-center gap-1.5 text-[10px] text-yellow-400 font-bold bg-yellow-500/5 px-3 py-1 border border-yellow-500/15 rounded-lg font-mono">
+                                     <AlertTriangle className="w-3 h-3 text-yellow-400" />
+                                     Imputation Recommended
+                                   </span>
+                                 ) : (
+                                   <span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold bg-emerald-500/5 px-3 py-1 border border-emerald-500/15 rounded-lg font-mono">
+                                     <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                     Verified Clean
+                                   </span>
+                                 )}
+                               </td>
+                             </tr>
+                           );
+                         })}
                       </tbody>
                     </table>
                   </div>
@@ -682,32 +762,33 @@ export default function DatasetDetail() {
         </div>
 
         {/* Automated Visualizations */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold tracking-tight mb-4">Auto-Generated Insights</h2>
+        <div className="pt-4">
+          <h2 className="text-xl font-bold tracking-tight text-white mb-4 text-left">AI Auto-Generated Visual Insights</h2>
           <AutoDashboard dataPreview={data?.preview} columns={data?.columns} />
         </div>
 
         {/* Machine Learning Engine */}
-        <div className="mt-8">
+        <div className="pt-4">
+          <h2 className="text-xl font-bold tracking-tight text-white mb-4 text-left">AI ML Predictive Models Studio</h2>
           <AutoML datasetId={id as string} columns={data?.columns} dataPreview={data?.preview} />
         </div>
 
         {/* 🧠 AI Engine Analytics & Pipeline Diagnostics Workbench */}
-        <Card className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 shadow-2xl overflow-hidden mb-16 mt-8 relative group hover:border-purple-500/20 transition-all duration-300">
+        <Card className="bg-gradient-to-br from-neutral-900/40 to-neutral-950/30 border border-neutral-850 shadow-2xl overflow-hidden mb-16 mt-8 relative group hover:border-indigo-500/20 transition-all duration-300 rounded-2xl">
           <div className="absolute top-0 right-0 w-44 h-44 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/10 transition-all"></div>
           
-          <CardHeader className="border-b border-neutral-850 pb-4 bg-neutral-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
+          <CardHeader className="border-b border-neutral-900/60 pb-5 bg-neutral-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-left">
               <div className="flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-                <CardTitle className="text-md font-bold">AI Engine Analytics & Pipeline Diagnostics Workbench</CardTitle>
+                <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
+                <CardTitle className="text-base font-bold text-white">AI Engine Analytics & Pipeline Diagnostics Workbench</CardTitle>
               </div>
-              <CardDescription className="text-neutral-400 text-xs mt-0.5">
-                Audit the backend mathematical calculations, execution logs, and script snippets in real-time.
+              <CardDescription className="text-neutral-400 text-xs mt-1">
+                Audit backend calculations, mathematical standard deviation bounds, and real-time execution terminals.
               </CardDescription>
             </div>
-            <div className="flex items-center space-x-2 shrink-0 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-full text-xs font-semibold text-indigo-400 font-mono">
-              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+            <div className="flex items-center space-x-2 shrink-0 bg-neutral-950 border border-neutral-850 px-3.5 py-2 rounded-full text-[10px] font-bold text-indigo-400 font-mono">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></div>
               <span>Engine Status: ONLINE</span>
             </div>
           </CardHeader>
@@ -716,16 +797,16 @@ export default function DatasetDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               
               {/* Left Column: Interactive Pipeline Navigation Tree */}
-              <div className="lg:col-span-2 flex flex-col space-y-3.5 border-r border-neutral-850/60 pr-2 lg:pr-6">
-                <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60 pb-2 mb-1.5 font-mono">
-                  Engine Stages & Execution Tree
+              <div className="lg:col-span-2 flex flex-col space-y-3.5 border-r border-neutral-900/65 pr-2 lg:pr-6">
+                <div className="text-[10px] font-black text-neutral-500 uppercase tracking-widest border-b border-neutral-900/60 pb-2.5 mb-1.5 font-mono text-left">
+                  Algorithm Execution Stages
                 </div>
                 
                 {[
-                  { stage: 1, label: 'Ingestion & Profiling', desc: 'Pandas memory parsing, shape profiling & datatype checks', icon: Database, color: 'border-blue-500 text-blue-400 bg-blue-500/5' },
-                  { stage: 2, label: 'Quality Integrity Engine', desc: 'IQR mathematical outlier calculation & health indexing', icon: AlertTriangle, color: 'border-emerald-500 text-emerald-400 bg-emerald-500/5' },
-                  { stage: 3, label: 'Run-Rate Aggregations', desc: 'Linear trends OLS, growth run-rates & category profiles', icon: Table, color: 'border-purple-500 text-purple-400 bg-purple-500/5' },
-                  { stage: 4, label: 'AutoML RandomForest Net', desc: 'Train-test splits, ensemble trees fitting & importance weight', icon: Sparkles, color: 'border-rose-500 text-rose-400 bg-rose-500/5' }
+                  { stage: 1, label: 'Ingestion & Profiling', desc: 'Pandas stream, shapes and types assessment', icon: Database, color: 'border-blue-500/30 text-blue-400 bg-blue-500/5' },
+                  { stage: 2, label: 'Integrity & Z-Score Clean', desc: 'IQR math outliers & standard deviations bounds', icon: AlertTriangle, color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5' },
+                  { stage: 3, label: 'Linear OLS Aggregations', desc: 'Ordinary least squares linear trend solved slopes', icon: Table, color: 'border-purple-500/30 text-purple-400 bg-purple-500/5' },
+                  { stage: 4, label: 'Random Forest ML Net', desc: 'Category label weights & RMSE regression fitting', icon: Sparkles, color: 'border-rose-500/30 text-rose-400 bg-rose-500/5' }
                 ].map((s) => {
                   const isActive = activeDiagStage === s.stage;
                   const Icon = s.icon;
@@ -733,25 +814,25 @@ export default function DatasetDetail() {
                     <button
                       key={s.stage}
                       onClick={() => setActiveDiagStage(s.stage)}
-                      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-300 flex items-start gap-3 cursor-pointer group/btn ${
+                      className={`w-full text-left p-3.5 rounded-xl border transition-all duration-300 flex items-start gap-3.5 cursor-pointer group/btn ${
                         isActive 
                           ? `${s.color} shadow-lg border-opacity-40` 
-                          : 'bg-neutral-950/20 border-neutral-850 hover:bg-neutral-900 hover:border-neutral-800'
+                          : 'bg-neutral-950/20 border-neutral-850 hover:bg-neutral-900/60 hover:border-neutral-800'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg border shrink-0 flex items-center justify-center transition-colors ${
-                        isActive ? 'bg-neutral-900 border-opacity-50' : 'bg-neutral-950 border-neutral-800 text-neutral-500 group-hover/btn:text-neutral-350'
+                      <div className={`w-9 h-9 rounded-xl border shrink-0 flex items-center justify-center transition-colors ${
+                        isActive ? 'bg-neutral-900 border-opacity-50' : 'bg-neutral-950 border-neutral-800 text-neutral-550 group-hover/btn:text-neutral-350'
                       }`}>
-                        <Icon className="w-4.5 h-4.5" />
+                        <Icon className="w-5 h-5" />
                       </div>
-                      <div className="space-y-0.5 min-w-0">
+                      <div className="space-y-0.5 min-w-0 flex-1">
                         <div className="flex justify-between items-center">
-                          <span className={`text-[10px] uppercase font-bold tracking-wider ${isActive ? 'text-neutral-200' : 'text-neutral-500 font-semibold'}`}>
+                          <span className={`text-[9px] uppercase font-black tracking-widest font-mono ${isActive ? 'text-neutral-200' : 'text-neutral-550'}`}>
                             Stage {s.stage}
                           </span>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-indigo-400 animate-ping' : 'bg-neutral-800'}`}></span>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-indigo-400 animate-pulse' : 'bg-neutral-800'}`}></span>
                         </div>
-                        <h4 className="text-xs font-bold text-neutral-200 truncate">{s.label}</h4>
+                        <h4 className="text-xs font-bold text-neutral-250 truncate">{s.label}</h4>
                         <p className="text-[10px] text-neutral-500 leading-normal truncate">{s.desc}</p>
                       </div>
                     </button>
@@ -777,17 +858,17 @@ export default function DatasetDetail() {
                       title: 'Data Ingestion & Profiling Engine',
                       description: 'Invokes memory-efficient streaming to parse the incoming CSV or Excel spreadsheet on the AI Engine FastAPI wrapper. Evaluates column vectors, shapes data, and infers Categorical vs. Numeric datatypes.',
                       math: (
-                        <div className="space-y-2 leading-relaxed text-neutral-300">
+                        <div className="space-y-2 leading-relaxed text-neutral-300 text-left">
                           <p>Reads dataset file directly using Pandas native parser:</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             df = pd.read_csv(file_path) if is_csv else pd.read_excel(file_path)
                           </div>
                           <p>Establishes overall dimensions $R \times C$:</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             df.shape = ({dataRows} rows, {dataCols} columns)
                           </div>
                           <p>Calculates inferred column types using dtype heuristics:</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             {"Type(col) = Numeric if (dtype == number) else Categorical"}
                           </div>
                         </div>
@@ -820,42 +901,48 @@ def parse_dataset(file_path, is_excel=False):
                       ]
                     },
                     2: {
-                      title: 'Quality Integrity & Health Scoring Algorithm',
+                      title: 'Quality Integrity & Z-Score Fallback Clean',
                       description: 'Evaluates column statistics using Interquartile Range (IQR) checks to isolate outlier indices. Deduplicates row instances and aggregates quality logs to build the Quality Health Index.',
                       math: (
-                        <div className="space-y-3 leading-relaxed text-neutral-300">
+                        <div className="space-y-3 leading-relaxed text-neutral-300 text-left">
                           <p>Calculates Outlier bounds per numeric column using the Interquartile Range (IQR):</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             {"IQR = Q_3 - Q_1\nLower Bound = Q_1 - 1.5 * IQR\nUpper Bound = Q_3 + 1.5 * IQR"}
                           </div>
-                          <p>Global Quality Health Score weighted formula:</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
-                            {"Score = 100 - (MissingRatio * 2.5) - (OutlierRatio * 1.5) - (DuplicateRatio * 4.0)"}
+                          <p>Calculates standard deviation fallback bounds if IQR collapses to zero:</p>
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                            {"Standard Bounds = Mean +/- 3.0 * Standard_Deviation"}
                           </div>
                         </div>
                       ),
                       libraries: ['numpy', 'pandas', 'scipy.stats'],
                       code: `import numpy as np
 
-# Calculate outlier index anomalies using IQR
+# Calculate outlier index anomalies using IQR & Z-score standard deviation fallback
 def find_outliers(series):
     q1 = series.quantile(0.25)
     q3 = series.quantile(0.75)
     iqr = q3 - q1
-    lower_limit = q1 - 1.5 * iqr
-    upper_limit = q3 + 1.5 * iqr
     
+    if iqr > 0.0:
+        lower_limit = q1 - 1.5 * iqr
+        upper_limit = q3 + 1.5 * iqr
+    else:
+        # Standard deviation bounds fallback
+        std = series.std()
+        mean = series.mean()
+        if std > 0.0:
+            lower_limit = mean - 3.0 * std
+            upper_limit = mean + 3.0 * std
+        else:
+            return 0 # All values identical
+            
     outliers_mask = (series < lower_limit) | (series > upper_limit)
-    return int(outliers_mask.sum())
-
-# Health Scoring Formula
-def compute_health(missing_pct, outlier_pct, duplicates_pct):
-    raw_score = 100 - (missing_pct * 2.5) - (outlier_pct * 1.5) - (duplicates_pct * 4.0)
-    return max(15, min(100, int(raw_score)))`,
+    return int(outliers_mask.sum())`,
                       logs: [
                         `[Quality Index] INFO: Calculating duplicate records...`,
                         `[Quality Index] SUCCESS: Found ${data?.issues?.duplicates || 0} duplicate row vectors.`,
-                        `[Quality Index] INFO: Commencing column outliers assessment (IQR)...`,
+                        `[Quality Index] INFO: Commencing column outliers assessment (IQR & Z-score)...`,
                         `[Quality Index] SUCCESS: Compiled quality diagnostics. Health Score evaluated.`
                       ]
                     },
@@ -863,13 +950,13 @@ def compute_health(missing_pct, outlier_pct, duplicates_pct):
                       title: 'Run-Rate & Regression Aggregation Engine',
                       description: 'Uses mathematical ordinary least squares (OLS) linear regressions to project trend slope coefficients and plots moving average run-rates over temporal dimensions.',
                       math: (
-                        <div className="space-y-3 leading-relaxed text-neutral-300">
+                        <div className="space-y-3 leading-relaxed text-neutral-300 text-left">
                           <p>Linear Regression Ordinary Least Squares Trend slope formula:</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             {"y = mx + c\nslope (m) = [N*sum(xy) - sum(x)*sum(y)] / [N*sum(x^2) - sum(x)^2]\nintercept (c) = [sum(y) - m*sum(x)] / N"}
                           </div>
                           <p>Cumulative Growth Profile Run-rate series:</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             {"C_k = sum_{i=1}^{k} y_i"}
                           </div>
                         </div>
@@ -903,13 +990,13 @@ function calculateTrendline(data: number[]) {
                       title: 'AutoML RandomForest prediction Modeling Pipeline',
                       description: 'Builds predictive model ensembles using a train-test split (80/20), executes categorical label/one-hot encoding, and trains a RandomForestClassifier or Regressor to compute metric accuracies.',
                       math: (
-                        <div className="space-y-3 leading-relaxed text-neutral-300">
+                        <div className="space-y-3 leading-relaxed text-neutral-300 text-left">
                           <p>Random Forest Split impurity algorithm (Gini Impurity):</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             {"I_G(p) = 1 - sum_{i=1}^{J} p_i^2"}
                           </div>
                           <p>Model Prediction Validation Performance metric (Root Mean Squared Error):</p>
-                          <div className="bg-neutral-950/60 p-3 rounded-lg border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
+                          <div className="bg-neutral-950/60 p-3 rounded-xl border border-neutral-850 font-mono text-[10px] text-neutral-400 select-all">
                             {"RMSE = sqrt( (1 / n) * sum_{i=1}^{n} (y_i - y_pred_i)^2 )"}
                           </div>
                         </div>
@@ -950,7 +1037,7 @@ def run_automl(df, target_col):
                   return (
                     <div className="bg-neutral-950/40 p-5 rounded-xl border border-neutral-850 flex-1 flex flex-col justify-between space-y-4">
                       {/* Section Info Header */}
-                      <div className="space-y-1">
+                      <div className="space-y-1 text-left">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-sm font-bold text-neutral-200 font-mono">{stageData.title}</h3>
                           <div className="flex gap-1.5">
@@ -961,13 +1048,13 @@ def run_automl(df, target_col):
                             ))}
                           </div>
                         </div>
-                        <p className="text-[11px] text-neutral-400 leading-relaxed pt-1">{stageData.description}</p>
+                        <p className="text-[11px] text-neutral-450 leading-relaxed pt-1">{stageData.description}</p>
                       </div>
 
                       {/* Split Panel: Mathematical Formula vs Code vs Terminal */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Left Panel: Mathematical Model */}
-                        <div className="bg-neutral-950 border border-neutral-855 rounded-xl p-4 space-y-2">
+                        <div className="bg-neutral-950 border border-neutral-850 rounded-xl p-4 space-y-2">
                           <div className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest font-mono border-b border-neutral-850 pb-1 flex justify-between">
                             <span>Mathematical Formula & Logic</span>
                             <span>Model Standard</span>
@@ -980,12 +1067,12 @@ def run_automl(df, target_col):
                         {/* Right Panel: Code snippet & Terminal */}
                         <div className="flex flex-col space-y-3">
                           {/* Code Snippet */}
-                          <div className="bg-neutral-950 border border-neutral-855 rounded-xl p-3.5 flex-1 relative overflow-hidden flex flex-col justify-between">
+                          <div className="bg-neutral-950 border border-neutral-850 rounded-xl p-3.5 flex-1 relative overflow-hidden flex flex-col justify-between">
                             <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-mono border-b border-neutral-850 pb-1 flex justify-between">
                               <span>Backend Python / TS Script</span>
                               <span>Engine code</span>
                             </div>
-                            <pre className="text-[9px] font-mono text-neutral-350 select-all leading-normal overflow-auto max-h-24 pt-2 whitespace-pre scrollbar-thin">
+                            <pre className="text-[9.5px] font-mono text-neutral-350 select-all leading-normal overflow-auto max-h-24 pt-2 whitespace-pre text-left scrollbar-thin">
                               <code>{stageData.code}</code>
                             </pre>
                           </div>
@@ -1000,7 +1087,7 @@ def run_automl(df, target_col):
                                 <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                               </div>
                             </div>
-                            <div className="text-[9px] text-green-400/90 space-y-1.5 pt-2 leading-relaxed max-h-24 overflow-y-auto select-text scrollbar-thin">
+                            <div className="text-[9.5px] text-green-400/90 space-y-1.5 pt-2 leading-relaxed max-h-24 overflow-y-auto select-text scrollbar-thin text-left">
                               {stageData.logs.map((log, lidx) => (
                                 <div key={lidx} className="flex items-start gap-1">
                                   <span className="text-neutral-600 font-bold shrink-0">{`>`}</span>
