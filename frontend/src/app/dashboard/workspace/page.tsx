@@ -33,6 +33,7 @@ interface Widget {
   showLegend?: boolean;
   lineType?: 'monotone' | 'linear' | 'step';
   tab?: 'Summary' | 'Performance Analytics';
+  overrideValue?: string;
 }
 
 const PALETTES = [
@@ -252,25 +253,54 @@ export default function DashboardWorkspace() {
     return widgets.find(w => w.id === selectedWidgetId) || null;
   }, [widgets, selectedWidgetId]);
 
-  // Mock Chart Data Generator
-  const chartData = useMemo(() => {
+  // Spreadsheet-style Raw Data rows state
+  const [localDatasetRows, setLocalDatasetRows] = useState<any[]>([]);
+
+  useEffect(() => {
+    let baseData = [];
     if (selectedDatasetName.includes('marketing')) {
-      return [
+      baseData = [
         { Category: 'Google Ads', Region: 'North America', Date: 'Q1', SalesAmount: 45000, DealSize: 3200, HealthIndex: 78, Revenue: 45000, UsersCount: 120 },
         { Category: 'Meta Ads', Region: 'Europe', Date: 'Q2', SalesAmount: 58000, DealSize: 4100, HealthIndex: 85, Revenue: 58000, UsersCount: 190 },
         { Category: 'YouTube Video', Region: 'Asia-Pacific', Date: 'Q3', SalesAmount: 32000, DealSize: 2800, HealthIndex: 69, Revenue: 32000, UsersCount: 95 },
         { Category: 'LinkedIn Sponsored', Region: 'Latin America', Date: 'Q4', SalesAmount: 67000, DealSize: 5200, HealthIndex: 91, Revenue: 67000, UsersCount: 230 },
         { Category: 'Newsletter Blast', Region: 'Middle East', Date: 'Q5', SalesAmount: 21000, DealSize: 1950, HealthIndex: 72, Revenue: 21000, UsersCount: 65 }
       ];
+    } else if (selectedDatasetName.includes('fraud') || selectedDatasetName.includes('fintech')) {
+      baseData = [
+        { Category: 'Credit Card', Region: 'United States', Date: '2026-05-24', SalesAmount: 15000, DealSize: 150, HealthIndex: 82.5, Revenue: 15000, UsersCount: 12 },
+        { Category: 'Debit Card', Region: 'Switzerland', Date: '2026-05-25', SalesAmount: 4500, DealSize: 45, HealthIndex: 90.0, Revenue: 4500, UsersCount: 45 },
+        { Category: 'Bank Transfer', Region: 'United Kingdom', Date: '2026-05-26', SalesAmount: 32000, DealSize: 1200, HealthIndex: 85.0, Revenue: 32000, UsersCount: 5 },
+        { Category: 'Crypto Wallet', Region: 'India', Date: '2026-05-27', SalesAmount: 1450, DealSize: 15, HealthIndex: 94.0, Revenue: 1450, UsersCount: 90 },
+        { Category: 'Digital Pay', Region: 'Singapore', Date: '2026-05-28', SalesAmount: 18000, DealSize: 80, HealthIndex: 88.5, Revenue: 18000, UsersCount: 25 }
+      ];
+    } else {
+      baseData = [
+        { Category: 'Enterprise Cloud SaaS', Region: 'New York, US', Date: '2026-05-24', SalesAmount: 12500, DealSize: 12500, HealthIndex: 94.2, Revenue: 62500, UsersCount: 15 },
+        { Category: 'Developer Compute Tier', Region: 'Zurich, CH', Date: '2026-05-25', SalesAmount: 99, DealSize: 4500, HealthIndex: 92.5, Revenue: 9900, UsersCount: 110 },
+        { Category: 'Enterprise Support SLA', Region: 'London, UK', Date: '2026-05-26', SalesAmount: 48000, DealSize: 24000, HealthIndex: 88.0, Revenue: 96000, UsersCount: 4 },
+        { Category: 'Local Storage Sync', Region: 'Mumbai, IN', Date: '2026-05-27', SalesAmount: 1450, DealSize: 1450, HealthIndex: 96.1, Revenue: 29000, UsersCount: 45 },
+        { Category: 'Data Cleaning Studio', Region: 'Singapore, SG', Date: '2026-05-28', SalesAmount: 32000, DealSize: 16000, HealthIndex: 95.0, Revenue: 64000, UsersCount: 22 }
+      ];
     }
-    return [
-      { Category: 'Enterprise Cloud SaaS', Region: 'New York, US', Date: '2026-05-24', SalesAmount: 12500, DealSize: 12500, HealthIndex: 94.2, Revenue: 62500, UsersCount: 15 },
-      { Category: 'Developer Compute Tier', Region: 'Zurich, CH', Date: '2026-05-25', SalesAmount: 99, DealSize: 4500, HealthIndex: 92.5, Revenue: 9900, UsersCount: 110 },
-      { Category: 'Enterprise Support SLA', Region: 'London, UK', Date: '2026-05-26', SalesAmount: 48000, DealSize: 24000, HealthIndex: 88.0, Revenue: 96000, UsersCount: 4 },
-      { Category: 'Local Storage Sync', Region: 'Mumbai, IN', Date: '2026-05-27', SalesAmount: 1450, DealSize: 1450, HealthIndex: 96.1, Revenue: 29000, UsersCount: 45 },
-      { Category: 'Data Cleaning Studio', Region: 'Singapore, SG', Date: '2026-05-28', SalesAmount: 32000, DealSize: 16000, HealthIndex: 95.0, Revenue: 64000, UsersCount: 22 }
-    ];
+    setLocalDatasetRows(baseData);
   }, [selectedDatasetName]);
+
+  const handleRowEdit = (rowIndex: number, column: string, value: any) => {
+    setLocalDatasetRows(prev => {
+      const updated = [...prev];
+      updated[rowIndex] = {
+        ...updated[rowIndex],
+        [column]: value
+      };
+      return updated;
+    });
+  };
+
+  // Mock Chart Data Generator
+  const chartData = useMemo(() => {
+    return localDatasetRows;
+  }, [localDatasetRows]);
 
   // Cross-Filtering states
   const [selectedRegionFilter, setSelectedRegionFilter] = useState('All Regions');
@@ -1223,11 +1253,15 @@ export default function DashboardWorkspace() {
                         {widget.type === 'kpi' && (
                           <div className="py-2.5">
                             <h2 className={`text-2xl font-black leading-none tracking-tight ${themeStyles.headingText}`}>
-                              {getKpiValue(widget).toLocaleString()}
+                              {widget.overrideValue !== undefined && widget.overrideValue !== ''
+                                ? widget.overrideValue
+                                : getKpiValue(widget).toLocaleString()}
                             </h2>
                             <p className={`text-[10px] mt-2 font-mono flex items-center gap-1 leading-normal ${themeStyles.subText}`}>
                               <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
-                              Real-time calculated {widget.aggregation || 'sum'} metric.
+                              {widget.overrideValue !== undefined && widget.overrideValue !== ''
+                                ? 'Manual user KPI value override.'
+                                : `Real-time calculated ${widget.aggregation || 'sum'} metric.`}
                             </p>
                           </div>
                         )}
@@ -1351,8 +1385,22 @@ export default function DashboardWorkspace() {
                               <tbody>
                                 {filteredChartData.map((row, idx) => (
                                   <tr key={idx} className={`border-b hover:bg-neutral-800/10 transition-colors ${themeStyles.cardHeader}`}>
-                                    <td className={`p-2 border-r ${themeStyles.borderAccent}`}>{String((row as any)[widget.category] || 'N/A')}</td>
-                                    <td className="p-2 font-semibold">{(row as any)[widget.metric]}</td>
+                                    <td className={`p-1.5 border-r ${themeStyles.borderAccent}`}>
+                                      <input
+                                        type="text"
+                                        value={String((row as any)[widget.category] || '')}
+                                        onChange={(e) => handleRowEdit(idx, widget.category, e.target.value)}
+                                        className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-900 px-1 py-0.5 text-neutral-350"
+                                      />
+                                    </td>
+                                    <td className="p-1.5">
+                                      <input
+                                        type="number"
+                                        value={Number((row as any)[widget.metric]) || 0}
+                                        onChange={(e) => handleRowEdit(idx, widget.metric, parseFloat(e.target.value) || 0)}
+                                        className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-900 px-1 py-0.5 font-semibold text-blue-450"
+                                      />
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1547,6 +1595,21 @@ export default function DashboardWorkspace() {
                       <option value="max">Maximum Value</option>
                       <option value="count">Count Records</option>
                     </select>
+                  </div>
+                )}
+
+                {/* KPI Manual Value Override */}
+                {selectedWidget.type === 'kpi' && (
+                  <div className="space-y-1.5 pt-3 border-t border-neutral-900/50">
+                    <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">KPI Manual Value Override</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. $1.5M or 99.9%"
+                      value={selectedWidget.overrideValue || ''}
+                      onChange={(e) => updateWidget({ ...selectedWidget, overrideValue: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-850 rounded-lg px-3 py-2 text-xs text-neutral-250 focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                    <span className="text-[8px] text-neutral-500 font-semibold block leading-normal mt-1">Leaves the input blank to display the automatically calculated PostgreSQL aggregation instead.</span>
                   </div>
                 )}
 
@@ -1775,6 +1838,89 @@ export default function DashboardWorkspace() {
                       <Trash2 className="w-3.5 h-3.5" /> Clear Active Sheet
                     </Button>
                   </div>
+                </div>
+
+                {/* Spreadsheet Rows Editor */}
+                <div className="space-y-3 pt-4 border-t border-neutral-900">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Spreadsheet Rows Editor</label>
+                    <span className="text-[8px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-bold font-mono animate-pulse">Live Sync</span>
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-2 border border-neutral-850 p-2 rounded-xl bg-neutral-950/40 scrollbar-thin">
+                    {localDatasetRows.map((row, idx) => {
+                      const categoryKey = row.Category !== undefined ? 'Category' : (row.name !== undefined ? 'name' : '');
+                      const metricKey = row.SalesAmount !== undefined ? 'SalesAmount' : (row.Sales !== undefined ? 'Sales' : (row.Revenue !== undefined ? 'Revenue' : ''));
+                      
+                      return (
+                        <div key={idx} className="p-2 rounded-lg border border-neutral-900 bg-neutral-900/30 flex flex-col gap-1.5 relative group/row">
+                          <div className="flex justify-between items-center text-[8px] text-neutral-500 font-mono">
+                            <span>Row #{idx + 1}</span>
+                            <button
+                              onClick={() => {
+                                setLocalDatasetRows(prev => prev.filter((_, i) => i !== idx));
+                              }}
+                              className="text-neutral-550 hover:text-red-400 transition-colors p-0.5 cursor-pointer"
+                              title="Delete Row"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {categoryKey && (
+                              <div className="space-y-0.5">
+                                <span className="text-[8px] text-neutral-500 block font-semibold">Label ({categoryKey})</span>
+                                <input
+                                  type="text"
+                                  value={String(row[categoryKey] || '')}
+                                  onChange={(e) => {
+                                    handleRowEdit(idx, categoryKey, e.target.value);
+                                  }}
+                                  className="w-full bg-neutral-950 border border-neutral-850 rounded px-1.5 py-1 text-[10px] text-neutral-250 focus:outline-none"
+                                />
+                              </div>
+                            )}
+                            {metricKey && (
+                              <div className="space-y-0.5">
+                                <span className="text-[8px] text-neutral-500 block font-semibold">Value ({metricKey})</span>
+                                <input
+                                  type="number"
+                                  value={Number(row[metricKey]) || 0}
+                                  onChange={(e) => {
+                                    handleRowEdit(idx, metricKey, parseFloat(e.target.value) || 0);
+                                  }}
+                                  className="w-full bg-neutral-950 border border-neutral-850 rounded px-1.5 py-1 text-[10px] text-neutral-250 focus:outline-none font-semibold"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {localDatasetRows.length === 0 && (
+                      <p className="text-[10px] text-neutral-500 text-center py-4">No rows present. Add one below!</p>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setLocalDatasetRows(prev => {
+                        const template = prev[0] || { Category: 'New Item', Region: 'New York, US', Date: '2026-05-29', SalesAmount: 1000, DealSize: 1000, HealthIndex: 95, Revenue: 2000, UsersCount: 1 };
+                        const newRow = {
+                          ...template,
+                          Category: 'New Dimension',
+                          name: 'New Dimension',
+                          SalesAmount: 5000,
+                          Sales: 5000,
+                          Revenue: 5000
+                        };
+                        return [...prev, newRow];
+                      });
+                    }}
+                    className="w-full bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add New Row
+                  </Button>
                 </div>
 
                 <div className="text-center py-6 text-neutral-500 text-[10px] leading-relaxed max-w-[200px] mx-auto border border-dashed border-neutral-900 rounded-xl bg-neutral-950/20 mt-4">

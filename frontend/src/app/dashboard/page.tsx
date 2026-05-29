@@ -8,7 +8,7 @@ import {
   LineChart, BrainCircuit, ChevronLeft, ChevronRight, Menu, Bell, 
   Search, Settings, Shield, Lock, Server, Key, Info, Activity, 
   Sliders, Trash2, ArrowRight, ArrowUpRight, HelpCircle, Layers, 
-  FolderDot, Laptop, Check, LogOut, LayoutDashboard, Calendar, RefreshCw
+  FolderDot, Laptop, Check, LogOut, LayoutDashboard, Calendar, RefreshCw, Edit3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -170,8 +170,18 @@ export default function DashboardPage() {
     return datasets.find(d => d.id === activeDatasetId) || null;
   }, [datasets, activeDatasetId]);
 
-  // High-fidelity active dataset visualization mock data
-  const chartData = useMemo(() => {
+  // Editable KPI states
+  const [kpiSales, setKpiSales] = useState<string>('1248500');
+  const [kpiQueries, setKpiQueries] = useState<string>('45210');
+  const [kpiQuality, setKpiQuality] = useState<string>('');
+  const [kpiModels, setKpiModels] = useState<string>('14');
+  const [editingKpi, setEditingKpi] = useState<string | null>(null);
+
+  // High-fidelity active dataset visualization state
+  const [localRawData, setLocalRawData] = useState<any[]>([]);
+  const [showSpreadsheet, setShowSpreadsheet] = useState(false);
+
+  useEffect(() => {
     let rawData = [
       { name: 'Jan', Sales: 4200, Queries: 12000, Quality: 85, Anomalies: 12 },
       { name: 'Feb', Sales: 5800, Queries: 15400, Quality: 88, Anomalies: 8 },
@@ -223,14 +233,29 @@ export default function DashboardPage() {
       }));
     }
 
+    setLocalRawData(rawData);
+  }, [selectedDataset, aiCleaned]);
+
+  const handleDataPointEdit = (rowIndex: number, column: string, value: any) => {
+    setLocalRawData(prev => {
+      const updated = [...prev];
+      updated[rowIndex] = {
+        ...updated[rowIndex],
+        [column]: value
+      };
+      return updated;
+    });
+  };
+
+  const chartData = useMemo(() => {
     if (dataPointsLimit === '5') {
-      return rawData.slice(-5);
+      return localRawData.slice(-5);
     }
     if (dataPointsLimit === '10') {
-      return rawData.slice(-10);
+      return localRawData.slice(-10);
     }
-    return rawData;
-  }, [selectedDataset, dataPointsLimit, aiCleaned]);
+    return localRawData;
+  }, [localRawData, dataPointsLimit]);
 
   // AI 1-Click Clean Trigger
   const triggerAiClean = () => {
@@ -508,7 +533,26 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="px-5 pb-4 pt-3 flex flex-col justify-between flex-grow">
                   <div className="flex justify-between items-end">
-                    <h2 className="text-2xl font-black tracking-tight text-white leading-none">$1,248,500</h2>
+                    {editingKpi === 'sales' ? (
+                      <input
+                        type="text"
+                        value={kpiSales}
+                        onChange={(e) => setKpiSales(e.target.value)}
+                        onBlur={() => setEditingKpi(null)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpi(null); }}
+                        className="w-28 bg-neutral-950 border border-neutral-800 rounded px-2 py-0.5 text-lg font-black text-white focus:outline-none focus:border-blue-500 font-mono"
+                        autoFocus
+                      />
+                    ) : (
+                      <h2 
+                        onClick={() => setEditingKpi('sales')}
+                        className="text-2xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
+                        title="Click to Edit Sales"
+                      >
+                        {Number(kpiSales) ? `$${Number(kpiSales).toLocaleString()}` : kpiSales}
+                        <Edit3 className="w-3.5 h-3.5 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity ml-1 shrink-0" />
+                      </h2>
+                    )}
                     <div className="w-20 h-10 shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={revenueSparkline}>
@@ -531,7 +575,26 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="px-5 pb-4 pt-3 flex flex-col justify-between flex-grow">
                   <div className="flex justify-between items-end">
-                    <h2 className="text-2xl font-black tracking-tight text-white leading-none">45,210</h2>
+                    {editingKpi === 'queries' ? (
+                      <input
+                        type="text"
+                        value={kpiQueries}
+                        onChange={(e) => setKpiQueries(e.target.value)}
+                        onBlur={() => setEditingKpi(null)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpi(null); }}
+                        className="w-28 bg-neutral-950 border border-neutral-800 rounded px-2 py-0.5 text-lg font-black text-white focus:outline-none focus:border-blue-500 font-mono"
+                        autoFocus
+                      />
+                    ) : (
+                      <h2 
+                        onClick={() => setEditingKpi('queries')}
+                        className="text-2xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
+                        title="Click to Edit Queries"
+                      >
+                        {Number(kpiQueries) ? Number(kpiQueries).toLocaleString() : kpiQueries}
+                        <Edit3 className="w-3.5 h-3.5 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity ml-1 shrink-0" />
+                      </h2>
+                    )}
                     <div className="w-20 h-10 shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={querySparkline}>
@@ -554,7 +617,26 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="px-5 pb-4 pt-3 flex items-center justify-between flex-grow">
                   <div className="space-y-1 text-left">
-                    <h2 className="text-2xl font-black tracking-tight text-white leading-none">{aiCleaned ? '98.5%' : '94.2%'}</h2>
+                    {editingKpi === 'quality' ? (
+                      <input
+                        type="text"
+                        value={kpiQuality !== '' ? kpiQuality : (aiCleaned ? '98.5' : '94.2')}
+                        onChange={(e) => setKpiQuality(e.target.value)}
+                        onBlur={() => setEditingKpi(null)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpi(null); }}
+                        className="w-24 bg-neutral-950 border border-neutral-800 rounded px-2 py-0.5 text-lg font-black text-white focus:outline-none focus:border-blue-500 font-mono"
+                        autoFocus
+                      />
+                    ) : (
+                      <h2 
+                        onClick={() => setEditingKpi('quality')}
+                        className="text-2xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
+                        title="Click to Edit Quality"
+                      >
+                        {kpiQuality !== '' ? (kpiQuality.includes('%') ? kpiQuality : `${kpiQuality}%`) : (aiCleaned ? '98.5%' : '94.2%')}
+                        <Edit3 className="w-3.5 h-3.5 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity ml-1 shrink-0" />
+                      </h2>
+                    )}
                     <p className="text-[9px] text-neutral-500 font-mono pt-1">Data completeness score</p>
                   </div>
                   
@@ -566,11 +648,13 @@ export default function DashboardPage() {
                         cx="50" cy="50" r="40" 
                         stroke="#10b981" strokeWidth="10" fill="transparent" 
                         strokeDasharray="251.2" 
-                        strokeDashoffset={251.2 - (251.2 * (aiCleaned ? 98.5 : 94.2)) / 100}
+                        strokeDashoffset={251.2 - (251.2 * (parseFloat(kpiQuality) || (aiCleaned ? 98.5 : 94.2))) / 100}
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className="absolute text-[10px] font-bold font-mono text-white">{aiCleaned ? '98%' : '94%'}</span>
+                    <span className="absolute text-[10px] font-bold font-mono text-white">
+                      {Math.round(parseFloat(kpiQuality) || (aiCleaned ? 98 : 94))}%
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -585,7 +669,26 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="px-5 pb-4 pt-3 flex flex-col justify-between flex-grow">
                   <div className="flex justify-between items-end">
-                    <h2 className="text-2xl font-black tracking-tight text-white leading-none">14 Models</h2>
+                    {editingKpi === 'models' ? (
+                      <input
+                        type="text"
+                        value={kpiModels}
+                        onChange={(e) => setKpiModels(e.target.value)}
+                        onBlur={() => setEditingKpi(null)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpi(null); }}
+                        className="w-28 bg-neutral-950 border border-neutral-800 rounded px-2 py-0.5 text-lg font-black text-white focus:outline-none focus:border-blue-500 font-mono"
+                        autoFocus
+                      />
+                    ) : (
+                      <h2 
+                        onClick={() => setEditingKpi('models')}
+                        className="text-2xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
+                        title="Click to Edit Models Count"
+                      >
+                        {Number(kpiModels) ? `${kpiModels} Models` : kpiModels}
+                        <Edit3 className="w-3.5 h-3.5 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity ml-1 shrink-0" />
+                      </h2>
+                    )}
                     <div className="w-20 h-10 shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={modelSparkline}>
@@ -685,6 +788,94 @@ export default function DashboardPage() {
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
+
+                {/* Collapsible Spreadsheet-Style Inline Editor */}
+                <div className="border-t border-neutral-900 bg-neutral-950/20">
+                  <button
+                    onClick={() => setShowSpreadsheet(!showSpreadsheet)}
+                    className="w-full flex items-center justify-between px-5 py-3.5 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{showSpreadsheet ? 'Hide Data Points Spreadsheet' : 'View & Edit Data Points Spreadsheet'}</span>
+                    </span>
+                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-bold font-mono">
+                      {chartData.length} Points • Live Sync
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {showSpreadsheet && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden border-t border-neutral-900"
+                      >
+                        <div className="p-4 max-h-60 overflow-y-auto scrollbar-thin text-[10px] font-mono">
+                          <table className="w-full border-collapse border border-neutral-850">
+                            <thead>
+                              <tr className="bg-neutral-900 border-b border-neutral-800 text-neutral-400">
+                                <th className="p-2 border-r border-neutral-850 text-left">Label (X-Axis)</th>
+                                <th className="p-2 border-r border-neutral-850 text-left">Sales ($)</th>
+                                <th className="p-2 border-r border-neutral-850 text-left">Queries</th>
+                                <th className="p-2 border-r border-neutral-850 text-left">Quality (%)</th>
+                                <th className="p-2 text-left">Anomalies</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {chartData.map((row, idx) => (
+                                <tr key={idx} className="border-b border-neutral-900 hover:bg-neutral-900/40 transition-colors">
+                                  <td className="p-1 border-r border-neutral-850">
+                                    <input
+                                      type="text"
+                                      value={row.name || ''}
+                                      onChange={(e) => handleDataPointEdit(idx, 'name', e.target.value)}
+                                      className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-950 px-1 py-0.5 text-neutral-200"
+                                    />
+                                  </td>
+                                  <td className="p-1 border-r border-neutral-850">
+                                    <input
+                                      type="number"
+                                      value={row.Sales || 0}
+                                      onChange={(e) => handleDataPointEdit(idx, 'Sales', parseFloat(e.target.value) || 0)}
+                                      className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-950 px-1 py-0.5 text-blue-400 font-semibold"
+                                    />
+                                  </td>
+                                  <td className="p-1 border-r border-neutral-850">
+                                    <input
+                                      type="number"
+                                      value={row.Queries || 0}
+                                      onChange={(e) => handleDataPointEdit(idx, 'Queries', parseInt(e.target.value) || 0)}
+                                      className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-950 px-1 py-0.5 text-purple-400"
+                                    />
+                                  </td>
+                                  <td className="p-1 border-r border-neutral-850">
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      value={row.Quality || 0}
+                                      onChange={(e) => handleDataPointEdit(idx, 'Quality', parseFloat(e.target.value) || 0)}
+                                      className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-950 px-1 py-0.5 text-emerald-400"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="number"
+                                      value={row.Anomalies || 0}
+                                      onChange={(e) => handleDataPointEdit(idx, 'Anomalies', parseInt(e.target.value) || 0)}
+                                      className="w-full bg-transparent border-none focus:outline-none focus:bg-neutral-950 px-1 py-0.5 text-red-400"
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </Card>
 
               {/* Right Column: AI Insights Recommendations panel */}
@@ -711,13 +902,31 @@ export default function DashboardPage() {
                   ) : (
                     <div className="space-y-3.5 text-xs text-neutral-400">
                       {aiCleaned ? (
-                        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                          <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5 animate-bounce" />
-                          <div className="space-y-0.5">
-                            <h4 className="font-bold text-white leading-normal">Dataset Fully Verified Clean</h4>
-                            <p className="text-[10px] text-neutral-500 leading-normal">Data completeness evaluated at 98.5%. Anomalies trimmed.</p>
+                        <>
+                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                            <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5 animate-bounce" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-white leading-normal">Dataset Fully Verified Clean</h4>
+                              <p className="text-[10px] text-neutral-500 leading-normal">Data completeness evaluated at 98.5%. Anomalies trimmed.</p>
+                            </div>
                           </div>
-                        </div>
+
+                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                            <Check className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-white leading-normal">Duplicates Pruned</h4>
+                              <p className="text-[10px] text-neutral-500 leading-normal">Pruned all 8 duplicate row sets successfully. Unique rows index: 100%.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                            <Check className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-white leading-normal">Outlier Anomaly Solved</h4>
+                              <p className="text-[10px] text-neutral-500 leading-normal">Standardized 14 outlier values. Root-Mean-Square Error: 0.00%.</p>
+                            </div>
+                          </div>
+                        </>
                       ) : (
                         <>
                           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10">
@@ -733,6 +942,30 @@ export default function DashboardPage() {
                             <div className="space-y-0.5">
                               <h4 className="font-bold text-white leading-normal">Data Completeness Flagged</h4>
                               <p className="text-[10px] text-neutral-500 leading-normal">45 missing categories in 'ProductCategory' column identified.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
+                            <Layers className="w-4.5 h-4.5 text-purple-400 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-white leading-normal">Data Redundancy Warning</h4>
+                              <p className="text-[10px] text-neutral-500 leading-normal">We found 8 duplicate index combinations inside active table rows.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                            <BrainCircuit className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-white leading-normal">High Feature Correlation</h4>
+                              <p className="text-[10px] text-neutral-500 leading-normal">Category dimensions correlate at 92.4% with SalesAmount variance.</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                            <Activity className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-white leading-normal">System Temporal Trajectory</h4>
+                              <p className="text-[10px] text-neutral-500 leading-normal">Run-rate displays a positive chronological slope of +0.35/month.</p>
                             </div>
                           </div>
                         </>
