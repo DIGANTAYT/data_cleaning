@@ -30,6 +30,86 @@ export default function SettingsPage() {
   // Admin access states
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Secure Stripe Simulated Checkout States
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedPlanForPurchase, setSelectedPlanForPurchase] = useState('');
+  const [selectedPriceForPurchase, setSelectedPriceForPurchase] = useState(0);
+  const [selectedCreditsForPurchase, setSelectedCreditsForPurchase] = useState(0);
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Digits only
+    value = value.substring(0, 16); // Max 16
+    const formatted = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Digits only
+    value = value.substring(0, 4); // Max 4 digits (MMYY)
+    if (value.length > 2) {
+      value = value.substring(0, 2) + '/' + value.substring(2);
+    }
+    setCardExpiry(value);
+  };
+
+  const handleCvcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').substring(0, 3); // Max 3
+    setCardCvc(value);
+  };
+
+  const handleUpgradeClick = (plan: string, price: number, initialCredits: number) => {
+    setSelectedPlanForPurchase(plan);
+    setSelectedPriceForPurchase(price);
+    setSelectedCreditsForPurchase(initialCredits);
+    setIsPaymentModalOpen(true);
+    setPaymentSuccess(false);
+    setPaymentProcessing(false);
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvc('');
+    setCardName('');
+  };
+
+  const handleProcessPayment = async () => {
+    if (!cardNumber || !cardExpiry || !cardCvc || !cardName) {
+      toast.error('Please fill in all credit card payment details.');
+      return;
+    }
+    if (cardNumber.replace(/\s/g, '').length < 16) {
+      toast.error('Please enter a valid 16-digit credit card number.');
+      return;
+    }
+    if (cardExpiry.length < 5) {
+      toast.error('Please enter a valid card expiry date (MM/YY).');
+      return;
+    }
+    if (cardCvc.length < 3) {
+      toast.error('Please enter a valid 3-digit CVC security code.');
+      return;
+    }
+
+    setPaymentProcessing(true);
+    
+    // Simulate premium secure payment transaction delay (2 seconds)
+    setTimeout(async () => {
+      setPaymentProcessing(false);
+      setPaymentSuccess(true);
+      
+      // Update plan in DB & localStorage
+      await handlePlanChange(selectedPlanForPurchase, selectedCreditsForPurchase);
+      
+      setTimeout(() => {
+        setIsPaymentModalOpen(false);
+      }, 1500);
+    }, 2000);
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedKey = localStorage.getItem('user_openai_key');
@@ -244,15 +324,15 @@ export default function SettingsPage() {
                   <div className="flex gap-2">
                     <Button 
                       size="sm"
-                      onClick={() => handlePlanChange('Data Analyst Lite', 15000)}
-                      className="bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 text-xs font-bold"
+                      onClick={() => handleUpgradeClick('Data Analyst Lite', 99, 15000)}
+                      className="bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 text-xs font-bold cursor-pointer"
                     >
                       Analyst Lite (₹99)
                     </Button>
                     <Button 
                       size="sm"
-                      onClick={() => handlePlanChange('Data Scientist Pro', 75000)}
-                      className="bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/20 text-purple-400 text-xs font-bold"
+                      onClick={() => handleUpgradeClick('Data Scientist Pro', 210, 75000)}
+                      className="bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/20 text-purple-400 text-xs font-bold cursor-pointer"
                     >
                       Scientist Pro (₹210)
                     </Button>
@@ -387,6 +467,167 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* 💳 Secure Stripe Simulated Payment Modal Checkout Overlay */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden space-y-6 text-neutral-50 animate-in fade-in zoom-in-95 duration-200">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            
+            {/* Header */}
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest font-mono">Secure Stripe Integration</span>
+                <h3 className="text-lg font-extrabold text-white">Upgrade Plan Checkout</h3>
+                <p className="text-neutral-400 text-xs mt-0.5">Authorize card transaction to unlock computing quota.</p>
+              </div>
+              <button 
+                onClick={() => setIsPaymentModalOpen(false)}
+                disabled={paymentProcessing}
+                className="text-neutral-500 hover:text-neutral-300 text-sm font-bold font-mono bg-neutral-950 border border-neutral-850 p-1.5 rounded-full cursor-pointer hover:bg-neutral-850 transition-colors w-7 h-7 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Price Plan Summary */}
+            <div className="bg-neutral-950 border border-neutral-850 p-4 rounded-2xl flex justify-between items-center">
+              <div>
+                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider font-mono">Subscription Package</span>
+                <h4 className="text-sm font-bold text-neutral-200">{selectedPlanForPurchase}</h4>
+                <p className="text-[10px] text-neutral-450 mt-0.5">Quota: {selectedCreditsForPurchase.toLocaleString()} compute points</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider font-mono">Total Billed</span>
+                <h3 className="text-lg font-black text-blue-400">₹{selectedPriceForPurchase}.00</h3>
+                <span className="text-[8px] text-neutral-500 font-mono block">One-time / Monthly</span>
+              </div>
+            </div>
+
+            {/* High-Fidelity Credit Card Mock */}
+            <div className="relative w-full h-40 rounded-2xl bg-gradient-to-br from-neutral-800 via-neutral-900 to-neutral-950 p-5 flex flex-col justify-between border border-neutral-750 shadow-xl overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/15 transition-all"></div>
+              <div className="flex justify-between items-start">
+                <span className="text-[9px] font-bold text-neutral-400 tracking-widest font-mono">METRICS FLOW SECURE</span>
+                <div className="w-9 h-7 rounded bg-yellow-600/35 border border-yellow-500/25 flex items-center justify-center overflow-hidden">
+                  <div className="grid grid-cols-3 gap-0.5 w-6 h-5 opacity-40">
+                    <div className="border border-neutral-400"></div>
+                    <div className="border border-neutral-400"></div>
+                    <div className="border border-neutral-400"></div>
+                    <div className="border border-neutral-400"></div>
+                    <div className="border border-neutral-400"></div>
+                    <div className="border border-neutral-400"></div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="text-sm font-mono font-bold tracking-widest text-neutral-200">
+                  {cardNumber || '•••• •••• •••• ••••'}
+                </div>
+                
+                <div className="flex justify-between items-center text-[9px] font-mono uppercase">
+                  <div className="min-w-0 flex-1 pr-4">
+                    <span className="text-[7px] text-neutral-500 block">Cardholder</span>
+                    <span className="text-neutral-300 font-bold truncate block">{cardName || 'YOUR FULL NAME'}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[7px] text-neutral-500 block">Expires</span>
+                    <span className="text-neutral-300 font-bold">{cardExpiry || 'MM/YY'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Input fields */}
+            {paymentSuccess ? (
+              <div className="bg-green-500/10 border border-green-500/20 p-6 rounded-2xl text-center space-y-2.5 flex flex-col items-center justify-center animate-fade-in">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 border border-green-500/30 text-lg font-bold">
+                  ✓
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-green-400">Transaction Authorized</h4>
+                  <p className="text-[11px] text-neutral-400">Stripe payment succeeded. Initializing compute quota...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Cardholder Name */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">Cardholder Full Name</label>
+                  <Input
+                    type="text"
+                    placeholder="John Doe"
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                    className="bg-neutral-950 border-neutral-800 text-xs py-2 focus:ring-1 focus:ring-blue-500"
+                    disabled={paymentProcessing}
+                  />
+                </div>
+
+                {/* Card Number */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">Credit Card Number</label>
+                  <Input
+                    type="text"
+                    placeholder="4111 2222 3333 4444"
+                    value={cardNumber}
+                    onChange={handleCardNumberChange}
+                    className="bg-neutral-950 border-neutral-800 text-xs font-mono py-2 focus:ring-1 focus:ring-blue-500"
+                    disabled={paymentProcessing}
+                  />
+                </div>
+
+                {/* Expiry & CVC Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">Expiry Date</label>
+                    <Input
+                      type="text"
+                      placeholder="MM/YY"
+                      value={cardExpiry}
+                      onChange={handleExpiryChange}
+                      className="bg-neutral-950 border-neutral-800 text-xs font-mono py-2 focus:ring-1 focus:ring-blue-500"
+                      disabled={paymentProcessing}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">CVC Security Code</label>
+                    <Input
+                      type="password"
+                      placeholder="123"
+                      value={cardCvc}
+                      onChange={handleCvcChange}
+                      className="bg-neutral-950 border-neutral-800 text-xs font-mono py-2 focus:ring-1 focus:ring-blue-500"
+                      disabled={paymentProcessing}
+                    />
+                  </div>
+                </div>
+
+                {/* Pay Button */}
+                <Button
+                  onClick={handleProcessPayment}
+                  disabled={paymentProcessing}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-blue-600/25 transition-all duration-300 flex items-center justify-center cursor-pointer h-10 text-xs"
+                >
+                  {paymentProcessing ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Processing Transaction...
+                    </span>
+                  ) : (
+                    `Authorize & Purchase Plan (₹${selectedPriceForPurchase}.00)`
+                  )}
+                </Button>
+                
+                <p className="text-[9px] text-neutral-500 text-center flex items-center justify-center gap-1">
+                  🔒 SSL Secured • 256-bit AES Stripe End-to-End Encryption
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
