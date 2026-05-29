@@ -23,8 +23,8 @@ def detect_issues(df: pd.DataFrame):
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
         IQR = Q3 - Q1
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
+        lower_bound = Q1 - 3.0 * IQR
+        upper_bound = Q3 + 3.0 * IQR
         outliers_count = int(((df[col] < lower_bound) | (df[col] > upper_bound)).sum())
         if outliers_count > 0:
             issues["outliers"][col] = outliers_count
@@ -67,8 +67,8 @@ def apply_cleaning(df: pd.DataFrame, operations: list):
                 Q1 = cleaned_df[target].quantile(0.25)
                 Q3 = cleaned_df[target].quantile(0.75)
                 IQR = Q3 - Q1
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
+                lower_bound = Q1 - 3.0 * IQR
+                upper_bound = Q3 + 3.0 * IQR
                 # Exclude outliers while preserving NaN missing values in the same column
                 cleaned_df = cleaned_df[
                     ((cleaned_df[target] >= lower_bound) & (cleaned_df[target] <= upper_bound)) | 

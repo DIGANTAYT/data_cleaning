@@ -293,8 +293,8 @@ const localProfileAndParse = (filePath: string): { columns: string[], preview: a
       const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
       const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
       const iqr = q3 - q1;
-      const lowerBound = q1 - 1.5 * iqr;
-      const upperBound = q3 + 1.5 * iqr;
+      const lowerBound = q1 - 3.0 * iqr;
+      const upperBound = q3 + 3.0 * iqr;
 
       let outlierCount = 0;
       numericValues.forEach(v => {
@@ -439,8 +439,8 @@ const localClean = (filePath: string, operations: any[]): { rowCount: number, fi
         const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
         const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
         const iqr = q3 - q1;
-        const lowerBound = q1 - 1.5 * iqr;
-        const upperBound = q3 + 1.5 * iqr;
+        const lowerBound = q1 - 3.0 * iqr;
+        const upperBound = q3 + 3.0 * iqr;
 
         cleanedRecords = cleanedRecords.filter(row => {
           const val = row[target];
