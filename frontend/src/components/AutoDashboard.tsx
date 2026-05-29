@@ -66,6 +66,36 @@ const THEME_COLORS = [
   { name: 'Slate', value: '#64748b' }
 ];
 
+const safeParseFloat = (val: any): number => {
+  if (val === null || val === undefined || val === '') return -Infinity;
+  if (typeof val === 'number') return val;
+  // Clean currency symbols, commas, percentage signs, and spaces
+  const clean = String(val).replace(/[$,%\s]/g, '').replace(/,/g, '');
+  const num = parseFloat(clean);
+  return isNaN(num) ? -Infinity : num;
+};
+
+const robustCompare = (a: any, b: any, key: string) => {
+  if (!key) return 0;
+  const valA = a[key];
+  const valB = b[key];
+  
+  const numA = safeParseFloat(valA);
+  const numB = safeParseFloat(valB);
+  
+  // If both are valid numbers, sort numerically descending
+  if (numA !== -Infinity && numB !== -Infinity) {
+    return numB - numA;
+  }
+  
+  // Place valid numbers first, invalid/null numbers last
+  if (numA !== -Infinity && numB === -Infinity) return -1;
+  if (numA === -Infinity && numB !== -Infinity) return 1;
+  
+  // Fallback to alphabetical sorting if both are non-numeric strings
+  return String(valB || '').localeCompare(String(valA || ''));
+};
+
 export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardProps) {
   const [isMounted, setIsMounted] = useState(false);
   // Find columns safely using fallback values to avoid TypeErrors during initial render
@@ -103,6 +133,11 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const [customSort, setCustomSort] = useState<boolean>(true);
   const [distSort, setDistSort] = useState<boolean>(true);
   const [trendSort, setTrendSort] = useState<boolean>(false); // Trend line chart defaults to original sequential order
+  
+  // Limit mode states for stable UI dropdown selections
+  const [customLimitMode, setCustomLimitMode] = useState<'5_sorted' | '5_unsorted' | '10_sorted' | '10_unsorted' | 'all' | 'custom'>('10_sorted');
+  const [distLimitMode, setDistLimitMode] = useState<'5_sorted' | '5_unsorted' | '10_sorted' | '10_unsorted' | 'all' | 'custom'>('10_sorted');
+  const [trendLimitMode, setTrendLimitMode] = useState<'5_sorted' | '5_unsorted' | '10_sorted' | '10_unsorted' | 'all' | 'custom'>('10_unsorted');
   
   // Custom Section for Interactive Display
   const [showTrendline, setShowTrendline] = useState(false);
@@ -148,6 +183,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   ]);
 
   const [activeKpiSettings, setActiveKpiSettings] = useState<number | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Synchronize column selection states when columns load asynchronously
   React.useEffect(() => {
@@ -192,23 +228,128 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     }
   }, [safeDataPreview, safeColumns, xCol, yCol1, yCol2]);
 
+  // Load saved dashboard configuration on mount
+  React.useEffect(() => {
+    if (safeColumns.length === 0) return;
+    const saveKey = 'autodashboard_config_' + safeColumns.join('_');
+    const saved = localStorage.getItem(saveKey);
+    if (saved) {
+      try {
+        const config = JSON.parse(saved);
+        if (config.chartType) setChartType(config.chartType);
+        if (config.customX) setCustomX(config.customX);
+        if (config.customY) setCustomY(config.customY);
+        if (config.customColor) setCustomColor(config.customColor);
+        if (config.customLimit !== undefined) setCustomLimit(config.customLimit);
+        if (config.customSort !== undefined) setCustomSort(config.customSort);
+        if (config.customLimitMode) setCustomLimitMode(config.customLimitMode);
+        
+        if (config.distX) setDistX(config.distX);
+        if (config.distY) setDistY(config.distY);
+        if (config.distLimit !== undefined) setDistLimit(config.distLimit);
+        if (config.distSort !== undefined) setDistSort(config.distSort);
+        if (config.distLimitMode) setDistLimitMode(config.distLimitMode);
+        
+        if (config.trendX) setTrendX(config.trendX);
+        if (config.trendY) setTrendY(config.trendY);
+        if (config.trendLimit !== undefined) setTrendLimit(config.trendLimit);
+        if (config.trendSort !== undefined) setTrendSort(config.trendSort);
+        if (config.trendLimitMode) setTrendLimitMode(config.trendLimitMode);
+        
+        if (config.showTrendline !== undefined) setShowTrendline(config.showTrendline);
+        if (config.showGridlines !== undefined) setShowGridlines(config.showGridlines);
+        if (config.movingAverageWindow !== undefined) setMovingAverageWindow(config.movingAverageWindow);
+        if (config.graphHeight !== undefined) setGraphHeight(config.graphHeight);
+        
+        if (config.compCategory) setCompCategory(config.compCategory);
+        if (config.compMetric) setCompMetric(config.compMetric);
+        if (config.compChartType) setCompChartType(config.compChartType);
+        if (config.compLimit !== undefined) setCompLimit(config.compLimit);
+        
+        if (config.cumulX) setCumulX(config.cumulX);
+        if (config.cumulY) setCumulY(config.cumulY);
+        if (config.cumulLimit !== undefined) setCumulLimit(config.cumulLimit);
+        
+        if (config.auditCol) setAuditCol(config.auditCol);
+        if (config.auditX) setAuditX(config.auditX);
+        if (config.auditChartType) setAuditChartType(config.auditChartType);
+        if (config.auditLimit !== undefined) setAuditLimit(config.auditLimit);
+        
+        if (config.radarCols) setRadarCols(config.radarCols);
+        if (config.kpiConfigs) setKpiConfigs(config.kpiConfigs);
+        
+        console.log('Dashboard config successfully loaded from local storage.');
+      } catch (err) {
+        console.warn('Failed to parse saved dashboard config:', err);
+      }
+    }
+  }, [safeColumns]);
+
+  // Auto-save dashboard state every 5 seconds (with instant configuration update feedback)
+  React.useEffect(() => {
+    if (safeColumns.length === 0) return;
+    const saveKey = 'autodashboard_config_' + safeColumns.join('_');
+    
+    setSaveStatus('saving');
+    const config = {
+      chartType,
+      customX,
+      customY,
+      customColor,
+      customLimit,
+      customSort,
+      customLimitMode,
+      distX,
+      distY,
+      distLimit,
+      distSort,
+      distLimitMode,
+      trendX,
+      trendY,
+      trendLimit,
+      trendSort,
+      trendLimitMode,
+      showTrendline,
+      showGridlines,
+      movingAverageWindow,
+      graphHeight,
+      compCategory,
+      compMetric,
+      compChartType,
+      compLimit,
+      cumulX,
+      cumulY,
+      cumulLimit,
+      auditCol,
+      auditX,
+      auditChartType,
+      auditLimit,
+      radarCols,
+      kpiConfigs
+    };
+    
+    localStorage.setItem(saveKey, JSON.stringify(config));
+    console.log('Dashboard config saved.');
+    
+    const timer = setTimeout(() => {
+      setSaveStatus('saved');
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [
+    safeColumns, chartType, customX, customY, customColor, customLimit, customSort, customLimitMode,
+    distX, distY, distLimit, distSort, distLimitMode, trendX, trendY, trendLimit, trendSort, trendLimitMode,
+    showTrendline, showGridlines, movingAverageWindow, graphHeight, compCategory, compMetric, compChartType,
+    compLimit, cumulX, cumulY, cumulLimit, auditCol, auditX, auditChartType, auditLimit, radarCols, kpiConfigs
+  ]);
+
   // processedData for Moving Average & Trendline
   const processedData = React.useMemo(() => {
     let result = safeDataPreview;
     
     if (customLimit > 0 && safeDataPreview.length > 0) {
       if (customSort) {
-        result = [...safeDataPreview].sort((a, b) => {
-          if (!customY) return 0;
-          const valA = a[customY];
-          const valB = b[customY];
-          const numA = Number(valA);
-          const numB = Number(valB);
-          if (!isNaN(numA) && !isNaN(numB)) {
-            return numB - numA;
-          }
-          return String(valB || '').localeCompare(String(valA || ''));
-        });
+        result = [...safeDataPreview].sort((a, b) => robustCompare(a, b, customY));
       }
       result = result.slice(0, customLimit);
     }
@@ -252,17 +393,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     let result = safeDataPreview;
     if (distLimit > 0 && safeDataPreview.length > 0) {
       if (distSort) {
-        result = [...safeDataPreview].sort((a, b) => {
-          if (!distY) return 0;
-          const valA = a[distY];
-          const valB = b[distY];
-          const numA = Number(valA);
-          const numB = Number(valB);
-          if (!isNaN(numA) && !isNaN(numB)) {
-            return numB - numA;
-          }
-          return String(valB || '').localeCompare(String(valA || ''));
-        });
+        result = [...safeDataPreview].sort((a, b) => robustCompare(a, b, distY));
       }
       result = result.slice(0, distLimit);
     }
@@ -273,17 +404,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     let result = safeDataPreview;
     if (trendLimit > 0 && safeDataPreview.length > 0) {
       if (trendSort) {
-        result = [...safeDataPreview].sort((a, b) => {
-          if (!trendY) return 0;
-          const valA = a[trendY];
-          const valB = b[trendY];
-          const numA = Number(valA);
-          const numB = Number(valB);
-          if (!isNaN(numA) && !isNaN(numB)) {
-            return numB - numA;
-          }
-          return String(valB || '').localeCompare(String(valA || ''));
-        });
+        result = [...safeDataPreview].sort((a, b) => robustCompare(a, b, trendY));
       }
       result = result.slice(0, trendLimit);
     }
@@ -488,6 +609,41 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
 
   return (
     <div className="space-y-8">
+      {/* 🚀 Premium Live Auto-Saving Status Indicator Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-800/80 p-4 rounded-2xl backdrop-blur-md">
+        <div>
+          <h2 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+            <Activity className="w-5 h-5 text-blue-500" />
+            Live Analytics Dashboard Studio
+          </h2>
+          <p className="text-neutral-400 text-xs mt-0.5">Live visualization of dataset: <span className="font-mono text-neutral-300 font-bold bg-neutral-950 px-2 py-0.5 rounded border border-neutral-850">{safeColumns.slice(0, 5).join(', ')}{safeColumns.length > 5 ? '...' : ''}</span></p>
+        </div>
+        <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+          <div className={`flex items-center space-x-2 border px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md transition-all duration-300 ${
+            saveStatus === 'saving'
+              ? 'text-yellow-400 border-yellow-500/20 bg-yellow-500/5 shadow-md shadow-yellow-500/5'
+              : saveStatus === 'saved'
+              ? 'text-green-400 border-green-500/20 bg-green-500/5 shadow-md shadow-green-500/5'
+              : 'text-neutral-400 border-neutral-850 bg-neutral-950/20'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              saveStatus === 'saving'
+                ? 'bg-yellow-500 animate-pulse'
+                : saveStatus === 'saved'
+                ? 'bg-green-500 shadow-[0_0_8px_#10b981]'
+                : 'bg-neutral-600'
+            }`} />
+            <span className="font-mono text-[10px] uppercase tracking-wider font-extrabold">
+              {saveStatus === 'saving'
+                ? 'Saving Layout...'
+                : saveStatus === 'saved'
+                ? 'All Settings Saved'
+                : 'Auto-saves every 5s'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* 🚀 Interactive Summary KPI Grid (5 Columns) */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {kpiConfigs.map((kpi) => {
@@ -647,21 +803,10 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
               </label>
               <div className="relative">
                 <select
-                  value={
-                    customLimit === 5 && customSort
-                      ? '5_sorted'
-                      : customLimit === 5 && !customSort
-                      ? '5_unsorted'
-                      : customLimit === 10 && customSort
-                      ? '10_sorted'
-                      : customLimit === 10 && !customSort
-                      ? '10_unsorted'
-                      : customLimit === 0
-                      ? 'all'
-                      : 'custom'
-                  }
+                  value={customLimitMode}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    const val = e.target.value as any;
+                    setCustomLimitMode(val);
                     if (val === '5_sorted') {
                       setCustomLimit(5);
                       setCustomSort(true);
@@ -695,7 +840,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
               </div>
               
               {/* Show custom input if custom is selected */}
-              {customLimit !== 5 && customLimit !== 10 && customLimit !== 0 && (
+              {customLimitMode === 'custom' && (
                 <div className="pt-1.5 flex items-center space-x-2">
                   <span className="text-[10px] text-neutral-400 font-mono">Row Limit:</span>
                   <input
@@ -940,21 +1085,10 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                   ))}
                 </select>
                 <select
-                  value={
-                    distLimit === 5 && distSort
-                      ? '5_sorted'
-                      : distLimit === 5 && !distSort
-                      ? '5_unsorted'
-                      : distLimit === 10 && distSort
-                      ? '10_sorted'
-                      : distLimit === 10 && !distSort
-                      ? '10_unsorted'
-                      : distLimit === 0
-                      ? 'all'
-                      : 'custom'
-                  }
+                  value={distLimitMode}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    const val = e.target.value as any;
+                    setDistLimitMode(val);
                     if (val === '5_sorted') {
                       setDistLimit(5);
                       setDistSort(true);
@@ -1044,21 +1178,10 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                   ))}
                 </select>
                 <select
-                  value={
-                    trendLimit === 5 && trendSort
-                      ? '5_sorted'
-                      : trendLimit === 5 && !trendSort
-                      ? '5_unsorted'
-                      : trendLimit === 10 && trendSort
-                      ? '10_sorted'
-                      : trendLimit === 10 && !trendSort
-                      ? '10_unsorted'
-                      : trendLimit === 0
-                      ? 'all'
-                      : 'custom'
-                  }
+                  value={trendLimitMode}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    const val = e.target.value as any;
+                    setTrendLimitMode(val);
                     if (val === '5_sorted') {
                       setTrendLimit(5);
                       setTrendSort(true);
