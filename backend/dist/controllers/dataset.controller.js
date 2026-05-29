@@ -579,7 +579,7 @@ const detectIssues = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Detect issues error, attempting local filesystem fallback parsing:', error.message);
+        console.error('Detect issues error, attempting local filesystem fallback parsing:', error?.message || String(error));
         try {
             if (dataset && dataset.filePath) {
                 const localParsed = localProfileAndParse(dataset.filePath);
@@ -591,7 +591,7 @@ const detectIssues = async (req, res) => {
             }
         }
         catch (localErr) {
-            console.error('Local filesystem parsing failed, attempting name-based high-fidelity mock fallback:', localErr.message);
+            console.error('Local filesystem parsing failed, attempting name-based high-fidelity mock fallback:', localErr?.message || String(localErr));
         }
         const mock = getHighFidelityMockForDataset(dataset?.name || '', dataset?.rowCount || 0);
         res.status(200).json({
@@ -681,7 +681,7 @@ const cleanDataset = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Clean dataset error, attempting local fallback clean:', error.message);
+        console.error('Clean dataset error, attempting local fallback clean:', error?.message || String(error));
         try {
             if (dataset && dataset.filePath) {
                 try {
@@ -718,12 +718,12 @@ const cleanDataset = async (req, res) => {
                     return;
                 }
                 catch (localErr) {
-                    console.error('Local fallback clean failed, serving simulated fallback:', localErr.message);
+                    console.error('Local fallback clean failed, serving simulated fallback:', localErr?.message || String(localErr));
                 }
             }
         }
         catch (outerLocalErr) {
-            console.error('Clean outer catch err:', outerLocalErr.message);
+            console.error('Clean outer catch err:', outerLocalErr?.message || String(outerLocalErr));
         }
         try {
             const updatedDataset = await prisma_1.default.dataset.update({
@@ -746,7 +746,7 @@ const cleanDataset = async (req, res) => {
             });
         }
         catch (finalErr) {
-            console.error('Final database fallback failed, serving pure JSON mock fallback:', finalErr.message);
+            console.error('Final database fallback failed, serving pure JSON mock fallback:', finalErr?.message || String(finalErr));
             res.status(200).json({
                 message: 'Dataset cleaned successfully (Pure Memory Fallback)',
                 newFilePath: (dataset && dataset.filePath) || '',
@@ -782,7 +782,7 @@ const askCopilot = async (req, res) => {
         res.status(200).json(aiResponse.data);
     }
     catch (error) {
-        console.error('Copilot error, serving fallback local assistant response:', error.message);
+        console.error('Copilot error, serving fallback local assistant response:', error?.message || String(error));
         res.status(200).json({
             answer: `Here is the analysis of your dataset based on the active local diagnostics schema:\n\n1. **Quality Profile**: The dataset has a high completeness rating (94.2% data health index) with 12 duplicate records and 45 missing categories detected.\n2. **Key Insights**: The sales metrics show strong category performance inside the "Enterprise Cloud SaaS" product bracket.\n3. **Recommendation**: We advise triggering 1-Click AI Auto Clean to fill missing cells and drop duplicates before running regressions.`
         });
@@ -807,7 +807,7 @@ const trainModel = async (req, res) => {
         res.status(200).json(aiResponse.data);
     }
     catch (error) {
-        console.error('Train model error, serving fallback local model parameters:', error.message);
+        console.error('Train model error, serving fallback local model parameters:', error?.message || String(error));
         res.status(200).json({
             success: true,
             result: {
@@ -857,7 +857,7 @@ const downloadDataset = async (req, res) => {
         res.download(absolutePath, downloadName);
     }
     catch (error) {
-        console.error('Download error:', error.message);
+        console.error('Download error:', error?.message || String(error));
         res.status(500).json({ error: 'Failed to download dataset' });
     }
 };
