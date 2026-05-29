@@ -62,6 +62,13 @@ export default function DashboardWorkspace() {
   const [globalDateFilter, setGlobalDateFilter] = useState('Last 30 Days');
   const [gridColumns, setGridColumns] = useState<number>(3);
 
+  // Canvas Customization States
+  const [canvasViewMode, setCanvasViewMode] = useState<'builder' | 'presentation'>('builder');
+  const [showDotMatrixGrid, setShowDotMatrixGrid] = useState(true);
+  const [cardGapSize, setCardGapSize] = useState<'gap-3' | 'gap-6' | 'gap-8'>('gap-6');
+  const [cardRoundedMode, setCardRoundedMode] = useState<'rounded-none' | 'rounded-xl' | 'rounded-3xl'>('rounded-xl');
+  const [showBorderGlow, setShowBorderGlow] = useState(true);
+
   // Database active states
   const [activeDashboardId, setActiveDashboardId] = useState<string | null>(null);
   const [dbDashboards, setDbDashboards] = useState<any[]>([]);
@@ -834,85 +841,100 @@ export default function DashboardWorkspace() {
       {activeWorkspaceTab === 'builder' && (
         <div className="flex-1 flex overflow-hidden min-h-0 animate-fade-in">
           {/* LEFT SIDEBAR: COMPONENT PALETTE */}
-          <div className="w-64 border-r border-neutral-900 bg-neutral-950/40 backdrop-blur-md flex flex-col overflow-y-auto px-4 py-6 shrink-0 space-y-6">
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-widest font-mono">
-                Dataset Metrics Source
-              </span>
-              <select
-                value={selectedDatasetName}
-                onChange={(e) => setSelectedDatasetName(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-850 hover:border-neutral-805 text-neutral-300 text-xs rounded-lg px-2.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer font-mono font-semibold"
-              >
-                {availableDatasets.map(d => (
-                  <option key={d.name} value={d.name}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Layout Components List */}
-            <div className="space-y-3">
-              <span className="text-[10px] font-bold text-neutral-455 uppercase tracking-widest font-mono">
-                Component Palette
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
-                {[
-                  { label: 'KPI Card', type: 'kpi', icon: Activity },
-                  { label: 'Bar Chart', type: 'bar', icon: BarChart3 },
-                  { label: 'Pie Chart', type: 'pie', icon: RechartsPieChart },
-                  { label: 'Line Chart', type: 'line', icon: TrendingUp },
-                  { label: 'Area Chart', type: 'area', icon: Layers },
-                  { label: 'Data Table', type: 'table', icon: FileSpreadsheet },
-                  { label: 'Scatter Graph', type: 'scatter', icon: Maximize2 },
-                  { label: 'Text Insights', type: 'text', icon: FileText }
-                ].map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.type}
-                      onClick={() => addWidget(item.type as any)}
-                      className="flex flex-col items-center gap-1.5 bg-neutral-900 border border-neutral-850 hover:border-neutral-800 rounded-lg p-2.5 transition-colors cursor-pointer group hover:bg-neutral-850/30"
-                    >
-                      <Icon className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-                      <span className="font-semibold text-neutral-300">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Dataset Fields Explorer */}
-            <div className="space-y-3">
-              <span className="text-[10px] font-bold text-neutral-455 uppercase tracking-widest font-mono">
-                Dimensions & Measures
-              </span>
-              
-              <div className="bg-neutral-950 border border-neutral-850 rounded-xl p-3 space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
-                <div className="space-y-1.5">
-                  <div className="text-[9px] uppercase font-bold text-purple-400 font-mono tracking-wider">Dimensions (X-Axis)</div>
-                  {activeDataset.columns.filter(col => col.includes('Category') || col.includes('Region') || col.includes('Country') || col.includes('Date') || col.includes('Platform') || col.includes('CardType')).map(col => (
-                    <div key={col} className="text-[10px] bg-neutral-900 border border-neutral-850/60 px-2 py-1.5 rounded font-mono text-neutral-300 flex items-center gap-1.5 select-all">
-                      <span className="text-[8px] bg-purple-500/10 text-purple-400 px-1 rounded font-black font-mono">A</span>
-                      <span>{col}</span>
-                    </div>
+          {canvasViewMode === 'builder' && (
+            <div className="w-64 border-r border-neutral-900 bg-neutral-950/40 backdrop-blur-md flex flex-col overflow-y-auto px-4 py-6 shrink-0 space-y-6">
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-widest font-mono">
+                  Dataset Metrics Source
+                </span>
+                <select
+                  value={selectedDatasetName}
+                  onChange={(e) => setSelectedDatasetName(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-850 hover:border-neutral-805 text-neutral-300 text-xs rounded-lg px-2.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer font-mono font-semibold"
+                >
+                  {availableDatasets.map(d => (
+                    <option key={d.name} value={d.name}>{d.name}</option>
                   ))}
+                </select>
+              </div>
+
+              {/* Layout Components List */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-neutral-455 uppercase tracking-widest font-mono">
+                  Component Palette
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  {[
+                    { label: 'KPI Card', type: 'kpi', icon: Activity },
+                    { label: 'Bar Chart', type: 'bar', icon: BarChart3 },
+                    { label: 'Pie Chart', type: 'pie', icon: RechartsPieChart },
+                    { label: 'Line Chart', type: 'line', icon: TrendingUp },
+                    { label: 'Area Chart', type: 'area', icon: Layers },
+                    { label: 'Data Table', type: 'table', icon: FileSpreadsheet },
+                    { label: 'Scatter Graph', type: 'scatter', icon: Maximize2 },
+                    { label: 'Text Insights', type: 'text', icon: FileText }
+                  ].map(item => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.type}
+                        onClick={() => addWidget(item.type as any)}
+                        className="flex flex-col items-center gap-1.5 bg-neutral-900 border border-neutral-850 hover:border-neutral-800 rounded-lg p-2.5 transition-colors cursor-pointer group hover:bg-neutral-850/30"
+                      >
+                        <Icon className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                        <span className="font-semibold text-neutral-300">{item.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+
+              {/* Dataset Fields Explorer */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-neutral-455 uppercase tracking-widest font-mono">
+                  Dimensions & Measures
+                </span>
                 
-                <div className="space-y-1.5">
-                  <div className="text-[9px] uppercase font-bold text-emerald-400 font-mono tracking-wider">Measures (Y-Metric)</div>
-                  {activeDataset.columns.filter(col => col.includes('Amount') || col.includes('Spend') || col.includes('Score') || col.includes('Size') || col.includes('ROI') || col.includes('Ratio') || col.includes('Index') || col.includes('UsersCount') || col.includes('Revenue')).map(col => (
-                    <div key={col} className="text-[10px] bg-neutral-900 border border-neutral-850/60 px-2 py-1.5 rounded font-mono text-neutral-300 flex items-center gap-1.5 select-all">
-                      <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-1 rounded font-black font-mono">#</span>
-                      <span>{col}</span>
-                    </div>
-                  ))}
+                <div className="bg-neutral-950 border border-neutral-850 rounded-xl p-3 space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
+                  <div className="space-y-1.5">
+                    <div className="text-[9px] uppercase font-bold text-purple-400 font-mono tracking-wider">Dimensions (X-Axis)</div>
+                    {activeDataset.columns.filter(col => col.includes('Category') || col.includes('Region') || col.includes('Country') || col.includes('Date') || col.includes('Platform') || col.includes('CardType')).map(col => (
+                      <div key={col} className="text-[10px] bg-neutral-900 border border-neutral-850/60 px-2 py-1.5 rounded font-mono text-neutral-300 flex items-center gap-1.5 select-all">
+                        <span className="text-[8px] bg-purple-500/10 text-purple-400 px-1 rounded font-black font-mono">A</span>
+                        <span>{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <div className="text-[9px] uppercase font-bold text-emerald-400 font-mono tracking-wider">Measures (Y-Metric)</div>
+                    {activeDataset.columns.filter(col => col.includes('Amount') || col.includes('Spend') || col.includes('Score') || col.includes('Size') || col.includes('ROI') || col.includes('Ratio') || col.includes('Index') || col.includes('UsersCount') || col.includes('Revenue')).map(col => (
+                      <div key={col} className="text-[10px] bg-neutral-900 border border-neutral-850/60 px-2 py-1.5 rounded font-mono text-neutral-300 flex items-center gap-1.5 select-all">
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-1 rounded font-black font-mono">#</span>
+                        <span>{col}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* MAIN INTERACTIVE BUILDER CANVAS */}
-          <div className={`flex-1 flex flex-col min-h-0 overflow-y-auto px-8 py-6 transition-colors duration-300 ${themeStyles.canvasBg}`}>
+          <div 
+            onClick={() => setSelectedWidgetId(null)}
+            className={`flex-1 flex flex-col min-h-0 overflow-y-auto px-8 py-6 transition-colors duration-300 relative ${themeStyles.canvasBg}`}
+            style={
+              showDotMatrixGrid
+                ? {
+                    backgroundImage: activeTheme === 'light'
+                      ? 'radial-gradient(rgba(0,0,0,0.06) 1.5px, transparent 1.5px)'
+                      : 'radial-gradient(rgba(255,255,255,0.06) 1.5px, transparent 1.5px)',
+                    backgroundSize: '24px 24px'
+                  }
+                : undefined
+            }
+          >
             {/* Top Editor Bar Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-900 pb-4 mb-6 gap-4">
               <div className="flex items-center space-x-3 min-w-0">
@@ -1090,7 +1112,7 @@ export default function DashboardWorkspace() {
                 )}
               </div>
             ) : (
-              <div className={`grid grid-cols-1 gap-6 ${
+              <div className={`grid grid-cols-1 ${cardGapSize} ${
                 gridColumns === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'
               }`}>
                 {tabFilteredWidgets.map((widget) => {
@@ -1099,14 +1121,19 @@ export default function DashboardWorkspace() {
                   return (
                     <Card
                       key={widget.id}
-                      onClick={() => setSelectedWidgetId(widget.id)}
+                      onClick={(e) => { e.stopPropagation(); setSelectedWidgetId(widget.id); }}
                       className={`backdrop-blur-sm border transition-all duration-300 relative group flex flex-col justify-between select-none ${
                         widget.w
-                      } ${
+                      } ${cardRoundedMode} ${
                         isSelected 
                           ? 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.15)] bg-neutral-900/90' 
                           : `${themeStyles.cardBg}`
                       }`}
+                      style={
+                        showBorderGlow && !isSelected
+                          ? { boxShadow: `0 8px 30px -10px ${widget.color}25` }
+                          : undefined
+                      }
                     >
                       {/* Top Widget Edit Icons */}
                       <div className="absolute top-2.5 right-2.5 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
@@ -1292,10 +1319,19 @@ export default function DashboardWorkspace() {
                 })}
               </div>
             )}
+            {canvasViewMode === 'presentation' && (
+              <Button
+                onClick={() => setCanvasViewMode('builder')}
+                className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-2xl flex items-center gap-1.5 cursor-pointer z-50 animate-bounce"
+              >
+                <Sliders className="w-3.5 h-3.5" /> Return to Editor
+              </Button>
+            )}
           </div>
 
           {/* RIGHT SIDEBAR: PROPERTIES EDITOR PANEL */}
-          <div className="w-72 border-l border-neutral-900 bg-neutral-950/40 backdrop-blur-md flex flex-col overflow-y-auto px-5 py-6 shrink-0 space-y-6">
+          {canvasViewMode === 'builder' && (
+            <div className="w-72 border-l border-neutral-900 bg-neutral-950/40 backdrop-blur-md flex flex-col overflow-y-auto px-5 py-6 shrink-0 space-y-6">
             <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-widest font-mono">
               Workspace Themes
             </span>
@@ -1550,12 +1586,152 @@ export default function DashboardWorkspace() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-20 text-neutral-500 text-xs leading-relaxed max-w-[200px] mx-auto border border-dashed border-neutral-900 rounded-xl bg-neutral-950/20">
-                <Info className="w-5 h-5 mx-auto mb-2 text-neutral-600" />
-                Select any widget on the canvas to configure axes, metric parameters, and themes.
+              <div className="space-y-5 animate-fade-in text-left">
+                <div className="flex items-center space-x-2 border-b border-neutral-900 pb-3 mb-1">
+                  <Palette className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs font-bold text-neutral-350 uppercase tracking-wider">Canvas Customizer</span>
+                </div>
+                
+                {/* Presentation Mode Trigger */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Canvas Layout View Mode</label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'builder', label: 'Builder Editor', icon: Sliders },
+                      { id: 'presentation', label: 'Presentation Mode', icon: Eye }
+                    ].map(v => {
+                      const Icon = v.icon;
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => setCanvasViewMode(v.id as any)}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-1 border rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                            canvasViewMode === v.id
+                              ? 'bg-blue-600 border-blue-500 text-white shadow-md'
+                              : 'bg-neutral-900 border-neutral-850 text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
+                          }`}
+                        >
+                          <Icon className="w-3 h-3" />
+                          <span>{v.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Card Rounded Corners Customization */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Card Border Radius</label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'rounded-none', label: 'Sharp' },
+                      { id: 'rounded-xl', label: 'Cozy' },
+                      { id: 'rounded-3xl', label: 'Organic Pro' }
+                    ].map(r => (
+                      <button
+                        key={r.id}
+                        onClick={() => setCardRoundedMode(r.id as any)}
+                        className={`flex-1 py-1.5 border rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                          cardRoundedMode === r.id
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-md'
+                            : 'bg-neutral-900 border-neutral-850 text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Card Gap Size */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Canvas Card Spacing</label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'gap-3', label: 'Compact' },
+                      { id: 'gap-6', label: 'Cozy' },
+                      { id: 'gap-8', label: 'Comfort' }
+                    ].map(g => (
+                      <button
+                        key={g.id}
+                        onClick={() => setCardGapSize(g.id as any)}
+                        className={`flex-1 py-1.5 border rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                          cardGapSize === g.id
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-md'
+                            : 'bg-neutral-900 border-neutral-850 text-neutral-400 hover:bg-neutral-850/50 hover:text-neutral-200'
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Toggles */}
+                <div className="space-y-3 pt-3 border-t border-neutral-900">
+                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Aesthetic Visual FX</label>
+                  <div className="flex flex-col space-y-2.5">
+                    <label className="flex items-center space-x-2 text-xs text-neutral-350 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={showDotMatrixGrid}
+                        onChange={(e) => setShowDotMatrixGrid(e.target.checked)}
+                        className="rounded bg-neutral-955 border-neutral-850 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                      />
+                      <span className="flex items-center gap-1.5">
+                        <Grid className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Subtle Dot Matrix Grid</span>
+                      </span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2 text-xs text-neutral-350 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={showBorderGlow}
+                        onChange={(e) => setShowBorderGlow(e.target.checked)}
+                        className="rounded bg-neutral-955 border-neutral-850 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                      />
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Ambient Widget Neon Glows</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Sheet Actions */}
+                <div className="space-y-3 pt-4 border-t border-neutral-900">
+                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider block">Canvas Sheet Actions</label>
+                  <div className="flex flex-col gap-2.5">
+                    <Button
+                      onClick={populatePerformanceAnalytics}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-lg flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-500/20"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> Re-populate Active Templates
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to clear all widgets on the active tab?')) {
+                          saveToUndo(widgets);
+                          setWidgets(prev => prev.filter(w => (w.tab || 'Summary') !== activeCanvasTab));
+                        }
+                      }}
+                      className="w-full bg-neutral-900 border border-neutral-850 hover:border-red-900/40 text-neutral-400 hover:text-red-400 text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Clear Active Sheet
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-center py-6 text-neutral-500 text-[10px] leading-relaxed max-w-[200px] mx-auto border border-dashed border-neutral-900 rounded-xl bg-neutral-950/20 mt-4">
+                  <Info className="w-3.5 h-3.5 mx-auto mb-1 text-neutral-600" />
+                  ProTip: Select any card widget to edit its individual axes, aggregations, and colors!
+                </div>
               </div>
             )}
           </div>
+          )}
         </div>
       )}
 
