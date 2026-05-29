@@ -1265,9 +1265,11 @@ export default function DashboardWorkspace() {
                                   innerRadius={30}
                                   paddingAngle={2}
                                 >
-                                  {filteredChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color || widget.color || PALETTES[index % PALETTES.length].primary} />
-                                  ))}
+                                  {filteredChartData.map((entry, index) => {
+                                    // Use a distinct premium color for each slice by cycling through the corporate PALETTES array
+                                    const sliceColor = entry.color || PALETTES[index % PALETTES.length].primary;
+                                    return <Cell key={`cell-${index}`} fill={sliceColor} />;
+                                  })}
                                 </Pie>
                                 <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
                                 {widget.showLegend === true && <Legend verticalAlign="bottom" height={24} iconSize={8} wrapperStyle={{ fontSize: '9px' }} />}
