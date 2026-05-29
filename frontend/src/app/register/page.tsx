@@ -26,6 +26,8 @@ export default function RegisterPage() {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user_email', email);
         localStorage.setItem('user_name', name);
+        localStorage.setItem('user_plan', 'Developer Sandbox');
+        localStorage.setItem('user_credits', '500');
         if (email === 'sarkardiganta04@gmail.com') {
           localStorage.setItem('user_role', 'admin');
         } else {

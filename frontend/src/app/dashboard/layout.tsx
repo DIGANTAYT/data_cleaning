@@ -192,14 +192,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="flex items-center justify-between border-b border-neutral-800 pb-3 mb-3.5">
                     <span className="text-xs font-bold text-white">Active Profile</span>
                     <button 
-                      onClick={() => setShowProfileCard(false)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowProfileCard(false);
+                      }}
                       className="text-neutral-500 hover:text-white text-[10px] uppercase font-mono font-bold cursor-pointer"
                     >
                       Close
                     </button>
                   </div>
                   
-                  <div className="space-y-3 font-sans text-xs">
+                  <div className="space-y-3 font-sans text-xs" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between">
                       <span className="text-neutral-500">Name:</span>
                       <span className="font-semibold text-neutral-200">{userName}</span>
@@ -224,10 +227,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                   </div>
 
-                  <div className="border-t border-neutral-800 mt-4 pt-3.5 flex justify-end">
+                  <div className="border-t border-neutral-800 mt-4 pt-3.5 flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <Button 
                       size="sm" 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowProfileCard(false);
                         router.push('/dashboard/settings');
                       }}

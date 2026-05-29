@@ -109,7 +109,34 @@ export default function AdminPanel() {
   };
 
   if (loading) {
-    return <div className="bg-neutral-950 text-neutral-50 p-8 h-screen">Loading Admin Panel...</div>;
+    return (
+      <div className="min-h-screen bg-neutral-950 text-neutral-50 flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Background glow grids */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-indigo-900/10 rounded-full blur-[100px] pointer-events-none translate-x-20" />
+
+        <div className="bg-neutral-900/60 border border-neutral-800 p-8 rounded-2xl backdrop-blur-md shadow-2xl max-w-sm w-full space-y-6 text-center relative z-10">
+          <div className="relative w-20 h-20 mx-auto">
+            {/* Pulsing neon rings */}
+            <div className="absolute inset-0 rounded-full border-2 border-t-purple-500 border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+            <div className="absolute -inset-2 rounded-full border border-t-transparent border-r-indigo-500 border-b-transparent border-l-transparent animate-spin duration-1000 opacity-60" />
+            <div className="absolute inset-2 bg-neutral-950 rounded-full flex items-center justify-center">
+              <Shield className="w-6 h-6 text-purple-400 animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-white tracking-wide">Loading Admin Panel</h3>
+            <p className="text-xs text-neutral-400 font-mono animate-pulse">Establishing secure handshake...</p>
+          </div>
+          
+          {/* Faux load stages indicator */}
+          <div className="w-full bg-neutral-950 h-1 rounded-full overflow-hidden border border-neutral-900">
+            <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full animate-pulse" style={{ width: '80%' }} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!isAdmin) {

@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Enforce pointer cursor on interactive elements globally */
+a,
+button,
+select,
+input[type="submit"],
+input[type="button"],
+input[type="file"],
+[role="button"],
+.cursor-pointer,
+[onClick],
+[onclick] {
+  cursor: pointer !important;
+}
+
