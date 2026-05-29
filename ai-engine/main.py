@@ -295,13 +295,12 @@ def detect_dataset_issues(request: AnalyzeRequest):
             
         issues = detect_issues(df)
         
-        for col in df.columns:
-            if df[col].dtype == object:
-                df[col] = df[col].fillna("")
-            else:
-                df[col] = df[col].fillna(0)
-                
-        preview = df.to_dict(orient="records")
+        import numpy as np
+        # Sanitize dataframe values for standard JSON compliance
+        # Replaces positive/negative infinities with NaN, then outputs clean records with JSON-compliant None/null fallbacks
+        df_sanitized = df.replace([np.inf, -np.inf], np.nan)
+        preview_json = df_sanitized.to_json(orient="records", date_format="iso", double_precision=10, force_ascii=True)
+        preview = json.loads(preview_json)
         columns = list(df.columns)
         
         return {"issues": issues, "preview": preview, "columns": columns, "rowCount": len(df)}
@@ -329,7 +328,10 @@ def clean_dataset(request: CleanRequest):
             
         cleaned_df = apply_cleaning(df, request.operations)
         
-        records = cleaned_df.fillna("").to_dict(orient="records")
+        import numpy as np
+        cleaned_df_sanitized = cleaned_df.replace([np.inf, -np.inf], np.nan)
+        records_json = cleaned_df_sanitized.to_json(orient="records", date_format="iso", double_precision=10, force_ascii=True)
+        records = json.loads(records_json)
         columns = list(cleaned_df.columns)
         
         return {
