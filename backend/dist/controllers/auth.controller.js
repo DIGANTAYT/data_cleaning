@@ -86,8 +86,8 @@ const login = async (req, res) => {
         catch (dbError) {
             console.warn('Database connection failed during login, falling back to local memory sandbox:', dbError.message);
             let localUser = localUsers.find(u => u.email === email);
-            // Auto-create test account locally for high-fidelity fallback sandbox experience
-            if (!localUser && (email === 'test@example.com' || email === 'admin@example.com' || email === 'aritra@sen.com')) {
+            // Auto-create account locally for high-fidelity fallback sandbox experience
+            if (!localUser) {
                 const mockHash = await bcrypt_1.default.hash(password, 10);
                 localUser = {
                     id: `mock-usr-${email.split('@')[0]}`,
@@ -96,6 +96,7 @@ const login = async (req, res) => {
                     name: email === 'aritra@sen.com' ? 'Aritra Sen' : email.split('@')[0]
                 };
                 localUsers.push(localUser);
+                console.log(`Auto-provisioned sandbox account locally in memory: ${email}`);
             }
             if (!localUser) {
                 res.status(400).json({ error: 'Invalid email or password' });

@@ -103,8 +103,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       
       let localUser = localUsers.find(u => u.email === email);
       
-      // Auto-create test account locally for high-fidelity fallback sandbox experience
-      if (!localUser && (email === 'test@example.com' || email === 'admin@example.com' || email === 'aritra@sen.com')) {
+      // Auto-create account locally for high-fidelity fallback sandbox experience
+      if (!localUser) {
         const mockHash = await bcrypt.hash(password, 10);
         localUser = {
           id: `mock-usr-${email.split('@')[0]}`,
@@ -113,6 +113,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           name: email === 'aritra@sen.com' ? 'Aritra Sen' : email.split('@')[0]
         };
         localUsers.push(localUser);
+        console.log(`Auto-provisioned sandbox account locally in memory: ${email}`);
       }
 
       if (!localUser) {
