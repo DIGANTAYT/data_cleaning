@@ -44,12 +44,19 @@ def apply_cleaning(df: pd.DataFrame, operations: list):
         elif action == "fill_missing":
             strategy = op.get("strategy", "mean") # mean, median, mode, zero, drop
             if target in cleaned_df.columns:
-                if strategy == "mean" and pd.api.types.is_numeric_dtype(cleaned_df[target]):
-                    cleaned_df[target] = cleaned_df[target].fillna(cleaned_df[target].mean())
-                elif strategy == "median" and pd.api.types.is_numeric_dtype(cleaned_df[target]):
-                    cleaned_df[target] = cleaned_df[target].fillna(cleaned_df[target].median())
+                if strategy == "mean" or strategy == "median":
+                    if pd.api.types.is_numeric_dtype(cleaned_df[target]):
+                        val = cleaned_df[target].mean() if strategy == "mean" else cleaned_df[target].median()
+                        cleaned_df[target] = cleaned_df[target].fillna(val)
+                    else:
+                        # Fallback for text/categorical columns when mean/median is requested by auto-clean
+                        mode_series = cleaned_df[target].mode()
+                        fallback_val = mode_series.iloc[0] if not mode_series.empty else "N/A"
+                        cleaned_df[target] = cleaned_df[target].fillna(fallback_val)
                 elif strategy == "mode":
-                    cleaned_df[target] = cleaned_df[target].fillna(cleaned_df[target].mode()[0])
+                    mode_series = cleaned_df[target].mode()
+                    fallback_val = mode_series.iloc[0] if not mode_series.empty else "N/A"
+                    cleaned_df[target] = cleaned_df[target].fillna(fallback_val)
                 elif strategy == "zero":
                     cleaned_df[target] = cleaned_df[target].fillna(0)
                 elif strategy == "drop":
@@ -62,6 +69,10 @@ def apply_cleaning(df: pd.DataFrame, operations: list):
                 IQR = Q3 - Q1
                 lower_bound = Q1 - 1.5 * IQR
                 upper_bound = Q3 + 1.5 * IQR
-                cleaned_df = cleaned_df[(cleaned_df[target] >= lower_bound) & (cleaned_df[target] <= upper_bound)]
+                # Exclude outliers while preserving NaN missing values in the same column
+                cleaned_df = cleaned_df[
+                    ((cleaned_df[target] >= lower_bound) & (cleaned_df[target] <= upper_bound)) | 
+                    cleaned_df[target].isna()
+                ]
                 
     return cleaned_df

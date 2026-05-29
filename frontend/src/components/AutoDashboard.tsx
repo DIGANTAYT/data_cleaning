@@ -96,6 +96,48 @@ const robustCompare = (a: any, b: any, key: string) => {
   return String(valB || '').localeCompare(String(valA || ''));
 };
 
+const LOCATION_COORDINATES: Record<string, { x: number; y: number; label: string }> = {
+  // India locations
+  'kolkata, india': { x: 72, y: 55, label: 'Kolkata, IN' },
+  'kolkata': { x: 72, y: 55, label: 'Kolkata, IN' },
+  'mumbai, india': { x: 67, y: 60, label: 'Mumbai, IN' },
+  'mumbai': { x: 67, y: 60, label: 'Mumbai, IN' },
+  'bangalore, india': { x: 69, y: 65, label: 'Bangalore, IN' },
+  'bangalore': { x: 69, y: 65, label: 'Bangalore, IN' },
+  'delhi, india': { x: 69, y: 48, label: 'Delhi, IN' },
+  'delhi': { x: 69, y: 48, label: 'Delhi, IN' },
+  // US locations
+  'new york, us': { x: 28, y: 35, label: 'New York, US' },
+  'new york': { x: 28, y: 35, label: 'New York, US' },
+  'united states': { x: 25, y: 38, label: 'United States' },
+  'us': { x: 25, y: 38, label: 'United States' },
+  'san francisco': { x: 18, y: 39, label: 'San Francisco, US' },
+  'chicago': { x: 23, y: 35, label: 'Chicago, US' },
+  // Europe
+  'zurich, ch': { x: 48, y: 34, label: 'Zurich, CH' },
+  'zurich': { x: 48, y: 34, label: 'Zurich, CH' },
+  'london, uk': { x: 45, y: 30, label: 'London, UK' },
+  'london': { x: 45, y: 30, label: 'London, UK' },
+  'paris, fr': { x: 46, y: 33, label: 'Paris, FR' },
+  'paris': { x: 46, y: 33, label: 'Paris, FR' },
+  'germany': { x: 49, y: 32, label: 'Germany' },
+  'berlin': { x: 50, y: 30, label: 'Berlin, DE' },
+  'amsterdam': { x: 47, y: 30, label: 'Amsterdam, NL' },
+  // Russia
+  'moscow, ru': { x: 57, y: 28, label: 'Moscow, RU' },
+  'moscow': { x: 57, y: 28, label: 'Moscow, RU' },
+  // Japan
+  'japan': { x: 84, y: 40, label: 'Japan' },
+  'tokyo': { x: 84, y: 38, label: 'Tokyo, JP' },
+  // Other global hubs
+  'singapore': { x: 74, y: 64, label: 'Singapore' },
+  'sydney': { x: 88, y: 76, label: 'Sydney, AU' },
+  'toronto': { x: 26, y: 32, label: 'Toronto, CA' },
+  'dubai': { x: 62, y: 46, label: 'Dubai, AE' },
+  'cape town': { x: 53, y: 75, label: 'Cape Town, ZA' },
+  'sao paulo': { x: 38, y: 70, label: 'São Paulo, BR' }
+};
+
 export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardProps) {
   const [isMounted, setIsMounted] = useState(false);
   // Find columns safely using fallback values to avoid TypeErrors during initial render
@@ -115,7 +157,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const yCol2 = numCols.length > 1 ? numCols[1] : null;
 
   // Custom Graph Builder State
-  const [chartType, setChartType] = useState<'bar' | 'line' | 'area' | 'scatter' | 'pie' | 'composed' | 'radial'>('bar');
+  const [chartType, setChartType] = useState<'bar' | 'line' | 'area' | 'scatter' | 'pie' | 'composed' | 'radial' | 'map'>('bar');
   const [customX, setCustomX] = useState('');
   const [customY, setCustomY] = useState('');
   const [customColor, setCustomColor] = useState('#3b82f6');
@@ -151,6 +193,12 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const [compChartType, setCompChartType] = useState<'donut' | 'pie' | 'radial'>('donut');
   const [compLimit, setCompLimit] = useState<number>(5);
   const [compSidebarTab, setCompSidebarTab] = useState<'share' | 'metric_profile'>('share');
+  
+  // Geospatial Location Map States
+  const [mapLocation, setMapLocation] = useState('');
+  const [mapMetric, setMapMetric] = useState('');
+  const [hoveredMapNode, setHoveredMapNode] = useState<any>(null);
+  const [hoveredCustomMapNode, setHoveredCustomMapNode] = useState<any>(null);
   
   // Custom states for AI Hypothesis Testing Sandbox
   const [hypothesisTemplate, setHypothesisTemplate] = useState<string>('positive');
@@ -200,6 +248,12 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       setCumulX(prev => prev || xCol);
       setCumulY(prev => prev || yCol1);
       setAuditCol(prev => prev || safeColumns[0]);
+      
+      // Auto-detect a location column
+      const locKeywords = ['location', 'store', 'country', 'city', 'region', 'state', 'address', 'nation'];
+      const autoLocCol = safeColumns.find(col => locKeywords.some(kw => col.toLowerCase().includes(kw))) || stringCols[0] || safeColumns[0] || '';
+      setMapLocation(prev => prev || autoLocCol);
+      setMapMetric(prev => prev || yCol1);
       setAuditX(prev => prev || safeColumns[0]);
       setRadarCols(prev => prev.length > 0 ? prev : numCols.slice(0, 5));
       setHypothesisX(prev => prev || numCols[0] || safeColumns[0]);
@@ -277,6 +331,8 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
         
         if (config.radarCols) setRadarCols(config.radarCols);
         if (config.kpiConfigs) setKpiConfigs(config.kpiConfigs);
+        if (config.mapLocation) setMapLocation(config.mapLocation);
+        if (config.mapMetric) setMapMetric(config.mapMetric);
         
         console.log('Dashboard config successfully loaded from local storage.');
       } catch (err) {
@@ -325,7 +381,9 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       auditChartType,
       auditLimit,
       radarCols,
-      kpiConfigs
+      kpiConfigs,
+      mapLocation,
+      mapMetric
     };
     
     localStorage.setItem(saveKey, JSON.stringify(config));
@@ -340,7 +398,8 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     safeColumns, chartType, customX, customY, customColor, customLimit, customSort, customLimitMode,
     distX, distY, distLimit, distSort, distLimitMode, trendX, trendY, trendLimit, trendSort, trendLimitMode,
     showTrendline, showGridlines, movingAverageWindow, graphHeight, compCategory, compMetric, compChartType,
-    compLimit, cumulX, cumulY, cumulLimit, auditCol, auditX, auditChartType, auditLimit, radarCols, kpiConfigs
+    compLimit, cumulX, cumulY, cumulLimit, auditCol, auditX, auditChartType, auditLimit, radarCols, kpiConfigs,
+    mapLocation, mapMetric
   ]);
 
   // processedData for Moving Average & Trendline
@@ -432,6 +491,116 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     }
     return safeDataPreview;
   }, [safeDataPreview, auditLimit]);
+
+  // Generate background dot-matrix world grid points dynamically
+  const mapGridPoints = React.useMemo(() => {
+    const points: { x: number; y: number }[] = [];
+    
+    // Abstract continents representation (rough grid coordinates)
+    const isInContinent = (x: number, y: number) => {
+      // North America
+      if (x >= 14 && x <= 32 && y >= 25 && y <= 45) return true;
+      // South America
+      if (x >= 28 && x <= 40 && y >= 48 && y <= 76) {
+        return x - y / 2 < 12; // taper off
+      }
+      // Europe
+      if (x >= 44 && x <= 53 && y >= 24 && y <= 40) return true;
+      // Russia / North Asia
+      if (x >= 54 && x <= 85 && y >= 18 && y <= 35) return true;
+      // Africa
+      if (x >= 45 && x <= 58 && y >= 43 && y <= 72) {
+        return x > 44 + (y - 43) * 0.3; // taper off
+      }
+      // Southern Asia / India
+      if (x >= 62 && x <= 82 && y >= 36 && y <= 62) return true;
+      // Australia
+      if (x >= 80 && x <= 92 && y >= 64 && y <= 80) return true;
+      
+      return false;
+    };
+
+    for (let x = 10; x <= 95; x += 3.2) {
+      for (let y = 15; y <= 82; y += 3.2) {
+        if (isInContinent(x, y)) {
+          points.push({ x, y });
+        }
+      }
+    }
+    return points;
+  }, []);
+
+  // Dynamic geospatial location resolution
+  const resolvedMapData = React.useMemo(() => {
+    if (!mapLocation || !mapMetric) return [];
+    
+    // Group and aggregate metrics by location
+    const groups: Record<string, number> = {};
+    safeDataPreview.forEach(row => {
+      const rawLoc = row[mapLocation];
+      if (rawLoc === null || rawLoc === undefined || rawLoc === '') return;
+      const locStr = String(rawLoc).trim();
+      const val = Number(row[mapMetric]) || 0;
+      groups[locStr] = (groups[locStr] || 0) + val;
+    });
+
+    const totalVal = Object.values(groups).reduce((sum, v) => sum + v, 0) || 1;
+
+    return Object.entries(groups)
+      .map(([name, value]) => {
+        const key = name.toLowerCase();
+        // Resolve coordinates
+        const coord = LOCATION_COORDINATES[key] || 
+                      Object.entries(LOCATION_COORDINATES).find(([k]) => key.includes(k) || k.includes(key))?.[1] ||
+                      { x: 50, y: 50, label: name }; // default middle center
+        
+        return {
+          name,
+          value,
+          percent: (value / totalVal) * 100,
+          x: coord.x,
+          y: coord.y,
+          displayLabel: coord.label
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [safeDataPreview, mapLocation, mapMetric]);
+
+  // Dynamic custom geospatial location resolution for Graph Workbench
+  const resolvedCustomMapData = React.useMemo(() => {
+    if (!customX || !customY) return [];
+    
+    // Group and aggregate metrics by location
+    const groups: Record<string, number> = {};
+    safeDataPreview.forEach(row => {
+      const rawLoc = row[customX];
+      if (rawLoc === null || rawLoc === undefined || rawLoc === '') return;
+      const locStr = String(rawLoc).trim();
+      const val = Number(row[customY]) || 0;
+      groups[locStr] = (groups[locStr] || 0) + val;
+    });
+
+    const totalVal = Object.values(groups).reduce((sum, v) => sum + v, 0) || 1;
+
+    return Object.entries(groups)
+      .map(([name, value]) => {
+        const key = name.toLowerCase();
+        // Resolve coordinates
+        const coord = LOCATION_COORDINATES[key] || 
+                      Object.entries(LOCATION_COORDINATES).find(([k]) => key.includes(k) || k.includes(key))?.[1] ||
+                      { x: 50, y: 50, label: name }; // default middle center
+        
+        return {
+          name,
+          value,
+          percent: (value / totalVal) * 100,
+          x: coord.x,
+          y: coord.y,
+          displayLabel: coord.label
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [safeDataPreview, customX, customY]);
 
   // Update KPI column/operation
   const updateKpiConfig = (id: number, field: 'column' | 'operation', value: string) => {
@@ -744,7 +913,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
             <div className="space-y-2">
               <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Chart Type</label>
               <div className="grid grid-cols-4 gap-2">
-                {(['bar', 'line', 'area', 'scatter', 'pie', 'composed', 'radial'] as const).map(type => (
+                {(['bar', 'line', 'area', 'scatter', 'pie', 'composed', 'radial', 'map'] as const).map(type => (
                   <Button
                     key={type}
                     variant={chartType === type ? 'default' : 'outline'}
@@ -1032,7 +1201,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     <Line type="monotone" dataKey={customY} stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
                     {showTrendline && <Line type="monotone" dataKey="Trendline" stroke="#ef4444" strokeWidth={2} dot={false} />}
                   </ComposedChart>
-                ) : (
+                ) : chartType === 'radial' ? (
                   <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" barSize={10} data={processedData}>
                     <RadialBar
                       label={{ position: 'insideStart', fill: '#fff', fontSize: 9 }}
@@ -1045,6 +1214,77 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     </RadialBar>
                     <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '8px' }} />
                   </RadialBarChart>
+                ) : (
+                  // Highly Premium Map Visualization inside Custom Workbench
+                  <div className="relative w-full h-full bg-neutral-950/60 rounded-2xl border border-neutral-850 flex items-center justify-center overflow-hidden">
+                    {/* Concentric Sonar Rings */}
+                    <div className="absolute w-[220px] h-[220px] border border-neutral-800/10 rounded-full pointer-events-none"></div>
+                    <div className="absolute w-[100px] h-[100px] border border-neutral-800/10 rounded-full pointer-events-none"></div>
+                    
+                    <svg className="w-full h-full relative" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      {/* Grid Lines */}
+                      <line x1="0" y1="50" x2="100" y2="50" stroke="#262626" strokeWidth="0.2" strokeDasharray="1.5 1.5" />
+                      <line x1="50" y1="0" x2="50" y2="100" stroke="#262626" strokeWidth="0.2" strokeDasharray="1.5 1.5" />
+                      
+                      {/* Stylized Continent Matrix Dot Background */}
+                      {mapGridPoints.map((pt, pidx) => (
+                        <circle key={pidx} cx={`${pt.x}%`} cy={`${pt.y}%`} r="0.55" fill="#404040" opacity="0.45" />
+                      ))}
+
+                      {/* Active Location density bubbles */}
+                      {resolvedCustomMapData.map((node, nidx) => {
+                        const radius = 2.0 + (node.percent / 100) * 5.0; // proportional size
+                        
+                        return (
+                          <g 
+                            key={nidx}
+                            className="cursor-pointer group/node"
+                            onMouseEnter={() => setHoveredCustomMapNode(node)}
+                            onMouseLeave={() => setHoveredCustomMapNode(null)}
+                          >
+                            {/* Pulsing Outer Glow */}
+                            <circle 
+                              cx={`${node.x}%`} 
+                              cy={`${node.y}%`} 
+                              r={radius + 2.0} 
+                              fill={`${customColor}15`}
+                              stroke={`${customColor}40`}
+                              strokeWidth="0.4"
+                              className="animate-ping"
+                              style={{ animationDuration: '3.5s' }}
+                            />
+                            {/* Core Bubble */}
+                            <circle 
+                              cx={`${node.x}%`} 
+                              cy={`${node.y}%`} 
+                              r={radius} 
+                              fill={customColor}
+                              fillOpacity={0.8}
+                              stroke="#ffffff"
+                              strokeWidth="0.6"
+                              className="shadow-lg hover:fill-white transition-all duration-200"
+                            />
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+                    {/* Node Hover Tooltip Panel */}
+                    {hoveredCustomMapNode && (
+                      <div className="absolute bottom-3 left-3 bg-neutral-900/95 border border-neutral-800 p-2.5 rounded-lg text-[10px] font-mono shadow-2xl animate-fade-in z-20">
+                        <span className="text-neutral-500 uppercase tracking-wider text-[8px] font-bold">Node Metric Audit</span>
+                        <h5 className="font-bold text-neutral-200 mt-0.5">{hoveredCustomMapNode.name}</h5>
+                        <div className="flex justify-between gap-4 mt-1.5 border-t border-neutral-850 pt-1">
+                          <span className="text-neutral-400">Total volume:</span>
+                          <strong style={{ color: customColor }}>{hoveredCustomMapNode.value.toLocaleString(undefined, {maximumFractionDigits: 1})}</strong>
+                        </div>
+                        <div className="flex justify-between gap-4 mt-0.5">
+                          <span className="text-neutral-400">Global Share:</span>
+                          <strong style={{ color: customColor }}>{hoveredCustomMapNode.percent.toFixed(1)}%</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </ResponsiveContainer>
             </div>
@@ -1640,6 +1880,161 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
               </div>
             </CardContent>
           </Card>
+
+          {/* 🗺️ Premium Live Geospatial Location Density Map Card */}
+          {mapLocation && (
+            <Card className="dark bg-neutral-900/60 backdrop-blur-md border border-neutral-800/80 text-neutral-50 shadow-xl md:col-span-2 relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute top-0 right-0 w-44 h-44 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+              
+              <CardHeader className="pb-4 border-b border-neutral-850 bg-neutral-950/20 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-md flex items-center font-bold">
+                    <Sliders className="w-4.5 h-4.5 mr-2 text-blue-400" />
+                    Geospatial Location Density Net
+                  </CardTitle>
+                  <CardDescription className="text-neutral-400 text-xs">Real-time geospatial plotting of metric weights across resolved coordinates.</CardDescription>
+                </div>
+
+                {/* Map Control Dropdowns */}
+                <div className="flex flex-wrap items-center gap-2 z-10">
+                  {/* Location Column selector */}
+                  <div className="flex items-center space-x-1">
+                    <span className="text-[9px] text-neutral-400 font-semibold uppercase tracking-wider font-mono">Location</span>
+                    <select
+                      value={mapLocation}
+                      onChange={(e) => setMapLocation(e.target.value)}
+                      className="bg-neutral-950 border border-neutral-850 hover:border-neutral-800 text-[10px] font-bold text-neutral-300 rounded px-2 py-1 focus:outline-none cursor-pointer"
+                    >
+                      {columns.map(col => (
+                        <option key={col} value={col}>{col}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Metric Column selector */}
+                  <div className="flex items-center space-x-1">
+                    <span className="text-[9px] text-neutral-400 font-semibold uppercase tracking-wider font-mono">Metric</span>
+                    <select
+                      value={mapMetric}
+                      onChange={(e) => setMapMetric(e.target.value)}
+                      className="bg-neutral-950 border border-neutral-850 hover:border-neutral-800 text-[10px] font-bold text-neutral-300 rounded px-2 py-1 focus:outline-none cursor-pointer"
+                    >
+                      {numCols.map(col => (
+                        <option key={col} value={col}>{col}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center">
+                  {/* Left: Dynamic SVG Continent Grid Map */}
+                  <div className="lg:col-span-3 relative h-80 w-full bg-neutral-950/60 rounded-2xl border border-neutral-850 flex items-center justify-center overflow-hidden">
+                    {/* Concentric Sonar Rings */}
+                    <div className="absolute w-[250px] h-[250px] border border-neutral-850/20 rounded-full pointer-events-none"></div>
+                    <div className="absolute w-[120px] h-[120px] border border-neutral-850/15 rounded-full pointer-events-none"></div>
+                    
+                    <svg className="w-full h-full relative" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      {/* Grid Lines */}
+                      <line x1="0" y1="50" x2="100" y2="50" stroke="#1f2937" strokeWidth="0.25" strokeDasharray="2 2" />
+                      <line x1="50" y1="0" x2="50" y2="100" stroke="#1f2937" strokeWidth="0.25" strokeDasharray="2 2" />
+                      
+                      {/* Stylized Continent Matrix Dot Background */}
+                      {mapGridPoints.map((pt, pidx) => (
+                        <circle key={pidx} cx={`${pt.x}%`} cy={`${pt.y}%`} r="0.6" fill="#374151" opacity="0.45" />
+                      ))}
+
+                      {/* Active Location density bubbles */}
+                      {resolvedMapData.map((node, nidx) => {
+                        const radius = 2.5 + (node.percent / 100) * 5.5; // proportional size
+                        
+                        return (
+                          <g 
+                            key={nidx}
+                            className="cursor-pointer group/node"
+                            onMouseEnter={() => setHoveredMapNode(node)}
+                            onMouseLeave={() => setHoveredMapNode(null)}
+                          >
+                            {/* Pulsing Outer Glow */}
+                            <circle 
+                              cx={`${node.x}%`} 
+                              cy={`${node.y}%`} 
+                              r={radius + 2.5} 
+                              className="fill-blue-500/10 stroke-blue-500/30 stroke-[0.5] animate-ping" 
+                              style={{ animationDuration: '3.5s' }}
+                            />
+                            {/* Core Bubble */}
+                            <circle 
+                              cx={`${node.x}%`} 
+                              cy={`${node.y}%`} 
+                              r={radius} 
+                              className="fill-blue-500/80 stroke-blue-400 stroke-[1] shadow-lg hover:fill-blue-400 hover:stroke-white transition-all duration-200"
+                            />
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+                    {/* Node Hover Tooltip Panel */}
+                    {hoveredMapNode && (
+                      <div className="absolute bottom-3 left-3 bg-neutral-900/95 border border-neutral-800 p-2.5 rounded-lg text-[10px] font-mono shadow-2xl animate-fade-in z-20">
+                        <span className="text-neutral-500 uppercase tracking-wider text-[8px] font-bold">Node Metric Audit</span>
+                        <h5 className="font-bold text-neutral-200 mt-0.5">{hoveredMapNode.name}</h5>
+                        <div className="flex justify-between gap-4 mt-1.5 border-t border-neutral-850 pt-1">
+                          <span className="text-neutral-400">Total volume:</span>
+                          <strong className="text-blue-400">{hoveredMapNode.value.toLocaleString(undefined, {maximumFractionDigits: 1})}</strong>
+                        </div>
+                        <div className="flex justify-between gap-4 mt-0.5">
+                          <span className="text-neutral-400">Global Share:</span>
+                          <strong className="text-blue-400">{hoveredMapNode.percent.toFixed(1)}%</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: Detailed Legend Table */}
+                  <div className="lg:col-span-2 space-y-3.5 pr-1">
+                    <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-800 pb-2 mb-2 font-mono flex justify-between items-center">
+                      <span>Geographic Split Share</span>
+                      <span className="text-[8px] text-neutral-500 bg-neutral-950 border border-neutral-850 px-1 py-0.5 rounded uppercase font-bold tracking-wider font-mono">Location Data</span>
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-neutral-850">
+                      {resolvedMapData.length === 0 ? (
+                        <div className="text-center py-12 text-neutral-550 text-xs">
+                          No matching geographic coords found in location column.
+                        </div>
+                      ) : (
+                        resolvedMapData.map((node, idx) => (
+                          <div key={idx} className="space-y-1 bg-neutral-950/40 p-2 rounded-xl border border-neutral-850">
+                            <div className="flex justify-between items-center text-xs">
+                              <div className="flex items-center space-x-2 truncate mr-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]"></div>
+                                <span className="font-medium text-neutral-200 truncate font-mono text-[11px]" title={node.name}>{node.name}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 shrink-0">
+                                <span className="font-bold text-neutral-350 text-[11px]">
+                                  {node.value > 1e6 ? `${(node.value / 1e6).toFixed(1)}M` : node.value > 1e3 ? `${(node.value / 1e3).toFixed(0)}k` : node.value.toLocaleString(undefined, {maximumFractionDigits: 1})}
+                                </span>
+                                <span className="text-[9px] text-neutral-400 bg-neutral-800 border border-neutral-750 px-1 py-0.5 rounded font-mono font-extrabold">{node.percent.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                            <div className="h-1.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-neutral-900">
+                              <div 
+                                className="h-full bg-blue-500 rounded-full transition-all duration-500" 
+                                style={{ width: `${node.percent}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Custom Section on Auto-Generated Analytical Insights: Custom Feature Audit Sandbox */}

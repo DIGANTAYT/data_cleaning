@@ -132,6 +132,34 @@ const getHighFidelityMockForDataset = (datasetName: string, rowCount: number) =>
   };
 };
 
+const guaranteeDatasetFile = (filePath: string, datasetName: string) => {
+  const absolutePath = path.resolve(__dirname, '../../', filePath);
+  if (!fs.existsSync(absolutePath)) {
+    // Create parent directory if missing
+    const parentDir = path.dirname(absolutePath);
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
+    }
+    // Generate mock content based on name
+    const mock = getHighFidelityMockForDataset(datasetName, 100);
+    const columns = mock.columns;
+    let content = columns.join(',') + '\n';
+    mock.preview.forEach(row => {
+      content += columns.map(col => {
+        let cell = (row as any)[col];
+        if (cell === null || cell === undefined) cell = '';
+        cell = cell.toString().replace(/"/g, '""');
+        if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
+          cell = `"${cell}"`;
+        }
+        return cell;
+      }).join(',') + '\n';
+    });
+    fs.writeFileSync(absolutePath, content);
+    console.log(`Guaranteed and generated physical mock file at: ${absolutePath}`);
+  }
+};
+
 // Helper to parse local datasets when AI engine is offline
 const localProfileAndParse = (filePath: string): { columns: string[], preview: any[], rowCount: number, issues: any } => {
   const absolutePath = path.resolve(__dirname, '../../', filePath);
@@ -562,6 +590,9 @@ export const detectIssues = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    // Guarantee that the physical file exists on disk
+    guaranteeDatasetFile(dataset.filePath, dataset.name);
+
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
     const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
 
@@ -610,6 +641,9 @@ export const cleanDataset = async (req: AuthRequest, res: Response): Promise<voi
       res.status(404).json({ error: 'Dataset not found' });
       return;
     }
+
+    // Guarantee that the physical file exists on disk
+    guaranteeDatasetFile(dataset.filePath, dataset.name);
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
     const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;

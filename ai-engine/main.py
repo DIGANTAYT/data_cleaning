@@ -92,6 +92,19 @@ def generate_high_fidelity_mock_file(filename: str, local_path: str):
 def ensure_local_file(file_path: str) -> str:
     # If the file path is already a full URL, download it
     if file_path.startswith("http://") or file_path.startswith("https://"):
+        # Check if this is a local backend url running on the same host
+        if "localhost" in file_path or "127.0.0.1" in file_path:
+            parsed_url = urllib.parse.urlparse(file_path)
+            filename = urllib.parse.unquote(os.path.basename(parsed_url.path))
+            
+            # Resolve to backend/uploads
+            backend_uploads_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "backend", "uploads"))
+            local_backend_path = os.path.join(backend_uploads_dir, filename)
+            
+            if os.path.exists(local_backend_path):
+                print(f"Optimized local mapping: resolved URL {file_path} directly to local file {local_backend_path}")
+                return local_backend_path
+
         local_dir = os.path.join(os.path.dirname(__file__), "temp_uploads")
         os.makedirs(local_dir, exist_ok=True)
         parsed_url = urllib.parse.urlparse(file_path)
