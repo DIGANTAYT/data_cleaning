@@ -131,6 +131,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const [auditCol, setAuditCol] = useState('');
   const [auditX, setAuditX] = useState('');
   const [auditChartType, setAuditChartType] = useState<'bar' | 'line' | 'area'>('bar');
+  const [auditLimit, setAuditLimit] = useState<number>(10);
 
   // Interactive 5 KPIs configurations
   const [kpiConfigs, setKpiConfigs] = useState([
@@ -263,6 +264,13 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
       };
     });
   }, [safeDataPreview, cumulY, cumulX, cumulLimit]);
+
+  const processedAuditData = React.useMemo(() => {
+    if (auditLimit > 0 && safeDataPreview.length > 0) {
+      return safeDataPreview.slice(0, auditLimit);
+    }
+    return safeDataPreview;
+  }, [safeDataPreview, auditLimit]);
 
   // Update KPI column/operation
   const updateKpiConfig = (id: number, field: 'column' | 'operation', value: string) => {
@@ -797,7 +805,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                 ) : chartType === 'pie' ? (
                   <PieChart>
                     <Pie
-                      data={processedData.slice(0, 8)}
+                      data={processedData}
                       dataKey={customY}
                       nameKey={customX}
                       cx="50%"
@@ -807,7 +815,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                       paddingAngle={2}
                       cornerRadius={4}
                     >
-                      {processedData.slice(0, 8).map((entry, index) => (
+                      {processedData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -824,13 +832,13 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     {showTrendline && <Line type="monotone" dataKey="Trendline" stroke="#ef4444" strokeWidth={2} dot={false} />}
                   </ComposedChart>
                 ) : (
-                  <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" barSize={10} data={processedData.slice(0, 8)}>
+                  <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" barSize={10} data={processedData}>
                     <RadialBar
                       label={{ position: 'insideStart', fill: '#fff', fontSize: 9 }}
                       background
                       dataKey={customY}
                     >
-                      {processedData.slice(0, 8).map((entry, index) => (
+                      {processedData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </RadialBar>
@@ -1471,6 +1479,49 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                     <option value="area">Area Plot</option>
                   </select>
                 </div>
+                <div className="flex items-center space-x-1">
+                  <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider font-mono">Limit</span>
+                  <select
+                    value={
+                      auditLimit === 5
+                        ? '5'
+                        : auditLimit === 10
+                        ? '10'
+                        : auditLimit === 0
+                        ? 'all'
+                        : 'custom'
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '5') {
+                        setAuditLimit(5);
+                      } else if (val === '10') {
+                        setAuditLimit(10);
+                      } else if (val === 'all') {
+                        setAuditLimit(0);
+                      } else {
+                        setAuditLimit(15);
+                      }
+                    }}
+                    className="bg-neutral-950 border border-neutral-850 hover:border-neutral-800 text-[10px] font-bold text-neutral-200 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
+                  >
+                    <option value="5">Top 5</option>
+                    <option value="10">Top 10</option>
+                    <option value="all">All</option>
+                    <option value="custom">Custom...</option>
+                  </select>
+                </div>
+                {auditLimit !== 5 && auditLimit !== 10 && auditLimit !== 0 && (
+                  <input
+                    type="number"
+                    min="1"
+                    max={dataPreview.length}
+                    value={auditLimit}
+                    onChange={(e) => setAuditLimit(Math.max(1, Number(e.target.value)))}
+                    className="w-12 bg-neutral-950 border border-neutral-850 text-neutral-200 text-[10px] rounded px-1.5 py-1 focus:outline-none font-mono text-center"
+                    title="Custom Row Limit"
+                  />
+                )}
               </div>
             </div>
           </CardHeader>
@@ -1531,14 +1582,14 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                   <div className="lg:col-span-3 h-52 w-full">
                     <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                       {auditChartType === 'bar' ? (
-                        <BarChart data={dataPreview.slice(0, 15)}>
+                        <BarChart data={processedAuditData}>
                           <XAxis dataKey={auditX} stroke="#737373" fontSize={9} />
                           <YAxis stroke="#737373" fontSize={9} />
                           <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '8px' }} />
                           <Bar dataKey={auditCol} fill="#ec4899" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       ) : auditChartType === 'line' ? (
-                        <LineChart data={dataPreview.slice(0, 15)}>
+                        <LineChart data={processedAuditData}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
                           <XAxis dataKey={auditX} stroke="#737373" fontSize={9} />
                           <YAxis stroke="#737373" fontSize={9} />
@@ -1546,7 +1597,7 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                           <Line type="monotone" dataKey={auditCol} stroke="#ec4899" strokeWidth={2} />
                         </LineChart>
                       ) : (
-                        <AreaChart data={dataPreview.slice(0, 15)}>
+                        <AreaChart data={processedAuditData}>
                           <defs>
                             <linearGradient id="auditAreaGrad" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#ec4899" stopOpacity={0.4}/>
