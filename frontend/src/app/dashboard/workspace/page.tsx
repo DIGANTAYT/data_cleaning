@@ -444,11 +444,169 @@ export default function DashboardWorkspace() {
     setWidgets(prev => prev.map(w => w.id === updated.id ? updated : w));
   };
 
-  // Auto-Save Workspace Configuration
+  const [isHydrated, setIsHydrated] = useState(false);
+
   useEffect(() => {
     const key = 'metricsflow_workspace_widgets';
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWidgets(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to load saved widgets from localStorage', e);
+      }
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Auto-Save Workspace Configuration
+  useEffect(() => {
+    if (!isHydrated) return;
+    const key = 'metricsflow_workspace_widgets';
     localStorage.setItem(key, JSON.stringify(widgets));
-  }, [widgets]);
+  }, [widgets, isHydrated]);
+
+  const populatePerformanceAnalytics = () => {
+    let newWidgets: Widget[] = [];
+    if (selectedDatasetName.includes('marketing')) {
+      newWidgets = [
+        { 
+          id: `w-perf-1-${Date.now()}`, 
+          type: 'area', 
+          title: 'Marketing Campaign ROI Performance Curve', 
+          w: 'col-span-2', 
+          metric: 'ROI', 
+          category: 'Campaign', 
+          color: '#8b5cf6', 
+          tab: 'Performance Analytics', 
+          showGridlines: true, 
+          showLegend: true,
+          lineType: 'monotone' 
+        },
+        { 
+          id: `w-perf-2-${Date.now()}`, 
+          type: 'bar', 
+          title: 'Ad Spend Efficiency by Platform', 
+          w: 'col-span-1', 
+          metric: 'AdSpend', 
+          category: 'Platform', 
+          color: '#3b82f6', 
+          tab: 'Performance Analytics', 
+          showGridlines: true, 
+          showLegend: true 
+        },
+        { 
+          id: `w-perf-3-${Date.now()}`, 
+          type: 'kpi', 
+          title: 'Total Ad Impressions Generated', 
+          w: 'col-span-1', 
+          metric: 'Impressions', 
+          category: '', 
+          color: '#10b981', 
+          tab: 'Performance Analytics', 
+          aggregation: 'sum' 
+        }
+      ];
+    } else if (selectedDatasetName.includes('fraud') || selectedDatasetName.includes('fintech')) {
+      newWidgets = [
+        { 
+          id: `w-perf-1-${Date.now()}`, 
+          type: 'line', 
+          title: 'Fraud Ratio Risk Trajectory', 
+          w: 'col-span-2', 
+          metric: 'FraudRatio', 
+          category: 'Country', 
+          color: '#f43f5e', 
+          tab: 'Performance Analytics', 
+          showGridlines: true, 
+          showLegend: true,
+          lineType: 'monotone' 
+        },
+        { 
+          id: `w-perf-2-${Date.now()}`, 
+          type: 'bar', 
+          title: 'Transaction Volume & Risk Spread', 
+          w: 'col-span-1', 
+          metric: 'TransactionAmount', 
+          category: 'CardType', 
+          color: '#f59e0b', 
+          tab: 'Performance Analytics', 
+          showGridlines: true, 
+          showLegend: true 
+        },
+        { 
+          id: `w-perf-3-${Date.now()}`, 
+          type: 'kpi', 
+          title: 'Maximum Transaction Peak Exposure', 
+          w: 'col-span-1', 
+          metric: 'TransactionAmount', 
+          category: '', 
+          color: '#8b5cf6', 
+          tab: 'Performance Analytics', 
+          aggregation: 'max' 
+        }
+      ];
+    } else {
+      newWidgets = [
+        { 
+          id: `w-perf-1-${Date.now()}`, 
+          type: 'line', 
+          title: 'Customer Lifetime Value Run-Rate Trajectory', 
+          w: 'col-span-2', 
+          metric: 'SalesAmount', 
+          category: 'Date', 
+          color: '#10b981', 
+          tab: 'Performance Analytics', 
+          showGridlines: true, 
+          showLegend: true,
+          lineType: 'monotone' 
+        },
+        { 
+          id: `w-perf-2-${Date.now()}`, 
+          type: 'bar', 
+          title: 'Regional Operational Health Index', 
+          w: 'col-span-1', 
+          metric: 'HealthIndex', 
+          category: 'Region', 
+          color: '#3b82f6', 
+          tab: 'Performance Analytics', 
+          showGridlines: true, 
+          showLegend: true 
+        },
+        { 
+          id: `w-perf-3-${Date.now()}`, 
+          type: 'kpi', 
+          title: 'Peak Customer Engagement (Max Health)', 
+          w: 'col-span-1', 
+          metric: 'HealthIndex', 
+          category: '', 
+          color: '#8b5cf6', 
+          tab: 'Performance Analytics', 
+          aggregation: 'max' 
+        }
+      ];
+    }
+    
+    saveToUndo(widgets);
+    setWidgets(prev => {
+      const baseWidgets = prev.filter(w => w.tab !== 'Performance Analytics');
+      return [...baseWidgets, ...newWidgets];
+    });
+  };
+
+  // Auto-populate Performance Analytics tab if empty
+  useEffect(() => {
+    if (activeWorkspaceTab === 'builder' && activeCanvasTab === 'Performance Analytics') {
+      const hasPerfWidgets = widgets.some(w => w.tab === 'Performance Analytics');
+      if (!hasPerfWidgets) {
+        populatePerformanceAnalytics();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCanvasTab, activeWorkspaceTab, selectedDatasetName]);
 
   // AI Pipeline Runner
   const runAiGenerator = () => {
@@ -922,6 +1080,14 @@ export default function DashboardWorkspace() {
                 <LayoutDashboard className="w-10 h-10 text-neutral-600 animate-pulse" />
                 <h4 className="text-md font-bold text-neutral-200">The Canvas Tab is Empty</h4>
                 <p className="text-xs text-neutral-500 leading-relaxed">No widgets have been added to the active tab "{activeCanvasTab}" yet. Click elements in the left palette to add resizable KPI metrics and charts!</p>
+                {activeCanvasTab === 'Performance Analytics' && (
+                  <Button
+                    onClick={populatePerformanceAnalytics}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-lg mt-4 flex items-center gap-1.5 cursor-pointer border border-emerald-500/20"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" /> Auto-Populate Performance Widgets
+                  </Button>
+                )}
               </div>
             ) : (
               <div className={`grid grid-cols-1 gap-6 ${
