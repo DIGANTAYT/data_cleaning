@@ -368,6 +368,9 @@ export default function DatasetDetail() {
               <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
                 Total Columns: {data?.columns?.length || 0}
               </span>
+              <span className="text-xs px-2.5 py-1 rounded-md font-semibold border border-neutral-800 bg-neutral-900 text-neutral-300">
+                Sample: 5
+              </span>
             </div>
           </div>
 
@@ -524,7 +527,7 @@ export default function DatasetDetail() {
                     <div>
                       <CardTitle>Data Explorer</CardTitle>
                       <CardDescription className="text-neutral-400">
-                        First 5 rows of the dataset (Total Rows: {data?.rowCount || data?.preview?.length || 0} • Total Columns: {data?.columns?.length || 0})
+                        First 5 rows of the dataset (Total Rows: {data?.rowCount || data?.preview?.length || 0} • Total Columns: {data?.columns?.length || 0} • Sample: 5)
                       </CardDescription>
                     </div>
                     <div className="relative max-w-xs w-full">
