@@ -132,7 +132,7 @@ const getHighFidelityMockForDataset = (datasetName: string, rowCount: number) =>
   };
 };
 
-const guaranteeDatasetFile = (filePath: string, datasetName: string) => {
+const guaranteeDatasetFile = (filePath: string, datasetName: string, rowCount: number = 100) => {
   const absolutePath = path.resolve(__dirname, '../../', filePath);
   if (!fs.existsSync(absolutePath)) {
     // Create parent directory if missing
@@ -140,11 +140,14 @@ const guaranteeDatasetFile = (filePath: string, datasetName: string) => {
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
-    // Generate mock content based on name
-    const mock = getHighFidelityMockForDataset(datasetName, 100);
+    // Generate mock content based on name and target rowCount
+    const mock = getHighFidelityMockForDataset(datasetName, rowCount);
     const columns = mock.columns;
     let content = columns.join(',') + '\n';
-    mock.preview.forEach(row => {
+    
+    // Repeat preview data to match target rowCount
+    for (let i = 0; i < rowCount; i++) {
+      const row = mock.preview[i % mock.preview.length];
       content += columns.map(col => {
         let cell = (row as any)[col];
         if (cell === null || cell === undefined) cell = '';
@@ -153,10 +156,12 @@ const guaranteeDatasetFile = (filePath: string, datasetName: string) => {
           cell = `"${cell}"`;
         }
         return cell;
-      }).join(',') + '\n';
-    });
+      }).join(',');
+      content += '\n';
+    }
+    
     fs.writeFileSync(absolutePath, content);
-    console.log(`Guaranteed and generated physical mock file at: ${absolutePath}`);
+    console.log(`Guaranteed and generated physical mock file of size ${rowCount} rows at: ${absolutePath}`);
   }
 };
 
@@ -627,7 +632,7 @@ export const detectIssues = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     // Guarantee that the physical file exists on disk
-    guaranteeDatasetFile(dataset.filePath, dataset.name);
+    guaranteeDatasetFile(dataset.filePath, dataset.name, dataset.rowCount || 100);
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
     const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
@@ -679,7 +684,7 @@ export const cleanDataset = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     // Guarantee that the physical file exists on disk
-    guaranteeDatasetFile(dataset.filePath, dataset.name);
+    guaranteeDatasetFile(dataset.filePath, dataset.name, dataset.rowCount || 100);
 
     const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
     const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;

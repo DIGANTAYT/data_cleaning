@@ -21,59 +21,59 @@ def generate_high_fidelity_mock_file(filename: str, local_path: str):
     # 1. AI Impact / Job / Layoffs
     if 'job' in name or 'layoff' in name or 'hiring' in name or 'employment' in name:
         data = {
-            'JobTitle': ['Data Entry Clerk', 'Software Engineer', 'Graphic Designer', 'Financial Analyst', 'Marketing Manager'] * 10,
-            'Sector': ['Administrative', 'Technology', 'Creative', 'Finance', 'Marketing'] * 10,
-            'AutomationRisk': [0.95, 0.08, 0.25, 0.35, 0.12] * 10,
-            'EmploymentGrowth': [-0.12, 0.22, 0.04, 0.08, 0.10] * 10,
-            'AverageSalary': [45000, 115000, 62000, 85000, 95000] * 10,
-            'RequiredEducation': ['High School', 'Bachelors', 'Bachelors', 'Bachelors', 'Bachelors'] * 10
+            'JobTitle': ['Data Entry Clerk', 'Software Engineer', 'Graphic Designer', 'Financial Analyst', 'Marketing Manager'] * 200,
+            'Sector': ['Administrative', 'Technology', 'Creative', 'Finance', 'Marketing'] * 200,
+            'AutomationRisk': [0.95, 0.08, 0.25, 0.35, 0.12] * 200,
+            'EmploymentGrowth': [-0.12, 0.22, 0.04, 0.08, 0.10] * 200,
+            'AverageSalary': [45000, 115000, 62000, 85000, 95000] * 200,
+            'RequiredEducation': ['High School', 'Bachelors', 'Bachelors', 'Bachelors', 'Bachelors'] * 200
         }
     # 2. Retail / Margin / Sales
     elif 'retail' in name or 'margin' in name or 'cannibalization' in name or 'sale' in name or 'ecommerce' in name or 'order' in name:
         data = {
-            'ProductID': ['PROD-7701', 'PROD-7702', 'PROD-7703', 'PROD-7704', 'PROD-7705'] * 10,
-            'Category': ['Electronics', 'Apparel', 'Home & Kitchen', 'Electronics', 'Fitness & Sports'] * 10,
-            'OriginalPrice': [299.99, 59.99, 120.00, 999.00, 45.00] * 10,
-            'DiscountedSalePrice': [249.99, 59.99, 90.00, 799.00, 35.00] * 10,
-            'BaseCostCOGS': [150.00, 20.00, 50.00, 550.00, 15.00] * 10,
-            'QuantitySold': [42, 110, 18, 5, 75] * 10,
-            'Revenue': [10499.58, 6598.90, 1620.00, 3995.00, 2625.00] * 10,
-            'NetProfit': [4199.58, 4398.90, 720.00, 1245.00, 1500.00] * 10,
-            'IsReturned': ['No', 'No', 'Yes', 'No', 'No'] * 10
+            'ProductID': ['PROD-7701', 'PROD-7702', 'PROD-7703', 'PROD-7704', 'PROD-7705'] * 200,
+            'Category': ['Electronics', 'Apparel', 'Home & Kitchen', 'Electronics', 'Fitness & Sports'] * 200,
+            'OriginalPrice': [299.99, 59.99, 120.00, 999.00, 45.00] * 200,
+            'DiscountedSalePrice': [249.99, 59.99, 90.00, 799.00, 35.00] * 200,
+            'BaseCostCOGS': [150.00, 20.00, 50.00, 550.00, 15.00] * 200,
+            'QuantitySold': [42, 110, 18, 5, 75] * 200,
+            'Revenue': [10499.58, 6598.90, 1620.00, 3995.00, 2625.00] * 200,
+            'NetProfit': [4199.58, 4398.90, 720.00, 1245.00, 1500.00] * 200,
+            'IsReturned': ['No', 'No', 'Yes', 'No', 'No'] * 200
         }
     # 3. Suicide Rates / World Health
     elif 'suicide' in name or 'rate' in name or 'population' in name or 'world' in name or 'health' in name:
         data = {
-            'Country': ['United States', 'United States', 'Japan', 'Japan', 'Germany'] * 10,
-            'Year': [2024, 2024, 2024, 2024, 2023] * 10,
-            'Gender': ['Male', 'Female', 'Male', 'Female', 'Male'] * 10,
-            'AgeGroup': ['35-54 years', '35-54 years', '55-74 years', '55-74 years', '15-24 years'] * 10,
-            'SuicidesCount': [11200, 2900, 6500, 2100, 850] * 10,
-            'Population': [42000000, 43000000, 17000000, 18000000, 4500000] * 10,
-            'SuicideRate': [26.6, 6.7, 38.2, 11.6, 18.9] * 10,
-            'HDIForYear': [0.926, 0.926, 0.915, 0.915, 0.942] * 10
+            'Country': ['United States', 'United States', 'Japan', 'Japan', 'Germany'] * 200,
+            'Year': [2024, 2024, 2024, 2024, 2023] * 200,
+            'Gender': ['Male', 'Female', 'Male', 'Female', 'Male'] * 200,
+            'AgeGroup': ['35-54 years', '35-54 years', '55-74 years', '55-74 years', '15-24 years'] * 200,
+            'SuicidesCount': [11200, 2900, 6500, 2100, 850] * 200,
+            'Population': [42000000, 43000000, 17000000, 18000000, 4500000] * 200,
+            'SuicideRate': [26.6, 6.7, 38.2, 11.6, 18.9] * 200,
+            'HDIForYear': [0.926, 0.926, 0.915, 0.915, 0.942] * 200
         }
     # 4. Fintech / Fraud / Risk
     elif 'fintech' in name or 'fraud' in name or 'risk' in name or 'finance' in name or 'bank' in name or 'transfer' in name or 'card' in name:
         data = {
-            'TransactionID': ['TXN-9901', 'TXN-9902', 'TXN-9903', 'TXN-9904', 'TXN-9905'] * 10,
-            'CustomerID': ['CUST-304', 'CUST-1085', 'CUST-211', 'CUST-617', 'CUST-522'] * 10,
-            'TransactionAmount': [450.00, 12500.00, 89.99, 1800.00, 15.50] * 10,
-            'TransactionType': ['Transfer', 'Wire', 'Purchase', 'Withdrawal', 'Purchase'] * 10,
-            'Location': ['New York, US', 'Zurich, CH', 'London, UK', 'Moscow, RU', 'Paris, FR'] * 10,
-            'IsFraud': ['No', 'Yes', 'No', 'Yes', 'No'] * 10,
-            'RiskScore': [0.12, 0.94, 0.05, 0.81, 0.02] * 10
+            'TransactionID': ['TXN-9901', 'TXN-9902', 'TXN-9903', 'TXN-9904', 'TXN-9905'] * 200,
+            'CustomerID': ['CUST-304', 'CUST-1085', 'CUST-211', 'CUST-617', 'CUST-522'] * 200,
+            'TransactionAmount': [450.00, 12500.00, 89.99, 1800.00, 15.50] * 200,
+            'TransactionType': ['Transfer', 'Wire', 'Purchase', 'Withdrawal', 'Purchase'] * 200,
+            'Location': ['New York, US', 'Zurich, CH', 'London, UK', 'Moscow, RU', 'Paris, FR'] * 200,
+            'IsFraud': ['No', 'Yes', 'No', 'Yes', 'No'] * 200,
+            'RiskScore': [0.12, 0.94, 0.05, 0.81, 0.02] * 200
         }
     # 5. Generic / Default transaction metrics
     else:
         data = {
-            'TransactionID': ['TXN-10024', 'TXN-10025', 'TXN-10026', 'TXN-10027', 'TXN-10028'] * 10,
-            'CustomerName': ['Aritra Sen', 'Rohan Sen', 'Ananya Roy', 'Priya Patel', 'Kabir Singh'] * 10,
-            'ProductCategory': ['Enterprise Cloud SaaS', 'Developer Compute Tier', None, 'Enterprise Cloud SaaS', 'Local Storage Sync'] * 10,
-            'SalesAmount': [12500.00, 99.00, 210.00, 48000.00, None] * 10,
-            'DiscountApplied': [0.15, 0.00, 0.10, 0.20, 0.00] * 10,
-            'StoreLocation': ['Kolkata, India', 'Kolkata, India', 'Mumbai, India', 'Bangalore, India', 'Delhi, India'] * 10,
-            'PurchaseDate': ['2026-05-28', '2026-05-28', '2026-05-27', '2026-05-26', '2026-05-25'] * 10
+            'TransactionID': ['TXN-10024', 'TXN-10025', 'TXN-10026', 'TXN-10027', 'TXN-10028'] * 200,
+            'CustomerName': ['Aritra Sen', 'Rohan Sen', 'Ananya Roy', 'Priya Patel', 'Kabir Singh'] * 200,
+            'ProductCategory': ['Enterprise Cloud SaaS', 'Developer Compute Tier', None, 'Enterprise Cloud SaaS', 'Local Storage Sync'] * 200,
+            'SalesAmount': [12500.00, 99.00, 210.00, 48000.00, None] * 200,
+            'DiscountApplied': [0.15, 0.00, 0.10, 0.20, 0.00] * 200,
+            'StoreLocation': ['Kolkata, India', 'Kolkata, India', 'Mumbai, India', 'Bangalore, India', 'Delhi, India'] * 200,
+            'PurchaseDate': ['2026-05-28', '2026-05-28', '2026-05-27', '2026-05-26', '2026-05-25'] * 200
         }
         
     df = pd.DataFrame(data)
