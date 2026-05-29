@@ -29,25 +29,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     
     const syncCredits = () => {
       if (typeof window !== 'undefined') {
-        const storedCredits = localStorage.getItem('user_credits');
-        const storedPlan = localStorage.getItem('user_plan');
         const storedEmail = localStorage.getItem('user_email') || '';
-        const storedRole = localStorage.getItem('user_role') || '';
+        const activeEmail = storedEmail || 'anonymous';
         const storedName = localStorage.getItem('user_name') || 'My Account';
         
         setIsAdmin(storedEmail === 'sarkardiganta04@gmail.com');
         setUserName(storedName);
         setUserEmail(storedEmail);
-        
-        if (storedCredits === null) {
-          localStorage.setItem('user_credits', '500');
-          localStorage.setItem('user_plan', 'Developer Sandbox');
-          setCredits(500);
-          setPlan('Developer Sandbox');
-        } else {
-          setCredits(Number(storedCredits));
-          setPlan(storedPlan || 'Developer Sandbox');
+
+        const userCreditsKey = `credits_${activeEmail}`;
+        const userPlanKey = `plan_${activeEmail}`;
+
+        // Get the current session-level values
+        const sessionCredits = localStorage.getItem('user_credits');
+        const sessionPlan = localStorage.getItem('user_plan');
+
+        // Get the user-specific persisted values
+        let userPersistedCredits = localStorage.getItem(userCreditsKey);
+        let userPersistedPlan = localStorage.getItem(userPlanKey);
+
+        // If the session changed a value, persist it to the user-specific key
+        if (sessionCredits !== null && sessionCredits !== userPersistedCredits) {
+          localStorage.setItem(userCreditsKey, sessionCredits);
+          userPersistedCredits = sessionCredits;
         }
+        if (sessionPlan !== null && sessionPlan !== userPersistedPlan) {
+          localStorage.setItem(userPlanKey, sessionPlan);
+          userPersistedPlan = sessionPlan;
+        }
+
+        // If user-specific persisted values don't exist yet, initialize them
+        if (userPersistedCredits === null) {
+          userPersistedCredits = sessionCredits !== null ? sessionCredits : '500';
+          localStorage.setItem(userCreditsKey, userPersistedCredits);
+        }
+        if (userPersistedPlan === null) {
+          userPersistedPlan = sessionPlan !== null ? sessionPlan : 'Developer Sandbox';
+          localStorage.setItem(userPlanKey, userPersistedPlan);
+        }
+
+        // Synchronize back to session-level for components that read raw keys directly
+        localStorage.setItem('user_credits', userPersistedCredits);
+        localStorage.setItem('user_plan', userPersistedPlan);
+
+        setCredits(Number(userPersistedCredits));
+        setPlan(userPersistedPlan);
       }
     };
 
@@ -65,6 +91,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_credits');
+    localStorage.removeItem('user_plan');
     router.push('/login');
   };
 

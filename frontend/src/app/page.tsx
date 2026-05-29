@@ -22,6 +22,11 @@ export default function LandingPage() {
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_credits');
+    localStorage.removeItem('user_plan');
     setIsLoggedIn(false);
     router.push('/');
   };
