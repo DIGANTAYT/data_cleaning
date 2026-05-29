@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight, Check } from 'lucide-react';
+import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight, Check, Shield, Lock, Server, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 
@@ -85,6 +85,19 @@ export default function LandingPage() {
           <div className="inline-flex items-center space-x-2 bg-neutral-900/50 border border-neutral-800 backdrop-blur-md rounded-full px-4 py-1.5 w-fit">
             <Sparkles className="w-4 h-4 text-blue-400" />
             <span className="text-sm text-neutral-300 font-medium font-sans">The Next-Gen Analytics Copilot</span>
+          </div>
+
+          {/* Feature Pills */}
+          <div className="flex flex-wrap gap-2.5">
+            <span className="inline-flex items-center gap-1.5 bg-neutral-900/60 border border-neutral-850 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-semibold text-neutral-300 shadow-md">
+              <span>⚡</span> AI Data Cleaning
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-neutral-900/60 border border-neutral-850 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-semibold text-neutral-300 shadow-md">
+              <span>📊</span> Auto Dashboard Builder
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-neutral-900/60 border border-neutral-850 backdrop-blur-md rounded-full px-3.5 py-1.5 text-xs font-semibold text-neutral-300 shadow-md">
+              <span>🧠</span> Insights & Predictions
+            </span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-neutral-400 leading-tight">
@@ -214,6 +227,71 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">Auto ML Predictions</h3>
             <p className="text-neutral-400 leading-relaxed">Train Random Forest models entirely in the background. Uncover the features driving your KPIs.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust & Security Section */}
+      <div className="max-w-7xl mx-auto w-full px-6 md:px-8 mb-32 border-t border-neutral-900/60 pt-16 text-center">
+        <div className="space-y-4 mb-12">
+          <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full text-xs font-semibold text-blue-400">
+            <Shield className="w-3.5 h-3.5 mr-1 animate-pulse" />
+            Enterprise-Grade Security Protection
+          </div>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-white to-neutral-400">
+            Built for Secure Analytics
+          </h2>
+          <p className="text-neutral-400 max-w-xl mx-auto text-sm leading-relaxed">
+            Your data confidentiality is our highest priority. We process datasets entirely within secure sandbox environments.
+          </p>
+        </div>
+
+        {/* 3 Security Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="bg-neutral-900/40 border border-neutral-850 p-8 rounded-2xl backdrop-blur-sm text-left hover:border-blue-500/20 transition-all duration-300 group">
+            <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Lock className="w-5 h-5 text-blue-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Secure Uploads</h3>
+            <p className="text-xs text-neutral-400 leading-relaxed">Encrypted dataset processing.</p>
+          </div>
+
+          <div className="bg-neutral-900/40 border border-neutral-850 p-8 rounded-2xl backdrop-blur-sm text-left hover:border-emerald-500/20 transition-all duration-300 group">
+            <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Key className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Private Data</h3>
+            <p className="text-xs text-neutral-400 leading-relaxed">Your datasets remain isolated.</p>
+          </div>
+
+          <div className="bg-neutral-900/40 border border-neutral-850 p-8 rounded-2xl backdrop-blur-sm text-left hover:border-purple-500/20 transition-all duration-300 group">
+            <div className="w-10 h-10 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Server className="w-5 h-5 text-purple-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Modern Infrastructure</h3>
+            <p className="text-xs text-neutral-400 leading-relaxed">Next.js • FastAPI • PostgreSQL • Docker</p>
+          </div>
+        </div>
+
+        {/* Small Trust Bar */}
+        <div className="max-w-4xl mx-auto w-full bg-neutral-900/20 border border-neutral-850/60 rounded-full px-6 py-4 flex flex-wrap items-center justify-center gap-6 md:gap-12 text-xs backdrop-blur-sm shadow-xl">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]">
+              <Check className="w-3 h-3 text-emerald-400 font-bold stroke-[4]" />
+            </div>
+            <span className="font-semibold text-neutral-300">No Credit Card Required</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]">
+              <Check className="w-3 h-3 text-emerald-400 font-bold stroke-[4]" />
+            </div>
+            <span className="font-semibold text-neutral-300">Secure Authentication</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]">
+              <Check className="w-3 h-3 text-emerald-400 font-bold stroke-[4]" />
+            </div>
+            <span className="font-semibold text-neutral-300">Free Developer Sandbox</span>
           </div>
         </div>
       </div>
