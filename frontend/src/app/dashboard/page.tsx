@@ -171,14 +171,69 @@ export default function DashboardPage() {
   }, [datasets, activeDatasetId]);
 
   // Editable Dynamic KPI Card states
-  const [kpiCards, setKpiCards] = useState<any[]>([
-    { id: 'sales', title: 'Total Enterprise Sales', value: '1248500', type: 'currency', trend: '+12.4%', trendColor: 'text-green-400', sparkline: 'revenue' },
-    { id: 'queries', title: 'Workspace Queries', value: '45210', type: 'number', trend: '+8.2%', trendColor: 'text-blue-400', sparkline: 'query' },
-    { id: 'quality', title: 'Average Data Quality', value: '94.2%', type: 'progress', trend: 'Grade A', trendColor: 'text-emerald-400', sparkline: 'quality' },
-    { id: 'models', title: 'AI Predictors Trained', value: '14', type: 'model', trend: '+15%', trendColor: 'text-purple-400', sparkline: 'model' },
-    { id: 'cleanRate', title: 'Anomaly Cleansing Rate', value: '99.8%', type: 'percent', trend: 'Optimal', trendColor: 'text-emerald-400', sparkline: 'clean' }
-  ]);
+  const [kpiCards, setKpiCards] = useState<any[]>([]);
   const [editingKpiId, setEditingKpiId] = useState<string | null>(null);
+
+  // Dynamic Dataset-Aware KPI Populator
+  useEffect(() => {
+    let datasetKpis: any[] = [];
+    
+    if (selectedDataset) {
+      const isFintech = selectedDataset.name.toLowerCase().includes('fintech') || selectedDataset.name.toLowerCase().includes('fraud');
+      const isSuicide = selectedDataset.name.toLowerCase().includes('suicide') || selectedDataset.name.toLowerCase().includes('world');
+      const isMarketing = selectedDataset.name.toLowerCase().includes('marketing') || selectedDataset.name.toLowerCase().includes('ad');
+
+      if (isFintech) {
+        datasetKpis = [
+          { id: 'txn_vol', title: 'Total Transaction Volume', value: '28500', type: 'currency', trend: '+14.2%', trendColor: 'text-green-400', sparkline: 'revenue' },
+          { id: 'peak_txn', title: 'Peak Transaction Value', value: '12500', type: 'currency', trend: 'Stable', trendColor: 'text-blue-400', sparkline: 'default' },
+          { id: 'fraud_risk', title: 'Average Fraud Risk', value: '12.5%', type: 'percent', trend: '-2.4%', trendColor: 'text-green-400', sparkline: 'query' },
+          { id: 'active_users', title: 'Active Users Count', value: '177', type: 'number', trend: '+15%', trendColor: 'text-purple-400', sparkline: 'model' },
+          { id: 'fraud_rules', title: 'AI Fraud Rules Applied', value: '24', type: 'number', trend: 'Optimal', trendColor: 'text-emerald-400', sparkline: 'clean' }
+        ];
+      } else if (isSuicide) {
+        datasetKpis = [
+          { id: 'total_incidents', title: 'Total Incidents Reported', value: '23050', type: 'number', trend: 'Decreasing', trendColor: 'text-green-400', sparkline: 'query' },
+          { id: 'male_incidents', title: 'Male Incident Rate', value: '18550', type: 'number', trend: '-4.2%', trendColor: 'text-green-400', sparkline: 'default' },
+          { id: 'female_incidents', title: 'Female Incident Rate', value: '4500', type: 'number', trend: '-8.5%', trendColor: 'text-green-400', sparkline: 'revenue' },
+          { id: 'country_quality', title: 'Country Quality Index', value: '93.4%', type: 'progress', trend: 'Grade A', trendColor: 'text-emerald-400', sparkline: 'quality' },
+          { id: 'active_profiles', title: 'Active Country Profiles', value: '5', type: 'number', trend: 'Verified', trendColor: 'text-blue-400', sparkline: 'clean' }
+        ];
+      } else if (isMarketing) {
+        datasetKpis = [
+          { id: 'roi', title: 'Total Marketing ROI', value: '3.2', type: 'number', trend: '+12.4%', trendColor: 'text-green-400', sparkline: 'revenue' },
+          { id: 'impressions', title: 'Active Ad Impressions', value: '25200', type: 'number', trend: '+18%', trendColor: 'text-blue-400', sparkline: 'query' },
+          { id: 'ctr', title: 'Click-Through Rate (CTR)', value: '3.8%', type: 'percent', trend: 'Optimal', trendColor: 'text-emerald-400', sparkline: 'quality' },
+          { id: 'cpa', title: 'Cost Per Acquisition (CPA)', value: '12.50', type: 'currency', trend: '-14%', trendColor: 'text-green-400', sparkline: 'default' },
+          { id: 'campaigns', title: 'Active Campaigns Run', value: '8', type: 'number', trend: 'Running', trendColor: 'text-purple-400', sparkline: 'clean' }
+        ];
+      }
+    }
+
+    if (datasetKpis.length === 0) {
+      datasetKpis = [
+        { id: 'sales', title: 'Total Enterprise Sales', value: '1248500', type: 'currency', trend: '+12.4%', trendColor: 'text-green-400', sparkline: 'revenue' },
+        { id: 'queries', title: 'Workspace Queries', value: '45210', type: 'number', trend: '+8.2%', trendColor: 'text-blue-400', sparkline: 'query' },
+        { id: 'quality', title: 'Average Data Quality', value: '94.2%', type: 'progress', trend: 'Grade A', trendColor: 'text-emerald-400', sparkline: 'quality' },
+        { id: 'models', title: 'AI Predictors Trained', value: '14', type: 'model', trend: '+15%', trendColor: 'text-purple-400', sparkline: 'model' },
+        { id: 'cleanRate', title: 'Anomaly Cleansing Rate', value: '99.8%', type: 'percent', trend: 'Optimal', trendColor: 'text-emerald-400', sparkline: 'clean' }
+      ];
+    }
+
+    setKpiCards(datasetKpis);
+  }, [selectedDataset]);
+
+  // AI Quality Sync trigger
+  useEffect(() => {
+    if (aiCleaned) {
+      setKpiCards(prev => prev.map(k => {
+        if (k.id === 'quality' || k.id === 'country_quality' || k.id === 'cleanRate') {
+          return { ...k, value: '98.5' };
+        }
+        return k;
+      }));
+    }
+  }, [aiCleaned]);
 
   const updateKpiValue = (id: string, value: string) => {
     setKpiCards(prev => prev.map(k => k.id === id ? { ...k, value } : k));
@@ -568,10 +623,76 @@ export default function DashboardPage() {
             {/* 3. overview KPI grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {kpiCards.map((card) => {
-                const isEditingValue = editingKpiId === `${card.id}_val`;
-                const isEditingTitle = editingKpiId === `${card.id}_title`;
+                const isEditingCard = editingKpiId === card.id;
                 const sparklineData = getKpiSparkline(card.sparkline);
                 
+                if (isEditingCard) {
+                  return (
+                    <Card key={card.id} className="bg-neutral-900 border-blue-500 shadow-2xl relative p-3 flex flex-col justify-between h-40 z-30">
+                      <div className="space-y-1 flex-grow flex flex-col justify-between text-left">
+                        <div className="space-y-0.5">
+                          <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Label</label>
+                          <input
+                            type="text"
+                            value={card.title}
+                            onChange={(e) => updateKpiTitle(card.id, e.target.value)}
+                            className="w-full bg-neutral-955 border border-neutral-850 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                            placeholder="KPI Label"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div className="space-y-0.5">
+                            <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Value</label>
+                            <input
+                              type="text"
+                              value={card.value}
+                              onChange={(e) => updateKpiValue(card.id, e.target.value)}
+                              className="w-full bg-neutral-955 border border-neutral-855 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono font-bold"
+                              placeholder="1,000"
+                            />
+                          </div>
+                          <div className="space-y-0.5">
+                            <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Trend</label>
+                            <input
+                              type="text"
+                              value={card.trend || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, trend: val } : k));
+                              }}
+                              className="w-full bg-neutral-955 border border-neutral-855 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                              placeholder="+5.2%"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-1">
+                          <select
+                            value={card.type}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, type: val } : k));
+                            }}
+                            className="bg-neutral-955 border border-neutral-850 text-[7px] text-neutral-400 rounded px-1 py-0.5 cursor-pointer focus:outline-none font-bold"
+                          >
+                            <option value="currency">Currency ($)</option>
+                            <option value="number">Number</option>
+                            <option value="percent">Percentage (%)</option>
+                            <option value="progress">Score Ring</option>
+                            <option value="model">Model</option>
+                            <option value="text">Raw Text</option>
+                          </select>
+                          <Button
+                            onClick={() => setEditingKpiId(null)}
+                            className="bg-blue-650 hover:bg-blue-555 text-white text-[7px] font-black px-2 py-0.5 rounded h-auto min-h-0 cursor-pointer"
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                }
+
                 return (
                   <Card key={card.id} className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border-neutral-850 shadow-2xl relative overflow-hidden text-neutral-50 flex flex-col justify-between h-40 group/card">
                     {/* Delete Card Button (For custom cards or removing unnecessary cards) */}
@@ -583,30 +704,27 @@ export default function DashboardPage() {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
 
+                    {/* Edit Card Button (Customize KPI card) */}
+                    <button
+                      onClick={() => setEditingKpiId(card.id)}
+                      className="absolute top-2.5 right-8 opacity-0 group-hover/card:opacity-100 text-neutral-500 hover:text-blue-400 transition-all p-1 rounded hover:bg-neutral-800/50 cursor-pointer z-20"
+                      title="Customize KPI"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+
                     <CardHeader className="pb-1 pt-4 px-4 border-b border-neutral-900/50">
                       <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">
-                        {isEditingTitle ? (
-                          <input
-                            type="text"
-                            value={card.title}
-                            onChange={(e) => updateKpiTitle(card.id, e.target.value)}
-                            onBlur={() => setEditingKpiId(null)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpiId(null); }}
-                            className="bg-neutral-950 border border-neutral-800 rounded px-1 py-0.5 text-[10px] text-white focus:outline-none focus:border-blue-500 font-mono w-28"
-                            autoFocus
-                          />
-                        ) : (
-                          <span 
-                            onClick={() => setEditingKpiId(`${card.id}_title`)}
-                            className="cursor-pointer hover:text-neutral-300 flex items-center gap-1 group/title truncate pr-4"
-                            title="Click to Edit Label"
-                          >
-                            {card.title}
-                            <Edit3 className="w-2.5 h-2.5 opacity-0 group-hover/title:opacity-100 text-neutral-600 transition-opacity" />
-                          </span>
-                        )}
+                        <span 
+                          onClick={() => setEditingKpiId(card.id)}
+                          className="cursor-pointer hover:text-neutral-300 flex items-center gap-1 group/title truncate pr-10"
+                          title="Click to Customize Label"
+                        >
+                          {card.title}
+                          <Edit3 className="w-2.5 h-2.5 opacity-0 group-hover/title:opacity-100 text-neutral-600 transition-opacity" />
+                        </span>
                         {card.trend && (
-                          <span className={`${card.trendColor || 'text-blue-400'} bg-neutral-900/40 border border-neutral-800/80 px-1.5 py-0.5 rounded text-[8px] font-bold`}>
+                          <span className={`${card.trendColor || 'text-blue-405'} bg-neutral-900/40 border border-neutral-800/80 px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0`}>
                             {card.trend}
                           </span>
                         )}
@@ -617,26 +735,14 @@ export default function DashboardPage() {
                       {card.type === 'progress' ? (
                         <div className="flex items-center justify-between flex-grow">
                           <div className="space-y-1 text-left">
-                            {isEditingValue ? (
-                              <input
-                                type="text"
-                                value={card.value}
-                                onChange={(e) => updateKpiValue(card.id, e.target.value)}
-                                onBlur={() => setEditingKpiId(null)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpiId(null); }}
-                                className="w-20 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-lg font-black text-white focus:outline-none focus:border-blue-500 font-mono"
-                                autoFocus
-                              />
-                            ) : (
-                              <h2 
-                                onClick={() => setEditingKpiId(`${card.id}_val`)}
-                                className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-emerald-400 flex items-center gap-1 group/kpi"
-                                title="Click to Edit Score"
-                              >
-                                {card.value.includes('%') ? card.value : `${card.value}%`}
-                                <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity shrink-0" />
-                              </h2>
-                            )}
+                            <h2 
+                              onClick={() => setEditingKpiId(card.id)}
+                              className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-emerald-455 flex items-center gap-1 group/kpi"
+                              title="Click to Edit Score"
+                            >
+                              {card.value.includes('%') ? card.value : `${card.value}%`}
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity shrink-0" />
+                            </h2>
                             <p className="text-[8px] text-neutral-500 font-mono pt-1">Completeness index</p>
                           </div>
                           
@@ -660,32 +766,20 @@ export default function DashboardPage() {
                       ) : (
                         <div className="flex flex-col justify-between flex-grow">
                           <div className="flex justify-between items-end">
-                            {isEditingValue ? (
-                              <input
-                                type="text"
-                                value={card.value}
-                                onChange={(e) => updateKpiValue(card.id, e.target.value)}
-                                onBlur={() => setEditingKpiId(null)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') setEditingKpiId(null); }}
-                                className="w-24 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-lg font-black text-white focus:outline-none focus:border-blue-500 font-mono"
-                                autoFocus
-                              />
-                            ) : (
-                              <h2 
-                                onClick={() => setEditingKpiId(`${card.id}_val`)}
-                                className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
-                                title="Click to Edit Value"
-                              >
-                                {card.type === 'currency' && Number(card.value)
-                                  ? `$${Number(card.value).toLocaleString()}`
-                                  : card.type === 'number' && Number(card.value)
-                                    ? Number(card.value).toLocaleString()
-                                    : card.type === 'model' && Number(card.value)
-                                      ? `${card.value} Models`
-                                      : card.value}
-                                <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity shrink-0" />
-                              </h2>
-                            )}
+                            <h2 
+                              onClick={() => setEditingKpiId(card.id)}
+                              className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
+                              title="Click to Edit Value"
+                            >
+                              {card.type === 'currency' && Number(card.value)
+                                ? `$${Number(card.value).toLocaleString()}`
+                                : card.type === 'number' && Number(card.value)
+                                  ? Number(card.value).toLocaleString()
+                                  : card.type === 'model' && Number(card.value)
+                                    ? `${card.value} Models`
+                                    : card.value}
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-555 transition-opacity shrink-0" />
+                            </h2>
                             
                             <div className="w-16 h-8 shrink-0">
                               <ResponsiveContainer width="100%" height="100%">
@@ -693,9 +787,9 @@ export default function DashboardPage() {
                                   <Area 
                                     type="monotone" 
                                     dataKey="value" 
-                                    stroke={card.id === 'models' ? '#8b5cf6' : card.id === 'queries' ? '#3b82f6' : '#10b981'} 
+                                    stroke={card.id.includes('model') ? '#8b5cf6' : card.id.includes('query') || card.id.includes('risk') ? '#3b82f6' : '#10b981'} 
                                     strokeWidth={1.2} 
-                                    fill={card.id === 'models' ? '#8b5cf6' : card.id === 'queries' ? '#3b82f6' : '#10b981'} 
+                                    fill={card.id.includes('model') ? '#8b5cf6' : card.id.includes('query') || card.id.includes('risk') ? '#3b82f6' : '#10b981'} 
                                     fillOpacity={0.03} 
                                   />
                                 </AreaChart>
