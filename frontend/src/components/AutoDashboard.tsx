@@ -99,6 +99,11 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
   const [trendY, setTrendY] = useState('');
   const [trendLimit, setTrendLimit] = useState<number>(10);
   
+  // Sorting options for custom limits (Top N Sorted vs First N Original)
+  const [customSort, setCustomSort] = useState<boolean>(true);
+  const [distSort, setDistSort] = useState<boolean>(true);
+  const [trendSort, setTrendSort] = useState<boolean>(false); // Trend line chart defaults to original sequential order
+  
   // Custom Section for Interactive Display
   const [showTrendline, setShowTrendline] = useState(false);
   const [showGridlines, setShowGridlines] = useState(true);
@@ -192,17 +197,20 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     let result = safeDataPreview;
     
     if (customLimit > 0 && safeDataPreview.length > 0) {
-      result = [...safeDataPreview].sort((a, b) => {
-        if (!customY) return 0;
-        const valA = a[customY];
-        const valB = b[customY];
-        const numA = Number(valA);
-        const numB = Number(valB);
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return numB - numA;
-        }
-        return String(valB || '').localeCompare(String(valA || ''));
-      }).slice(0, customLimit);
+      if (customSort) {
+        result = [...safeDataPreview].sort((a, b) => {
+          if (!customY) return 0;
+          const valA = a[customY];
+          const valB = b[customY];
+          const numA = Number(valA);
+          const numB = Number(valB);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numB - numA;
+          }
+          return String(valB || '').localeCompare(String(valA || ''));
+        });
+      }
+      result = result.slice(0, customLimit);
     }
 
     if (movingAverageWindow > 0 && result.length > 0 && customY) {
@@ -238,41 +246,49 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
     }
 
     return result;
-  }, [safeDataPreview, customY, movingAverageWindow, showTrendline, customLimit]);
+  }, [safeDataPreview, customY, movingAverageWindow, showTrendline, customLimit, customSort]);
 
   const processedDistData = React.useMemo(() => {
+    let result = safeDataPreview;
     if (distLimit > 0 && safeDataPreview.length > 0) {
-      return [...safeDataPreview].sort((a, b) => {
-        if (!distY) return 0;
-        const valA = a[distY];
-        const valB = b[distY];
-        const numA = Number(valA);
-        const numB = Number(valB);
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return numB - numA;
-        }
-        return String(valB || '').localeCompare(String(valA || ''));
-      }).slice(0, distLimit);
+      if (distSort) {
+        result = [...safeDataPreview].sort((a, b) => {
+          if (!distY) return 0;
+          const valA = a[distY];
+          const valB = b[distY];
+          const numA = Number(valA);
+          const numB = Number(valB);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numB - numA;
+          }
+          return String(valB || '').localeCompare(String(valA || ''));
+        });
+      }
+      result = result.slice(0, distLimit);
     }
-    return safeDataPreview;
-  }, [safeDataPreview, distY, distLimit]);
+    return result;
+  }, [safeDataPreview, distY, distLimit, distSort]);
 
   const processedTrendData = React.useMemo(() => {
+    let result = safeDataPreview;
     if (trendLimit > 0 && safeDataPreview.length > 0) {
-      return [...safeDataPreview].sort((a, b) => {
-        if (!trendY) return 0;
-        const valA = a[trendY];
-        const valB = b[trendY];
-        const numA = Number(valA);
-        const numB = Number(valB);
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return numB - numA;
-        }
-        return String(valB || '').localeCompare(String(valA || ''));
-      }).slice(0, trendLimit);
+      if (trendSort) {
+        result = [...safeDataPreview].sort((a, b) => {
+          if (!trendY) return 0;
+          const valA = a[trendY];
+          const valB = b[trendY];
+          const numA = Number(valA);
+          const numB = Number(valB);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numB - numA;
+          }
+          return String(valB || '').localeCompare(String(valA || ''));
+        });
+      }
+      result = result.slice(0, trendLimit);
     }
-    return safeDataPreview;
-  }, [safeDataPreview, trendY, trendLimit]);
+    return result;
+  }, [safeDataPreview, trendY, trendLimit, trendSort]);
 
   const processedCumulativeData = React.useMemo(() => {
     let runningTotal = 0;
@@ -632,32 +648,48 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
               <div className="relative">
                 <select
                   value={
-                    customLimit === 5
-                      ? '5'
-                      : customLimit === 10
-                      ? '10'
+                    customLimit === 5 && customSort
+                      ? '5_sorted'
+                      : customLimit === 5 && !customSort
+                      ? '5_unsorted'
+                      : customLimit === 10 && customSort
+                      ? '10_sorted'
+                      : customLimit === 10 && !customSort
+                      ? '10_unsorted'
                       : customLimit === 0
                       ? 'all'
                       : 'custom'
                   }
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val === '5') {
+                    if (val === '5_sorted') {
                       setCustomLimit(5);
-                    } else if (val === '10') {
+                      setCustomSort(true);
+                    } else if (val === '5_unsorted') {
+                      setCustomLimit(5);
+                      setCustomSort(false);
+                    } else if (val === '10_sorted') {
                       setCustomLimit(10);
+                      setCustomSort(true);
+                    } else if (val === '10_unsorted') {
+                      setCustomLimit(10);
+                      setCustomSort(false);
                     } else if (val === 'all') {
                       setCustomLimit(0);
+                      setCustomSort(false);
                     } else {
                       setCustomLimit(15);
+                      setCustomSort(false);
                     }
                   }}
                   className="w-full bg-neutral-950 border border-neutral-800 hover:border-neutral-700 text-neutral-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer"
                 >
-                  <option value="5">Top 5 Rows (Sorted)</option>
-                  <option value="10">Top 10 Rows (Sorted)</option>
+                  <option value="5_sorted">Top 5 Rows (Sorted by Y)</option>
+                  <option value="5_unsorted">First 5 Rows (Original)</option>
+                  <option value="10_sorted">Top 10 Rows (Sorted by Y)</option>
+                  <option value="10_unsorted">First 10 Rows (Original)</option>
                   <option value="all">All Rows (Unsorted)</option>
-                  <option value="custom">Custom Limit...</option>
+                  <option value="custom">Custom Limit (Original)</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-3 top-3 pointer-events-none" />
               </div>
@@ -909,31 +941,47 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                 </select>
                 <select
                   value={
-                    distLimit === 5
-                      ? '5'
-                      : distLimit === 10
-                      ? '10'
+                    distLimit === 5 && distSort
+                      ? '5_sorted'
+                      : distLimit === 5 && !distSort
+                      ? '5_unsorted'
+                      : distLimit === 10 && distSort
+                      ? '10_sorted'
+                      : distLimit === 10 && !distSort
+                      ? '10_unsorted'
                       : distLimit === 0
                       ? 'all'
                       : 'custom'
                   }
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val === '5') {
+                    if (val === '5_sorted') {
                       setDistLimit(5);
-                    } else if (val === '10') {
+                      setDistSort(true);
+                    } else if (val === '5_unsorted') {
+                      setDistLimit(5);
+                      setDistSort(false);
+                    } else if (val === '10_sorted') {
                       setDistLimit(10);
+                      setDistSort(true);
+                    } else if (val === '10_unsorted') {
+                      setDistLimit(10);
+                      setDistSort(false);
                     } else if (val === 'all') {
                       setDistLimit(0);
+                      setDistSort(false);
                     } else {
                       setDistLimit(15);
+                      setDistSort(false);
                     }
                   }}
                   className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
-                  <option value="5">Top 5</option>
-                  <option value="10">Top 10</option>
-                  <option value="all">All</option>
+                  <option value="5_sorted">Top 5 (Sorted)</option>
+                  <option value="5_unsorted">First 5 (Original)</option>
+                  <option value="10_sorted">Top 10 (Sorted)</option>
+                  <option value="10_unsorted">First 10 (Original)</option>
+                  <option value="all">All Rows</option>
                   <option value="custom">Custom...</option>
                 </select>
                 {distLimit !== 5 && distLimit !== 10 && distLimit !== 0 && (
@@ -997,31 +1045,47 @@ export function AutoDashboard({ dataPreview = [], columns = [] }: AutoDashboardP
                 </select>
                 <select
                   value={
-                    trendLimit === 5
-                      ? '5'
-                      : trendLimit === 10
-                      ? '10'
+                    trendLimit === 5 && trendSort
+                      ? '5_sorted'
+                      : trendLimit === 5 && !trendSort
+                      ? '5_unsorted'
+                      : trendLimit === 10 && trendSort
+                      ? '10_sorted'
+                      : trendLimit === 10 && !trendSort
+                      ? '10_unsorted'
                       : trendLimit === 0
                       ? 'all'
                       : 'custom'
                   }
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val === '5') {
+                    if (val === '5_sorted') {
                       setTrendLimit(5);
-                    } else if (val === '10') {
+                      setTrendSort(true);
+                    } else if (val === '5_unsorted') {
+                      setTrendLimit(5);
+                      setTrendSort(false);
+                    } else if (val === '10_sorted') {
                       setTrendLimit(10);
+                      setTrendSort(true);
+                    } else if (val === '10_unsorted') {
+                      setTrendLimit(10);
+                      setTrendSort(false);
                     } else if (val === 'all') {
                       setTrendLimit(0);
+                      setTrendSort(false);
                     } else {
                       setTrendLimit(15);
+                      setTrendSort(false);
                     }
                   }}
                   className="bg-neutral-950 border border-neutral-850 text-[10px] font-bold text-neutral-300 rounded px-2 py-1.5 focus:outline-none cursor-pointer"
                 >
-                  <option value="5">Top 5</option>
-                  <option value="10">Top 10</option>
-                  <option value="all">All</option>
+                  <option value="5_sorted">Top 5 (Sorted)</option>
+                  <option value="5_unsorted">First 5 (Original)</option>
+                  <option value="10_sorted">Top 10 (Sorted)</option>
+                  <option value="10_unsorted">First 10 (Original)</option>
+                  <option value="all">All Rows</option>
                   <option value="custom">Custom...</option>
                 </select>
                 {trendLimit !== 5 && trendLimit !== 10 && trendLimit !== 0 && (
