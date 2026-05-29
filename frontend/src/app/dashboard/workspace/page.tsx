@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import axios from 'axios';
+import { API_URL } from '@/lib/api';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
   ResponsiveContainer, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, 
@@ -26,6 +28,7 @@ interface Widget {
   category: string;
   color: string;
   starred?: boolean;
+  aggregation?: 'sum' | 'avg' | 'min' | 'max' | 'count';
 }
 
 const PALETTES = [
@@ -50,6 +53,120 @@ export default function DashboardWorkspace() {
   const [activeCanvasTab, setActiveCanvasTab] = useState<'Summary' | 'Performance Analytics'>('Summary');
   const [activeTheme, setActiveTheme] = useState<'dark' | 'light' | 'corporate'>('dark');
   const [globalDateFilter, setGlobalDateFilter] = useState('Last 30 Days');
+
+  // Database active states
+  const [activeDashboardId, setActiveDashboardId] = useState<string | null>(null);
+  const [dbDashboards, setDbDashboards] = useState<any[]>([]);
+  const [loadingDashboards, setLoadingDashboards] = useState(false);
+
+  const fetchDashboards = async () => {
+    setLoadingDashboards(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/dashboards`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDbDashboards(res.data);
+    } catch (error) {
+      console.error('Failed to load dashboards from Postgres', error);
+    } finally {
+      setLoadingDashboards(false);
+    }
+  };
+
+  const saveDashboardToDb = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const configData = { widgets, activeTheme };
+      
+      setExportNotification({ status: 'loading', message: 'Synchronizing layout configuration with database...' });
+      
+      if (activeDashboardId) {
+        await axios.put(`${API_URL}/api/dashboards/${activeDashboardId}`, {
+          name: dashboardName,
+          config: configData
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setExportNotification({ status: 'success', message: `Dashboard "${dashboardName}" successfully saved.` });
+      } else {
+        const res = await axios.post(`${API_URL}/api/dashboards`, {
+          name: dashboardName,
+          config: configData
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const savedId = res.data.dashboard.id;
+        setActiveDashboardId(savedId);
+        setExportNotification({ status: 'success', message: `Dashboard "${dashboardName}" created & saved.` });
+      }
+      fetchDashboards(); // Refresh lists
+      setTimeout(() => setExportNotification({ status: 'idle', message: '' }), 3000);
+    } catch (error) {
+      console.error('Failed to save dashboard to DB', error);
+      setExportNotification({ status: 'loading', message: 'Failed to synchronize with database.' });
+      setTimeout(() => setExportNotification({ status: 'idle', message: '' }), 3000);
+    }
+  };
+
+  const loadDashboardFromDb = (dbItem: any) => {
+    setActiveDashboardId(dbItem.id);
+    setDashboardName(dbItem.name);
+    try {
+      const parsed = typeof dbItem.config === 'string' ? JSON.parse(dbItem.config) : dbItem.config;
+      if (parsed.widgets) setWidgets(parsed.widgets);
+      if (parsed.activeTheme) setActiveTheme(parsed.activeTheme);
+    } catch (e) {
+      console.error('Failed to parse dashboard config', e);
+    }
+    setActiveWorkspaceTab('builder');
+  };
+
+  const deleteDashboardFromDb = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this dashboard from the database?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/dashboards/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (activeDashboardId === id) {
+        setActiveDashboardId(null);
+        setDashboardName('New Analytics Dashboard');
+        setWidgets([]);
+      }
+      fetchDashboards();
+    } catch (error) {
+      console.error('Failed to delete dashboard from DB', error);
+    }
+  };
+
+  const resolvedDashboards = useMemo(() => {
+    if (dbDashboards && dbDashboards.length > 0) {
+      return dbDashboards.map((db: any) => ({
+        id: db.id,
+        name: db.name,
+        desc: `PostgreSQL synced layout with ${
+          typeof db.config === 'string' 
+            ? (JSON.parse(db.config).widgets?.length || 0) 
+            : (db.config.widgets?.length || 0)
+        } resizable charts.`,
+        type: 'Database Synced',
+        star: true,
+        raw: db
+      }));
+    }
+    return [
+      { id: 'mock-1', name: 'Global Sales Summary', desc: 'Real-time corporate deal allocations & operational health score.', type: 'Recent Dashboard', star: true, raw: null },
+      { id: 'mock-2', name: 'SaaS Churn & Health Index', desc: 'AutoML predicted risk margins with Gini impurities and metrics.', type: 'AI Generated Draft', star: true, raw: null },
+      { id: 'mock-3', name: 'Marketing ROI Matrix', desc: 'Visual distribution of platform ad-spends and conversion pings.', type: 'Team Dashboard', raw: null },
+      { id: 'mock-4', name: 'Standard Financial Audit template', desc: 'Presorted tabular layout for business sales run-rate forecasting.', type: 'Dashboard Template', raw: null }
+    ];
+  }, [dbDashboards]);
+
+  useEffect(() => {
+    fetchDashboards();
+  }, []);
 
   // Undo/Redo States
   const [undoStack, setUndoStack] = useState<Widget[][]>([]);
@@ -102,6 +219,126 @@ export default function DashboardWorkspace() {
       { Category: 'Data Cleaning Studio', Region: 'Singapore, SG', Date: '2026-05-28', SalesAmount: 32000, DealSize: 16000, HealthIndex: 95.0, Revenue: 64000, UsersCount: 22 }
     ];
   }, [selectedDatasetName]);
+
+  // Cross-Filtering states
+  const [selectedRegionFilter, setSelectedRegionFilter] = useState('All Regions');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All Categories');
+
+  // Export notification state
+  const [exportNotification, setExportNotification] = useState<{ status: 'idle' | 'loading' | 'success'; message: string }>({ status: 'idle', message: '' });
+
+  // Dynamic dropdown categories
+  const uniqueRegions = useMemo(() => {
+    const items = (chartData as any[]).map(d => String(d.Region || d.Country || ''));
+    return ['All Regions', ...Array.from(new Set(items.filter(Boolean)))];
+  }, [chartData]);
+
+  const uniqueCategories = useMemo(() => {
+    const items = (chartData as any[]).map(d => String(d.Category || d.CardType || d.Platform || ''));
+    return ['All Categories', ...Array.from(new Set(items.filter(Boolean)))];
+  }, [chartData]);
+
+  // Reset filters if active dataset changes to prevent empty fits
+  useEffect(() => {
+    setSelectedRegionFilter('All Regions');
+    setSelectedCategoryFilter('All Categories');
+  }, [selectedDatasetName]);
+
+  // Derived filtered chart data
+  const filteredChartData = useMemo(() => {
+    let data = chartData as any[];
+    if (selectedRegionFilter !== 'All Regions') {
+      data = data.filter(d => String(d.Region || d.Country || '') === selectedRegionFilter);
+    }
+    if (selectedCategoryFilter !== 'All Categories') {
+      data = data.filter(d => String(d.Category || d.CardType || d.Platform || '') === selectedCategoryFilter);
+    }
+    return data;
+  }, [chartData, selectedRegionFilter, selectedCategoryFilter]);
+
+  // Dynamic KPI aggregator
+  const getKpiValue = (widget: Widget) => {
+    const agg = widget.aggregation || 'sum';
+    const values = filteredChartData.map(d => Number(d[widget.metric as keyof typeof d]) || 0);
+    
+    if (agg === 'sum') {
+      return values.reduce((a, b) => a + b, 0);
+    }
+    if (agg === 'avg') {
+      return values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : 0;
+    }
+    if (agg === 'min') {
+      return values.length ? Math.min(...values) : 0;
+    }
+    if (agg === 'max') {
+      return values.length ? Math.max(...values) : 0;
+    }
+    if (agg === 'count') {
+      return values.length;
+    }
+    return 0;
+  };
+
+  // Mock export handler
+  const triggerExport = (format: 'PDF' | 'PNG' | 'Excel' | 'Share') => {
+    setExportNotification({ status: 'loading', message: `Initializing ${format} compilation & compiling schemas...` });
+    
+    setTimeout(() => {
+      let completeMsg = '';
+      if (format === 'PDF') completeMsg = `Dashboard "${dashboardName}" successfully compiled to PDF format.`;
+      if (format === 'PNG') completeMsg = `Canvas viewport rendered as raw PNG. Check Downloads folder.`;
+      if (format === 'Excel') completeMsg = `Exported ${filteredChartData.length} records to local Excel spreadsheet.`;
+      if (format === 'Share') completeMsg = `Copied secure workspace link: http://metricsflow.io/share/x9F82a`;
+      
+      setExportNotification({ status: 'success', message: completeMsg });
+      
+      setTimeout(() => {
+        setExportNotification({ status: 'idle', message: '' });
+      }, 4000);
+    }, 1800);
+  };
+
+  // Dynamic HSL Theme mappings for maximum aesthetic customization
+  const themeStyles = useMemo(() => {
+    if (activeTheme === 'light') {
+      return {
+        canvasBg: 'bg-neutral-50 text-neutral-900 border-neutral-250',
+        cardBg: 'bg-white border-neutral-200 text-neutral-900 shadow-md',
+        cardHeader: 'border-neutral-100',
+        subText: 'text-neutral-500 font-semibold',
+        headingText: 'text-neutral-900 font-extrabold',
+        gridLine: '#e5e7eb',
+        textColor: '#171717',
+        borderAccent: 'border-neutral-200',
+        tooltipStyle: { backgroundColor: '#ffffff', borderColor: '#e5e7eb', color: '#171717', borderRadius: '6px' }
+      };
+    }
+    if (activeTheme === 'corporate') {
+      return {
+        canvasBg: 'bg-slate-950 text-slate-50 border-slate-900',
+        cardBg: 'bg-gradient-to-br from-slate-900/90 to-slate-950/60 border-slate-800 shadow-[0_4px_20px_rgba(59,130,246,0.06)]',
+        cardHeader: 'border-slate-900/50',
+        subText: 'text-slate-400 font-semibold',
+        headingText: 'text-slate-100 font-extrabold',
+        gridLine: '#1e293b',
+        textColor: '#cbd5e1',
+        borderAccent: 'border-slate-800',
+        tooltipStyle: { backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f1f5f9', borderRadius: '6px' }
+      };
+    }
+    // Default Dark Mode
+    return {
+      canvasBg: 'bg-neutral-950 text-neutral-50 border-neutral-900',
+      cardBg: 'bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border-neutral-850 shadow-2xl',
+      cardHeader: 'border-neutral-900/50',
+      subText: 'text-neutral-450 font-semibold',
+      headingText: 'text-white font-extrabold',
+      gridLine: '#1f2937',
+      textColor: '#d4d4d4',
+      borderAccent: 'border-neutral-850',
+      tooltipStyle: { backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '6px' }
+    };
+  }, [activeTheme]);
 
   // AI Generator Pipeline States
   const [generatorStage, setGeneratorStage] = useState<'idle' | 'analyzing' | 'schema' | 'recommend' | 'complete'>('idle');
@@ -160,7 +397,8 @@ export default function DashboardWorkspace() {
       w: type === 'kpi' || type === 'filter' ? 'col-span-1' : type === 'line' || type === 'area' || type === 'table' ? 'col-span-3' : 'col-span-2',
       metric: defaultY,
       category: defaultX,
-      color: PALETTES[widgets.length % PALETTES.length].primary
+      color: PALETTES[widgets.length % PALETTES.length].primary,
+      aggregation: 'sum'
     };
 
     setWidgets(prev => [...prev, newWidget]);
@@ -374,15 +612,10 @@ export default function DashboardWorkspace() {
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'Global Sales Summary', desc: 'Real-time corporate deal allocations & operational health score.', type: 'Recent Dashboard', star: true },
-                { name: 'SaaS Churn & Health Index', desc: 'AutoML predicted risk margins with Gini impurities and metrics.', type: 'AI Generated Draft', star: true },
-                { name: 'Marketing ROI Matrix', desc: 'Visual distribution of platform ad-spends and conversion pings.', type: 'Team Dashboard' },
-                { name: 'Standard Financial Audit template', desc: 'Presorted tabular layout for business sales run-rate forecasting.', type: 'Dashboard Template' }
-              ].filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase())).map((db, idx) => (
+              {resolvedDashboards.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase())).map((db, idx) => (
                 <Card 
-                  key={idx}
-                  onClick={() => setActiveWorkspaceTab('builder')}
+                  key={db.id || idx}
+                  onClick={() => db.raw ? loadDashboardFromDb(db.raw) : setActiveWorkspaceTab('builder')}
                   className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 hover:border-neutral-800 transition-all duration-300 shadow-xl cursor-pointer group flex flex-col justify-between"
                 >
                   <CardHeader className="pb-2">
@@ -390,16 +623,27 @@ export default function DashboardWorkspace() {
                       <span className="text-[9px] bg-neutral-950 border border-neutral-850 px-2 py-0.5 rounded text-neutral-400 font-mono tracking-wider font-extrabold uppercase">
                         {db.type}
                       </span>
-                      {db.star && (
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      )}
+                      <div className="flex items-center space-x-1.5">
+                        {db.star && (
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                        )}
+                        {db.raw && (
+                          <button
+                            onClick={(e) => deleteDashboardFromDb(db.id, e)}
+                            className="text-neutral-500 hover:text-red-400 transition-colors p-1 cursor-pointer"
+                            title="Delete from Database"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <CardTitle className="text-md mt-4 group-hover:text-blue-400 transition-colors">{db.name}</CardTitle>
                     <CardDescription className="text-neutral-400 text-xs leading-relaxed mt-1.5">{db.desc}</CardDescription>
                   </CardHeader>
                   
                   <CardContent className="pt-0 pb-4 border-t border-neutral-900/50 mt-4 flex justify-between items-center text-[10px] text-neutral-500 font-mono">
-                    <span>Modified 2h ago</span>
+                    <span>Modified recently</span>
                     <span className="flex items-center text-blue-400 font-bold group-hover:translate-x-0.5 transition-transform">
                       Open in Builder <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                     </span>
@@ -495,7 +739,7 @@ export default function DashboardWorkspace() {
           </div>
 
           {/* MAIN INTERACTIVE BUILDER CANVAS */}
-          <div className="flex-1 bg-neutral-950 flex flex-col min-h-0 overflow-y-auto px-8 py-6">
+          <div className={`flex-1 flex flex-col min-h-0 overflow-y-auto px-8 py-6 transition-colors duration-300 ${themeStyles.canvasBg}`}>
             {/* Top Editor Bar Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-900 pb-4 mb-6 gap-4">
               <div className="flex items-center space-x-3 min-w-0">
@@ -532,14 +776,69 @@ export default function DashboardWorkspace() {
 
                 <div className="h-6 w-[1px] bg-neutral-850 mx-1"></div>
 
+                {/* Export dropdown */}
+                <div className="relative group">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-neutral-900 border-neutral-850 text-xs font-semibold text-neutral-200 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-400" /> Export <ChevronRight className="w-3 h-3 rotate-90" />
+                  </Button>
+                  
+                  <div className="absolute right-0 mt-1.5 w-44 bg-neutral-900 border border-neutral-800 rounded-xl p-1.5 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-45">
+                    {[
+                      { id: 'PDF', label: 'Export as PDF', format: 'PDF', icon: FileText },
+                      { id: 'PNG', label: 'Export as PNG', format: 'PNG', icon: FileImage },
+                      { id: 'Excel', label: 'Export as Excel Data', format: 'Excel', icon: FileSpreadsheet },
+                      { id: 'Share', label: 'Copy Share Link', format: 'Share', icon: Share2 }
+                    ].map(opt => {
+                      const Icon = opt.icon;
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => triggerExport(opt.format as any)}
+                          className="w-full flex items-center gap-2 text-left text-[11px] text-neutral-300 hover:text-white hover:bg-neutral-800 px-2.5 py-2 rounded-lg cursor-pointer transition-colors"
+                        >
+                          <Icon className="w-3.5 h-3.5 text-blue-400" />
+                          <span>{opt.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <Button 
-                  onClick={() => alert(`Layout of "${dashboardName}" successfully saved to local storage.`)}
+                  onClick={saveDashboardToDb}
                   className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/10 cursor-pointer"
                 >
                   Save Dashboard
                 </Button>
               </div>
             </div>
+
+            {/* Export Notification Toast */}
+            {exportNotification.status !== 'idle' && (
+              <div className="bg-neutral-900 border border-neutral-800 px-5 py-3.5 rounded-2xl mb-6 shadow-2xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center space-x-3">
+                  {exportNotification.status === 'loading' ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-t-blue-500 border-neutral-800 animate-spin" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 animate-bounce">
+                      <Check className="w-2.5 h-2.5 text-emerald-400 stroke-[3]" />
+                    </div>
+                  )}
+                  <span className="text-xs text-neutral-300 font-semibold">{exportNotification.message}</span>
+                </div>
+                
+                <button
+                  onClick={() => setExportNotification({ status: 'idle', message: '' })}
+                  className="text-neutral-500 hover:text-neutral-300 text-[10px] uppercase font-mono font-bold"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
 
             {/* Canvas Multi-Tab controls */}
             <div className="flex space-x-1.5 bg-neutral-900 p-1 rounded-xl border border-neutral-850 max-w-xs mb-6 text-xs">
@@ -558,6 +857,50 @@ export default function DashboardWorkspace() {
               ))}
             </div>
 
+            {/* Global Cross-Filtering controls */}
+            <div className="bg-neutral-900/60 border border-neutral-850 p-4 rounded-2xl mb-6 flex flex-wrap gap-4 items-center">
+              <div className="flex items-center space-x-2">
+                <Sliders className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                <span className="text-xs font-bold text-neutral-300">Global Cross-Filters:</span>
+              </div>
+              
+              <div className="flex space-x-3 items-center">
+                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">Region:</span>
+                <select
+                  value={selectedRegionFilter}
+                  onChange={(e) => setSelectedRegionFilter(e.target.value)}
+                  className="bg-neutral-950 border border-neutral-850 text-xs text-neutral-300 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer font-semibold"
+                >
+                  {uniqueRegions.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex space-x-3 items-center">
+                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">Category:</span>
+                <select
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  className="bg-neutral-950 border border-neutral-850 text-xs text-neutral-300 rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer font-semibold"
+                >
+                  {uniqueCategories.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Clear filters trigger */}
+              {(selectedRegionFilter !== 'All Regions' || selectedCategoryFilter !== 'All Categories') && (
+                <button
+                  onClick={() => { setSelectedRegionFilter('All Regions'); setSelectedCategoryFilter('All Categories'); }}
+                  className="text-[10px] text-blue-450 hover:text-blue-300 font-bold font-mono underline cursor-pointer"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+
             {/* RENDER DYNAMIC CANVAS WIDGETS */}
             {widgets.length === 0 ? (
               <div className="border border-dashed border-neutral-850 rounded-2xl p-24 text-center text-neutral-400 flex flex-col items-center justify-center space-y-4 max-w-xl mx-auto mt-12 bg-neutral-950/40">
@@ -574,12 +917,12 @@ export default function DashboardWorkspace() {
                     <Card
                       key={widget.id}
                       onClick={() => setSelectedWidgetId(widget.id)}
-                      className={`bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 backdrop-blur-sm border transition-all duration-300 relative group flex flex-col justify-between select-none ${
+                      className={`backdrop-blur-sm border transition-all duration-300 relative group flex flex-col justify-between select-none ${
                         widget.w
                       } ${
                         isSelected 
                           ? 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.15)] bg-neutral-900/90' 
-                          : 'border-neutral-850 hover:border-neutral-800 shadow-2xl'
+                          : `${themeStyles.cardBg}`
                       }`}
                     >
                       {/* Top Widget Edit Icons */}
@@ -600,30 +943,30 @@ export default function DashboardWorkspace() {
                         </button>
                       </div>
 
-                      <CardHeader className="pb-3 pt-4 px-5">
+                      <CardHeader className={`pb-3 pt-4 px-5 border-b ${themeStyles.cardHeader}`}>
                         <div className="flex items-center space-x-1.5">
                           {widget.starred && (
                             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                           )}
-                          <CardTitle className="text-xs font-bold text-neutral-300 truncate max-w-[200px]" title={widget.title}>
+                          <CardTitle className={`text-xs font-bold truncate max-w-[200px] ${themeStyles.headingText}`} title={widget.title}>
                             {widget.title}
                           </CardTitle>
                         </div>
-                        <CardDescription className="text-[9px] font-mono text-neutral-500 uppercase tracking-wider mt-0.5">
+                        <CardDescription className={`text-[9px] font-mono uppercase tracking-wider mt-0.5 ${themeStyles.subText}`}>
                           {widget.type} chart • Y-Metric: {widget.metric}
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="px-5 pb-5 pt-1">
+                      <CardContent className="px-5 pb-5 pt-3">
                         {/* KPI WIDGET */}
                         {widget.type === 'kpi' && (
                           <div className="py-2.5">
-                            <h2 className="text-2xl font-black text-white leading-none tracking-tight">
-                              {(chartData[0]?.[widget.metric as keyof typeof chartData[0]] || 12500).toLocaleString()}
+                            <h2 className={`text-2xl font-black leading-none tracking-tight ${themeStyles.headingText}`}>
+                              {getKpiValue(widget).toLocaleString()}
                             </h2>
-                            <p className="text-[10px] text-neutral-500 mt-2 font-mono flex items-center gap-1 leading-normal">
+                            <p className={`text-[10px] mt-2 font-mono flex items-center gap-1 leading-normal ${themeStyles.subText}`}>
                               <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
-                              Real-time calculated sum metric.
+                              Real-time calculated {widget.aggregation || 'sum'} metric.
                             </p>
                           </div>
                         )}
@@ -632,11 +975,11 @@ export default function DashboardWorkspace() {
                         {widget.type === 'bar' && (
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                                <XAxis dataKey={widget.category} stroke="#737373" fontSize={9} />
-                                <YAxis stroke="#737373" fontSize={9} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '6px' }} />
+                              <BarChart data={filteredChartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} vertical={false} />
+                                <XAxis dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <YAxis stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
                                 <Bar dataKey={widget.metric} fill={widget.color} radius={[3, 3, 0, 0]} />
                               </BarChart>
                             </ResponsiveContainer>
@@ -649,7 +992,7 @@ export default function DashboardWorkspace() {
                             <ResponsiveContainer width="100%" height="100%">
                               <RechartsPieChart>
                                 <Pie
-                                  data={chartData}
+                                  data={filteredChartData}
                                   dataKey={widget.metric}
                                   nameKey={widget.category}
                                   cx="50%"
@@ -658,11 +1001,11 @@ export default function DashboardWorkspace() {
                                   innerRadius={30}
                                   paddingAngle={2}
                                 >
-                                  {chartData.map((entry, index) => (
+                                  {filteredChartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={PALETTES[index % PALETTES.length].primary} />
                                   ))}
                                 </Pie>
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '6px' }} />
+                                <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
                               </RechartsPieChart>
                             </ResponsiveContainer>
                           </div>
@@ -672,11 +1015,11 @@ export default function DashboardWorkspace() {
                         {widget.type === 'line' && (
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                                <XAxis dataKey={widget.category} stroke="#737373" fontSize={9} />
-                                <YAxis stroke="#737373" fontSize={9} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '6px' }} />
+                              <LineChart data={filteredChartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} />
+                                <XAxis dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <YAxis stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
                                 <Line type="monotone" dataKey={widget.metric} stroke={widget.color} strokeWidth={2} dot={{ r: 3 }} />
                               </LineChart>
                             </ResponsiveContainer>
@@ -687,17 +1030,17 @@ export default function DashboardWorkspace() {
                         {widget.type === 'area' && (
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={chartData}>
+                              <AreaChart data={filteredChartData}>
                                 <defs>
                                   <linearGradient id={`areaGrad-${widget.id}`} x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor={widget.color} stopOpacity={0.3}/>
                                     <stop offset="95%" stopColor={widget.color} stopOpacity={0.0}/>
                                   </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                                <XAxis dataKey={widget.category} stroke="#737373" fontSize={9} />
-                                <YAxis stroke="#737373" fontSize={9} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '6px' }} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridLine} />
+                                <XAxis dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <YAxis stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
                                 <Area type="monotone" dataKey={widget.metric} stroke={widget.color} fillOpacity={1} fill={`url(#areaGrad-${widget.id})`} />
                               </AreaChart>
                             </ResponsiveContainer>
@@ -709,11 +1052,11 @@ export default function DashboardWorkspace() {
                           <div className="h-44 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                               <ScatterChart>
-                                <CartesianGrid stroke="#1f2937" />
-                                <XAxis type="category" dataKey={widget.category} stroke="#737373" fontSize={9} />
-                                <YAxis type="number" dataKey={widget.metric} stroke="#737373" fontSize={9} />
-                                <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', borderRadius: '6px' }} />
-                                <Scatter name={widget.metric} data={chartData} fill={widget.color} />
+                                <CartesianGrid stroke={themeStyles.gridLine} />
+                                <XAxis type="category" dataKey={widget.category} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <YAxis type="number" dataKey={widget.metric} stroke={activeTheme === 'light' ? '#737373' : '#a3a3a3'} fontSize={9} />
+                                <RechartsTooltip contentStyle={themeStyles.tooltipStyle} />
+                                <Scatter name={widget.metric} data={filteredChartData} fill={widget.color} />
                               </ScatterChart>
                             </ResponsiveContainer>
                           </div>
@@ -722,17 +1065,17 @@ export default function DashboardWorkspace() {
                         {/* TABLE SHEET WIDGET */}
                         {widget.type === 'table' && (
                           <div className="max-h-44 overflow-y-auto text-left text-[10px] font-mono scrollbar-thin">
-                            <table className="w-full border-collapse border border-neutral-850">
+                            <table className={`w-full border-collapse border ${themeStyles.borderAccent}`}>
                               <thead>
-                                <tr className="bg-neutral-950 border-b border-neutral-850">
-                                  <th className="p-2 border-r border-neutral-850 font-bold">{widget.category || 'Category'}</th>
+                                <tr className={`bg-neutral-950/20 border-b ${themeStyles.cardHeader}`}>
+                                  <th className={`p-2 border-r font-bold ${themeStyles.borderAccent}`}>{widget.category || 'Category'}</th>
                                   <th className="p-2 font-bold">{widget.metric}</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {chartData.map((row, idx) => (
-                                  <tr key={idx} className="border-b border-neutral-850 hover:bg-neutral-850/30 transition-colors">
-                                    <td className="p-2 border-r border-neutral-850">{String((row as any)[widget.category] || 'N/A')}</td>
+                                {filteredChartData.map((row, idx) => (
+                                  <tr key={idx} className={`border-b hover:bg-neutral-800/10 transition-colors ${themeStyles.cardHeader}`}>
+                                    <td className={`p-2 border-r ${themeStyles.borderAccent}`}>{String((row as any)[widget.category] || 'N/A')}</td>
                                     <td className="p-2 font-semibold">{(row as any)[widget.metric]}</td>
                                   </tr>
                                 ))}
@@ -743,7 +1086,7 @@ export default function DashboardWorkspace() {
 
                         {/* TEXT BOX INSIGHT WIDGET */}
                         {widget.type === 'text' && (
-                          <p className="text-xs text-neutral-400 leading-relaxed text-left">
+                          <p className={`text-xs leading-relaxed text-left ${themeStyles.subText}`}>
                             <strong>Analyst Audit:</strong> The distribution of {widget.metric} by {widget.category || 'Dimensions'} shows consistent growth indices. Outliers have been safely trimmed, ensuring model stability.
                           </p>
                         )}
@@ -757,6 +1100,36 @@ export default function DashboardWorkspace() {
 
           {/* RIGHT SIDEBAR: PROPERTIES EDITOR PANEL */}
           <div className="w-72 border-l border-neutral-900 bg-neutral-950/40 backdrop-blur-md flex flex-col overflow-y-auto px-5 py-6 shrink-0 space-y-6">
+            <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-widest font-mono">
+              Workspace Themes
+            </span>
+
+            {/* Global Theme select */}
+            <div className="space-y-2">
+              <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Canvas Workspace Theme</label>
+              <div className="flex gap-2">
+                {[
+                  { id: 'dark', label: 'Dark Slate' },
+                  { id: 'light', label: 'Light Clean' },
+                  { id: 'corporate', label: 'Corporate Blue' }
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTheme(t.id as any)}
+                    className={`flex-1 py-2 px-1.5 border rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                      activeTheme === t.id
+                        ? 'bg-blue-600 border-blue-505 text-white shadow-md'
+                        : 'bg-neutral-900 border-neutral-850 text-neutral-450 hover:bg-neutral-850/50 hover:text-neutral-200'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-[1px] bg-neutral-900 w-full" />
+
             <span className="text-[10px] font-bold text-neutral-450 uppercase tracking-widest font-mono">
               Widget Properties
             </span>
@@ -788,13 +1161,32 @@ export default function DashboardWorkspace() {
                   </select>
                 </div>
 
+                {/* Chart type swapper */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Visual Chart Type</label>
+                  <select
+                    value={selectedWidget.type}
+                    onChange={(e) => updateWidget({ ...selectedWidget, type: e.target.value as any })}
+                    className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer font-semibold"
+                  >
+                    <option value="kpi">KPI Card</option>
+                    <option value="bar">Bar Chart</option>
+                    <option value="pie">Pie Chart</option>
+                    <option value="line">Line Chart</option>
+                    <option value="area">Area Chart</option>
+                    <option value="table">Data Table</option>
+                    <option value="scatter">Scatter Graph</option>
+                    <option value="text">Text Insights</option>
+                  </select>
+                </div>
+
                 {/* Metric select */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Metric (Y-Axis)</label>
                   <select
                     value={selectedWidget.metric}
                     onChange={(e) => updateWidget({ ...selectedWidget, metric: e.target.value })}
-                    className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer"
+                    className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer font-mono"
                   >
                     {activeDataset.columns.map(col => (
                       <option key={col} value={col}>{col}</option>
@@ -809,11 +1201,29 @@ export default function DashboardWorkspace() {
                     <select
                       value={selectedWidget.category}
                       onChange={(e) => updateWidget({ ...selectedWidget, category: e.target.value })}
-                      className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer"
+                      className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer font-mono"
                     >
                       {activeDataset.columns.map(col => (
                         <option key={col} value={col}>{col}</option>
                       ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Aggregation select */}
+                {selectedWidget.type === 'kpi' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Aggregation Type</label>
+                    <select
+                      value={selectedWidget.aggregation || 'sum'}
+                      onChange={(e) => updateWidget({ ...selectedWidget, aggregation: e.target.value as any })}
+                      className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-350 rounded-lg px-2.5 py-2 focus:outline-none cursor-pointer font-semibold"
+                    >
+                      <option value="sum">Sum Total</option>
+                      <option value="avg">Arithmetic Mean (Average)</option>
+                      <option value="min">Minimum Value</option>
+                      <option value="max">Maximum Value</option>
+                      <option value="count">Count Records</option>
                     </select>
                   </div>
                 )}
