@@ -4,8 +4,337 @@ import prisma from '../prisma';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import * as XLSX from 'xlsx';
 
 const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:7860';
+
+// Helper to parse local datasets when AI engine is offline
+const localProfileAndParse = (filePath: string): { columns: string[], preview: any[], rowCount: number, issues: any } => {
+  const absolutePath = path.resolve(__dirname, '../../', filePath);
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`File not found at: ${absolutePath}`);
+  }
+
+  let columns: string[] = [];
+  let preview: any[] = [];
+  let rowCount = 0;
+  let records: any[] = [];
+
+  const ext = path.extname(filePath).toLowerCase();
+
+  if (ext === '.csv') {
+    const content = fs.readFileSync(absolutePath, 'utf-8');
+    const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length > 0) {
+      const splitCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result.map(val => {
+          if (val.startsWith('"') && val.endsWith('"')) {
+            return val.slice(1, -1).replace(/""/g, '"');
+          }
+          return val;
+        });
+      };
+
+      columns = splitCSVLine(lines[0]);
+      rowCount = lines.length - 1;
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = splitCSVLine(lines[i]);
+        const row: any = {};
+        columns.forEach((col, idx) => {
+          let val: any = values[idx] !== undefined ? values[idx] : null;
+          if (val !== null && val !== '') {
+            const num = Number(val);
+            if (!isNaN(num)) {
+              val = num;
+            }
+          } else {
+            val = null;
+          }
+          row[col] = val;
+        });
+        records.push(row);
+      }
+    }
+  } else if (ext === '.json') {
+    const content = fs.readFileSync(absolutePath, 'utf-8');
+    const data = JSON.parse(content);
+    records = Array.isArray(data) ? data : [data];
+    if (records.length > 0) {
+      columns = Object.keys(records[0]);
+      rowCount = records.length;
+    }
+  } else if (ext === '.xlsx' || ext === '.xls') {
+    const workbook = XLSX.readFile(absolutePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    records = XLSX.utils.sheet_to_json(worksheet);
+    if (records.length > 0) {
+      columns = Object.keys(records[0]);
+      rowCount = records.length;
+    }
+  } else {
+    throw new Error(`Unsupported file extension: ${ext}`);
+  }
+
+  preview = records.slice(0, 100);
+
+  // Calculate local diagnostics/issues
+  let duplicates = 0;
+  const seenRows = new Set<string>();
+  const missingValues: { [key: string]: number } = {};
+  const outliers: { [key: string]: number } = {};
+
+  // Initialize missing value counters
+  columns.forEach(col => {
+    missingValues[col] = 0;
+  });
+
+  records.forEach(row => {
+    // Check duplicates
+    const stringified = JSON.stringify(row);
+    if (seenRows.has(stringified)) {
+      duplicates++;
+    } else {
+      seenRows.add(stringified);
+    }
+
+    // Check missing values
+    columns.forEach(col => {
+      const val = row[col];
+      if (val === null || val === undefined || val === '') {
+        missingValues[col] = (missingValues[col] || 0) + 1;
+      }
+    });
+  });
+
+  // Filter out columns with 0 missing values
+  Object.keys(missingValues).forEach(col => {
+    if (missingValues[col] === 0) {
+      delete missingValues[col];
+    }
+  });
+
+  // Calculate outliers for numeric columns using IQR (Interquartile Range)
+  columns.forEach(col => {
+    const numericValues = records
+      .map(r => r[col])
+      .filter(v => typeof v === 'number' && !isNaN(v))
+      .sort((a, b) => a - b);
+
+    if (numericValues.length >= 4) {
+      const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
+      const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
+      const iqr = q3 - q1;
+      const lowerBound = q1 - 1.5 * iqr;
+      const upperBound = q3 + 1.5 * iqr;
+
+      let outlierCount = 0;
+      numericValues.forEach(v => {
+        if (v < lowerBound || v > upperBound) {
+          outlierCount++;
+        }
+      });
+
+      if (outlierCount > 0) {
+        outliers[col] = outlierCount;
+      }
+    }
+  });
+
+  return {
+    columns,
+    preview,
+    rowCount,
+    issues: {
+      duplicates,
+      missing_values: missingValues,
+      outliers
+    }
+  };
+};
+
+// Helper to clean local datasets when AI engine is offline
+const localClean = (filePath: string, operations: any[]): { rowCount: number, filePath: string } => {
+  const absolutePath = path.resolve(__dirname, '../../', filePath);
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`File not found at: ${absolutePath}`);
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  let records: any[] = [];
+  let columns: string[] = [];
+
+  if (ext === '.csv') {
+    const content = fs.readFileSync(absolutePath, 'utf-8');
+    const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length > 0) {
+      const splitCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result.map(val => {
+          if (val.startsWith('"') && val.endsWith('"')) {
+            return val.slice(1, -1).replace(/""/g, '"');
+          }
+          return val;
+        });
+      };
+
+      columns = splitCSVLine(lines[0]);
+      for (let i = 1; i < lines.length; i++) {
+        const values = splitCSVLine(lines[i]);
+        const row: any = {};
+        columns.forEach((col, idx) => {
+          let val: any = values[idx] !== undefined ? values[idx] : null;
+          if (val !== null && val !== '') {
+            const num = Number(val);
+            if (!isNaN(num)) {
+              val = num;
+            }
+          } else {
+            val = null;
+          }
+          row[col] = val;
+        });
+        records.push(row);
+      }
+    }
+  } else if (ext === '.xlsx' || ext === '.xls') {
+    const workbook = XLSX.readFile(absolutePath);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    records = XLSX.utils.sheet_to_json(worksheet);
+    if (records.length > 0) {
+      columns = Object.keys(records[0]);
+    }
+  } else if (ext === '.json') {
+    const content = fs.readFileSync(absolutePath, 'utf-8');
+    const data = JSON.parse(content);
+    records = Array.isArray(data) ? data : [data];
+    if (records.length > 0) {
+      columns = Object.keys(records[0]);
+    }
+  }
+
+  // Apply operations
+  let cleanedRecords = [...records];
+
+  operations.forEach((op: any) => {
+    if (op.action === 'drop_duplicates') {
+      const seen = new Set<string>();
+      cleanedRecords = cleanedRecords.filter(row => {
+        const str = JSON.stringify(row);
+        if (seen.has(str)) {
+          return false;
+        }
+        seen.add(str);
+        return true;
+      });
+    } else if (op.action === 'fill_missing') {
+      const target = op.target;
+      const numericValues = cleanedRecords
+        .map(r => r[target])
+        .filter(v => typeof v === 'number' && !isNaN(v));
+      
+      const mean = numericValues.length > 0 
+        ? numericValues.reduce((a, b) => a + b, 0) / numericValues.length 
+        : 0;
+
+      const defaultVal = numericValues.length > 0 ? mean : 'N/A';
+
+      cleanedRecords = cleanedRecords.map(row => {
+        if (row[target] === null || row[target] === undefined || row[target] === '') {
+          row[target] = defaultVal;
+        }
+        return row;
+      });
+    } else if (op.action === 'remove_outliers') {
+      const target = op.target;
+      const numericValues = cleanedRecords
+        .map(r => r[target])
+        .filter(v => typeof v === 'number' && !isNaN(v))
+        .sort((a, b) => a - b);
+
+      if (numericValues.length >= 4) {
+        const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
+        const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
+        const iqr = q3 - q1;
+        const lowerBound = q1 - 1.5 * iqr;
+        const upperBound = q3 + 1.5 * iqr;
+
+        cleanedRecords = cleanedRecords.filter(row => {
+          const val = row[target];
+          if (typeof val === 'number') {
+            return val >= lowerBound && val <= upperBound;
+          }
+          return true;
+        });
+      }
+    }
+  });
+
+  // Save the cleaned file
+  const newFileName = `cleaned_${Date.now()}-${path.basename(filePath)}`;
+  const newFilePath = `uploads/${newFileName}`;
+  const newAbsolutePath = path.resolve(__dirname, '../../', newFilePath);
+
+  if (ext === '.csv') {
+    let fileContent = columns.join(',') + '\n';
+    cleanedRecords.forEach((row: any) => {
+      const line = columns.map(col => {
+        let cell = row[col];
+        if (cell === null || cell === undefined) cell = '';
+        cell = cell.toString().replace(/"/g, '""');
+        if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
+          cell = `"${cell}"`;
+        }
+        return cell;
+      }).join(',');
+      fileContent += line + '\n';
+    });
+    fs.writeFileSync(newAbsolutePath, fileContent);
+  } else if (ext === '.xlsx' || ext === '.xls') {
+    const worksheet = XLSX.utils.json_to_sheet(cleanedRecords);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    XLSX.writeFile(workbook, newAbsolutePath);
+  } else if (ext === '.json') {
+    fs.writeFileSync(newAbsolutePath, JSON.stringify(cleanedRecords, null, 2));
+  }
+
+  return {
+    rowCount: cleanedRecords.length,
+    filePath: newFilePath
+  };
+};
 
 export const uploadDataset = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -121,7 +450,20 @@ export const detectIssues = async (req: AuthRequest, res: Response): Promise<voi
       versions: dataset.versions
     });
   } catch (error: any) {
-    console.error('Detect issues error, serving fallback dataset diagnostics:', error.message);
+    console.error('Detect issues error, attempting local filesystem fallback parsing:', error.message);
+    try {
+      if (dataset && dataset.filePath) {
+        const localParsed = localProfileAndParse(dataset.filePath);
+        res.status(200).json({
+          ...localParsed,
+          versions: dataset.versions
+        });
+        return;
+      }
+    } catch (localErr: any) {
+      console.error('Local filesystem parsing failed, serving mock fallback:', localErr.message);
+    }
+
     const columns = ['TransactionID', 'CustomerName', 'ProductCategory', 'SalesAmount', 'DiscountApplied', 'StoreLocation', 'PurchaseDate'];
     res.status(200).json({
       rowCount: (dataset && dataset.rowCount) || 12504,
@@ -231,7 +573,49 @@ export const cleanDataset = async (req: AuthRequest, res: Response): Promise<voi
       version: versionRecord
     });
   } catch (error: any) {
-    console.error('Clean dataset error, executing resilient simulated clean:', error.message);
+    console.error('Clean dataset error, attempting local fallback clean:', error.message);
+    try {
+      if (dataset && dataset.filePath) {
+        const localCleaned = localClean(dataset.filePath, operations || []);
+        
+        // Create new DatasetVersion inside database
+        const lastVersion = await prisma.datasetVersion.findFirst({
+          where: { datasetId: id },
+          orderBy: { version: 'desc' }
+        });
+        const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+        
+        const versionRecord = await prisma.datasetVersion.create({
+          data: {
+            datasetId: id,
+            version: nextVersion,
+            filePath: localCleaned.filePath,
+            changes: JSON.stringify(operations || [])
+          }
+        });
+        
+        // Update main dataset
+        const updatedDataset = await prisma.dataset.update({
+          where: { id },
+          data: {
+            filePath: localCleaned.filePath,
+            rowCount: localCleaned.rowCount
+          }
+        });
+        
+        res.status(200).json({
+          message: 'Dataset cleaned successfully (Local Fallback Clean)',
+          newFilePath: localCleaned.filePath,
+          rowCount: localCleaned.rowCount,
+          dataset: updatedDataset,
+          version: versionRecord
+        });
+        return;
+      }
+    } catch (localErr: any) {
+      console.error('Local fallback clean failed, serving simulated fallback:', localErr.message);
+    }
+
     const updatedDataset = await prisma.dataset.update({
       where: { id },
       data: {
