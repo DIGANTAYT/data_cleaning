@@ -474,6 +474,36 @@ export default function DashboardPage() {
     }, 2000);
   };
 
+  // Download Cleaned Dataset Action
+  const handleDownloadCleaned = () => {
+    if (!localRawData || localRawData.length === 0) return;
+    const headers = Object.keys(localRawData[0]);
+    const csvRows = [
+      headers.join(','),
+      ...localRawData.map(row => 
+        headers.map(fieldName => {
+          const value = row[fieldName];
+          const stringVal = value !== null && value !== undefined ? String(value) : '';
+          // Escape quotes and wrap in quotes if contains comma, newline, or quotes
+          if (stringVal.includes(',') || stringVal.includes('\n') || stringVal.includes('"')) {
+            return `"${stringVal.replace(/"/g, '""')}"`;
+          }
+          return stringVal;
+        }).join(',')
+      )
+    ];
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${selectedDataset?.name || 'cleaned_dataset'}_cleaned.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="bg-neutral-950 text-neutral-50 min-h-screen flex selection:bg-blue-500/30 overflow-x-hidden font-sans antialiased">
       
@@ -725,14 +755,113 @@ export default function DashboardPage() {
             {/* 3. overview KPI grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {kpiCards.map((card) => {
+                const isEditingCard = editingKpiId === card.id;
                 const sparklineData = getKpiSparkline(card.sparkline);
-                const resolvedVal = getDynamicKpiValue(card.id, card.type) || card.value;
-
+                const resolvedVal = card.isManual ? card.value : (getDynamicKpiValue(card.id, card.type) || card.value);
+                
+                if (isEditingCard) {
+                  return (
+                    <Card key={card.id} className="bg-neutral-900 border-blue-500 shadow-2xl relative p-3 flex flex-col justify-between h-40 z-30">
+                      <div className="space-y-1 flex-grow flex flex-col justify-between text-left">
+                        <div className="space-y-0.5">
+                          <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Label</label>
+                          <input
+                            type="text"
+                            value={card.title}
+                            onChange={(e) => updateKpiTitle(card.id, e.target.value)}
+                            className="w-full bg-neutral-955 border border-neutral-850 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                            placeholder="KPI Label"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div className="space-y-0.5">
+                            <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Value</label>
+                            <input
+                              type="text"
+                              value={resolvedVal}
+                              disabled={!card.isCustom}
+                              onChange={(e) => updateKpiValue(card.id, e.target.value)}
+                              className={`w-full border rounded px-1.5 py-0.5 text-[9px] focus:outline-none font-mono font-bold ${
+                                !card.isCustom 
+                                  ? 'bg-neutral-950/60 border-neutral-900 text-neutral-500 cursor-not-allowed' 
+                                  : 'bg-neutral-955 border-neutral-855 text-white focus:border-blue-500'
+                              }`}
+                              placeholder="1,000"
+                              title={!card.isCustom ? "Derived automatically from dataset" : "Enter custom value"}
+                            />
+                          </div>
+                          <div className="space-y-0.5">
+                            <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Trend</label>
+                            <input
+                              type="text"
+                              value={card.trend || ''}
+                              onChange={(e) => {
+                                  const val = e.target.value;
+                                  setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, trend: val } : k));
+                              }}
+                              className="w-full bg-neutral-955 border border-neutral-855 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                              placeholder="+5.2%"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-1">
+                          <select
+                            value={card.type}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, type: val } : k));
+                            }}
+                            className="bg-neutral-955 border border-neutral-850 text-[7px] text-neutral-400 rounded px-1 py-0.5 cursor-pointer focus:outline-none font-bold"
+                          >
+                            <option value="currency">Currency ($)</option>
+                            <option value="number">Number</option>
+                            <option value="percent">Percentage (%)</option>
+                            <option value="progress">Score Ring</option>
+                            <option value="model">Model</option>
+                            <option value="text">Raw Text</option>
+                          </select>
+                          <Button
+                            onClick={() => setEditingKpiId(null)}
+                            className="bg-blue-650 hover:bg-blue-555 text-white text-[7px] font-black px-2 py-0.5 rounded h-auto min-h-0 cursor-pointer"
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                }
+ 
                 return (
                   <Card key={card.id} className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border-neutral-850 shadow-2xl relative overflow-hidden text-neutral-50 flex flex-col justify-between h-40 group/card">
+                    {/* Delete Card Button */}
+                    <button
+                      onClick={(e) => deleteKpiCard(card.id, e)}
+                      className="absolute top-2.5 right-2.5 opacity-0 group-hover/card:opacity-100 text-neutral-500 hover:text-red-400 transition-all p-1 rounded hover:bg-neutral-800/50 cursor-pointer z-20"
+                      title="Remove KPI Card"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+ 
+                    {/* Edit Card Button */}
+                    <button
+                      onClick={() => setEditingKpiId(card.id)}
+                      className="absolute top-2.5 right-8 opacity-0 group-hover/card:opacity-100 text-neutral-500 hover:text-blue-400 transition-all p-1 rounded hover:bg-neutral-800/50 cursor-pointer z-20"
+                      title="Customize KPI"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+ 
                     <CardHeader className="pb-1 pt-4 px-4 border-b border-neutral-900/50">
                       <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">
-                        <span className="text-neutral-450 pr-10 truncate">{card.title}</span>
+                        <span 
+                          onClick={() => setEditingKpiId(card.id)}
+                          className="cursor-pointer hover:text-neutral-300 flex items-center gap-1 group/title truncate pr-10"
+                          title="Click to Customize Label"
+                        >
+                          {card.title}
+                          <Edit3 className="w-2.5 h-2.5 opacity-0 group-hover/title:opacity-100 text-neutral-600 transition-opacity" />
+                        </span>
                         {card.trend && (
                           <span className={`${card.trendColor || 'text-blue-405'} bg-neutral-900/40 border border-neutral-800/80 px-1.5 py-0.5 rounded text-[8px] font-bold shrink-0`}>
                             {card.trend}
@@ -740,27 +869,47 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </CardHeader>
+ 
                     <CardContent className="px-4 pb-4 pt-3 flex flex-col justify-between flex-grow">
                       {card.type === 'progress' ? (
                         <div className="flex items-center justify-between flex-grow">
                           <div className="space-y-1 text-left">
-                            <h2 className="text-xl font-black tracking-tight text-white leading-none">
+                            <h2 
+                              onClick={() => setEditingKpiId(card.id)}
+                              className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-emerald-455 flex items-center gap-1 group/kpi"
+                              title="Click to Edit"
+                            >
                               {resolvedVal.includes('%') ? resolvedVal : `${resolvedVal}%`}
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity shrink-0" />
                             </h2>
                             <p className="text-[8px] text-neutral-500 font-mono pt-1">Completeness index</p>
                           </div>
+                          
+                          {/* Score Loader Circle */}
                           <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                               <circle cx="50" cy="50" r="40" stroke="#1f2937" strokeWidth="10" fill="transparent" />
-                              <circle cx="50" cy="50" r="40" stroke="#10b981" strokeWidth="10" fill="transparent" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * (parseFloat(resolvedVal) || 94.2)) / 100} strokeLinecap="round" />
+                              <circle 
+                                cx="50" cy="50" r="40" 
+                                stroke="#10b981" strokeWidth="10" fill="transparent" 
+                                strokeDasharray="251.2" 
+                                strokeDashoffset={251.2 - (251.2 * (parseFloat(resolvedVal) || 94.2)) / 100}
+                                strokeLinecap="round"
+                              />
                             </svg>
-                            <span className="absolute text-[9px] font-bold font-mono text-white">{Math.round(parseFloat(resolvedVal) || 94)}%</span>
+                            <span className="absolute text-[9px] font-bold font-mono text-white">
+                              {Math.round(parseFloat(resolvedVal) || 94)}%
+                            </span>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col justify-between flex-grow">
                           <div className="flex justify-between items-end">
-                            <h2 className="text-xl font-black tracking-tight text-white leading-none">
+                            <h2 
+                              onClick={() => setEditingKpiId(card.id)}
+                              className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
+                              title="Click to Edit"
+                            >
                               {card.type === 'currency' && Number(resolvedVal)
                                 ? `$${Number(resolvedVal).toLocaleString()}`
                                 : card.type === 'number' && Number(resolvedVal)
@@ -768,11 +917,20 @@ export default function DashboardPage() {
                                   : card.type === 'model' && Number(resolvedVal)
                                     ? `${resolvedVal} Models`
                                     : resolvedVal}
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-555 transition-opacity shrink-0" />
                             </h2>
+                            
                             <div className="w-16 h-8 shrink-0">
                               <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={sparklineData}>
-                                  <Area type="monotone" dataKey="value" stroke={card.id.includes('model') ? '#8b5cf6' : card.id.includes('query') || card.id.includes('risk') ? '#3b82f6' : '#10b981'} strokeWidth={1.2} fill={card.id.includes('model') ? '#8b5cf6' : card.id.includes('query') || card.id.includes('risk') ? '#3b82f6' : '#10b981'} fillOpacity={0.03} />
+                                  <Area 
+                                    type="monotone" 
+                                    dataKey="value" 
+                                    stroke={card.id.includes('model') ? '#8b5cf6' : card.id.includes('query') || card.id.includes('risk') ? '#3b82f6' : '#10b981'} 
+                                    strokeWidth={1.2} 
+                                    fill={card.id.includes('model') ? '#8b5cf6' : card.id.includes('query') || card.id.includes('risk') ? '#3b82f6' : '#10b981'} 
+                                    fillOpacity={0.03} 
+                                  />
                                 </AreaChart>
                               </ResponsiveContainer>
                             </div>
@@ -784,23 +942,42 @@ export default function DashboardPage() {
                   </Card>
                 );
               })}
+              
+              {/* Add Custom KPI Card */}
+              <button
+                onClick={addCustomKpiCard}
+                className="bg-neutral-900/20 hover:bg-neutral-900/40 border border-dashed border-neutral-800 hover:border-neutral-700 rounded-2xl shadow-xl flex flex-col items-center justify-center h-40 p-5 transition-all text-neutral-500 hover:text-neutral-300 gap-2 cursor-pointer group"
+              >
+                <div className="w-8 h-8 rounded-full border border-dashed border-neutral-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Add Custom KPI</span>
+              </button>
             </div>
-
             {/* 4. Interactive Charts visualizer block */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
               {/* Left Column: Visualizer Chart Canvas */}
               <Card className="lg:col-span-2 bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden">
                 <CardHeader className="border-b border-neutral-900/50 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <Sliders className="w-4.5 h-4.5 text-blue-400" />
-                      <CardTitle className="text-sm font-bold">Interactive Dataset Visualizer</CardTitle>
+                  <div className="flex justify-between items-center w-full">
+                    <div className="space-y-1 text-left">
+                      <div className="flex items-center space-x-2">
+                        <Sliders className="w-4.5 h-4.5 text-blue-400" />
+                        <CardTitle className="text-sm font-bold">Interactive Dataset Visualizer</CardTitle>
+                      </div>
+                      {/* Active Dataset display */}
+                      <p className="text-[10px] text-neutral-500 font-mono">
+                        Active: <span className="font-bold text-neutral-300">{selectedDataset?.name || 'customer_metrics_unclean.csv'}</span>
+                      </p>
                     </div>
-                    {/* Active Dataset display */}
-                    <p className="text-[10px] text-neutral-500 font-mono">
-                      Active: <span className="font-bold text-neutral-300">{selectedDataset?.name || 'customer_metrics_unclean.csv'}</span>
-                    </p>
+                    <Button
+                      onClick={handleDownloadCleaned}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] py-1.5 px-3 h-8 rounded-xl flex items-center gap-1 shadow-md cursor-pointer font-bold shrink-0 transition-colors border-none"
+                      title="Download Cleaned Dataset"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5 rotate-180" /> Download Cleaned CSV
+                    </Button>
                   </div>
 
                   {/* Chart Type toggles & point limit selectors */}
@@ -1064,6 +1241,17 @@ export default function DashboardPage() {
                         className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl py-5 shadow-lg shadow-purple-600/10 hover:shadow-purple-600/20 transition-all font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs"
                       >
                         <Sparkles className="w-3.5 h-3.5" /> 1-Click AI Auto Clean
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {aiCleaned && !aiCleaning && (
+                    <div className="pt-2">
+                      <Button
+                        onClick={handleDownloadCleaned}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-5 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs border-none"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5 rotate-180" /> Download Cleaned Dataset
                       </Button>
                     </div>
                   )}
