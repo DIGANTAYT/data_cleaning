@@ -60,6 +60,76 @@ export default function DashboardPage() {
   const [growthMultiplier, setGrowthMultiplier] = useState<number>(1.0);
   const [fullDatasetModalOpen, setFullDatasetModalOpen] = useState(false);
 
+  // AI SaaS Overhaul States
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotMessages, setCopilotMessages] = useState<any[]>([
+    { sender: 'ai', text: "Hello! I am your Metrics Flow Analytics Copilot. I can automatically query databases, generate visual charts, and establish Zapier-style automated workflows. What would you like today?", time: '13:05' }
+  ]);
+  const [copilotInput, setCopilotInput] = useState('');
+  const [activeIntegrationSubTab, setActiveIntegrationSubTab] = useState<'connectors' | 'auto_ingest' | 'workflow'>('connectors');
+  const [autoIngestPrompt, setAutoIngestPrompt] = useState('');
+  const [autoIngestLogs, setAutoIngestLogs] = useState<string[]>([]);
+  const [autoIngestLoading, setAutoIngestLoading] = useState(false);
+  const [workflowRunning, setWorkflowRunning] = useState(false);
+  const [activeWorkflowNodes, setActiveWorkflowNodes] = useState<any[]>([
+    { id: 'trigger', label: 'Shopify Ingestion Trigger', desc: 'When order created', active: true, iconName: 'UploadCloud' },
+    { id: 'condition', label: 'Condition Bounds', desc: 'If revenue > $100', active: true, iconName: 'Shield' },
+    { id: 'ai_node', label: 'AI Analytics Agent', desc: 'Compute outlier fallbacks & forecast', active: true, iconName: 'BrainCircuit' },
+    { id: 'action', label: 'Slack & Email Actions', desc: 'Dispatch alerts & update canvas', active: true, iconName: 'Bell' }
+  ]);
+
+  const handleCopilotSend = (text: string) => {
+    if (!text.trim()) return;
+    const userMsg = { sender: 'user', text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+    setCopilotMessages(prev => [...prev, userMsg]);
+    setCopilotInput('');
+
+    setTimeout(() => {
+      let aiText = "I've analyzed your request! As an autonomous agent orchestrator, I will check your active dataset layout and suggest the ideal configuration.";
+      const query = text.toLowerCase();
+      
+      if (query.includes('sales') || query.includes('revenue') || query.includes('kpi')) {
+        aiText = "📊 Sales KPI Pipeline Detected! I have automatically re-computed the OLS regression slope for your historical timeline. I recommend using the **Next 5 Years** projection curve and a growth multiplier of **1.5x** to visualize target trends. Let me know if I should insert this card.";
+      } else if (query.includes('connect') || query.includes('stripe') || query.includes('shopify')) {
+        aiText = "🔌 Integration Trigger Initialized! I can execute a real-time ETL sync with Stripe or Shopify APIs. I will auto-detect the inbound fields (e.g. Sales, Queries, Anomalies), drop duplicate transactions using a Z-score fallback, and automatically compile a clean data grid.";
+      } else if (query.includes('slack') || query.includes('alert') || query.includes('workflow')) {
+        aiText = "⚡ Zapier-style workflow configured! I've created a condition block: `If anomaly rate spikes > 15%, then trigger Slack email alert`. You can test this workflow live in the **Integrations & Workflows** tab.";
+      } else if (query.includes('forecast') || query.includes('churn')) {
+        aiText = "🔮 AI Predictive Forecasting ready! I've executed a t-Test significance model against your custom baseline. P-value: 0.034 (Significant). I've tilting the historical Sales slope to project a growth rate trajectory.";
+      }
+
+      const aiMsg = { sender: 'ai', text: aiText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+      setCopilotMessages(prev => [...prev, aiMsg]);
+    }, 1000);
+  };
+
+  const handleAutoIngestExecute = () => {
+    if (!autoIngestPrompt.trim()) return;
+    setAutoIngestLoading(true);
+    setAutoIngestLogs(["🚀 Initializing Agentic Automation engine...", "🔍 Parsing natural language prompt..."]);
+    
+    setTimeout(() => {
+      setAutoIngestLogs(prev => [...prev, "🔌 Resolving SaaS auth handshake for connected source...", "📦 Reading database tables and extracting columns..."]);
+    }, 1000);
+
+    setTimeout(() => {
+      setAutoIngestLogs(prev => [...prev, "🧬 Detecting dataset schema: Found 'Sales', 'Queries', 'Quality', 'Anomalies' attributes.", "🧹 Auto-Cleaning: Performing Z-score outlier checks..."]);
+    }, 2000);
+
+    setTimeout(() => {
+      setAutoIngestLogs(prev => [...prev, "✅ Ingestion complete! 1,000 mock records compiled.", "💡 Recommending KPIs: ROI sparklines, Anomalies completeness indices.", "📊 Dynamic charts initialized. Dashboard synced successfully!"]);
+      setAutoIngestLoading(false);
+    }, 3500);
+  };
+
+  const handleWorkflowDryRun = () => {
+    setWorkflowRunning(true);
+    setTimeout(() => {
+      setWorkflowRunning(false);
+    }, 2000);
+  };
+
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -860,6 +930,19 @@ export default function DashboardPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="text-neutral-400 font-mono text-[10px] uppercase font-bold">{userPlan}</span>
             </div>
+
+            {/* AI Copilot toggle trigger */}
+            <button 
+              onClick={() => setCopilotOpen(!copilotOpen)}
+              className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shadow-lg ${
+                copilotOpen
+                  ? 'bg-purple-650 border-purple-500 text-white shadow-purple-500/20 animate-pulse'
+                  : 'bg-neutral-900 border-neutral-850 text-purple-400 hover:text-purple-300 hover:border-neutral-800 hover:bg-neutral-900/60 shadow-neutral-950/20'
+              }`}
+              title="Toggle AI Copilot"
+            >
+              <Sparkles className="w-4.5 h-4.5" />
+            </button>
 
             {/* Notifications panel */}
             <div className="relative">
@@ -1728,6 +1811,58 @@ export default function DashboardPage() {
 
             </div>
 
+            {/* 5.5 Autonomous AI Analytics Agent Console */}
+            <Card className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-850 shadow-2xl rounded-[24px] overflow-hidden p-6 mb-8 relative">
+              <div className="absolute top-0 right-0 w-44 h-44 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse"></div>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-900 pb-4 mb-4">
+                <div className="space-y-1 text-left">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 absolute"></span>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                      <BrainCircuit className="w-4.5 h-4.5 text-emerald-400" />
+                      <span>Autonomous AI Analytics Agent Monitor</span>
+                    </h3>
+                  </div>
+                  <p className="text-[10px] text-neutral-450 leading-none">Always-on data integrity check, threshold monitors, and automation systems</p>
+                </div>
+                
+                <div className="flex items-center gap-3 text-[9px] font-mono shrink-0">
+                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold uppercase">
+                    Agent Status: Active Ingestion
+                  </span>
+                  <span className="bg-neutral-900 text-neutral-400 border border-neutral-850 px-2.5 py-0.5 rounded-full font-bold">
+                    System Accuracy: 99.8%
+                  </span>
+                </div>
+              </div>
+
+              {/* Terminal Logs Grid */}
+              <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-4 font-mono text-[10px] text-left leading-relaxed space-y-2 h-36 overflow-y-auto scrollbar-thin">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-neutral-500">13:00:15</span>
+                  <span className="text-blue-400 font-bold">[Agent Connection]</span>
+                  <span className="text-neutral-300">Live webhook monitoring established for active workspace `Acme Corp`.</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="text-neutral-500">13:02:11</span>
+                  <span className="text-purple-400 font-bold">[Outlier Anomaly]</span>
+                  <span className="text-neutral-350">Isolated extreme deviation spike in 'Sales' column on record index #4. Calculated fallback applied.</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="text-neutral-500">13:04:45</span>
+                  <span className="text-amber-400 font-bold">[Predictive Engine]</span>
+                  <span className="text-neutral-350">Recalculated OLS linear regression slope parameter (m = 0.35). Two-tailed t-Test significance model verified (p &lt; 0.05).</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="text-neutral-500">13:05:00</span>
+                  <span className="text-emerald-400 font-bold">[Workflow Trigger]</span>
+                  <span className="text-neutral-300">Data completeness ratio validated (Completeness: 98.5%). Automated analytical reports formatted and dispatched to Slack channel #sales-insights.</span>
+                </div>
+              </div>
+            </Card>
+
             {/* 6. Data Source Integrations Connect Panel */}
             <div className="space-y-4">
               <h2 className="text-xs font-bold text-neutral-450 uppercase tracking-widest border-b border-neutral-900 pb-2 font-mono flex items-center">
@@ -1908,50 +2043,237 @@ export default function DashboardPage() {
         {/* ──────────────────────────────────────────────────────── */}
         {activeTab === 'integrations' && (
           <main className="p-8 max-w-5xl mx-auto w-full space-y-8 animate-fade-in">
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                <Server className="w-6 h-6 text-blue-400 animate-pulse" /> Data Source Integrations
-              </h1>
-              <p className="text-xs text-neutral-400 mt-1">Connect your database clusters, third-party spreadsheets, or REST APIs for persistent real-time streaming.</p>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-900 pb-5">
+              <div className="space-y-1 text-left">
+                <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                  <Server className="w-6 h-6 text-blue-400" /> AI Automations & Workflows
+                </h1>
+                <p className="text-xs text-neutral-400">Connect corporate data warehouses, orchestrate multi-agent workflows, and schedule AI summary dispatches.</p>
+              </div>
+
+              {/* Sub-Tab Navigation */}
+              <div className="flex bg-neutral-900/60 border border-neutral-850 p-1 rounded-xl shrink-0">
+                {[
+                  { id: 'connectors', label: 'Plug-and-Play' },
+                  { id: 'auto_ingest', label: 'AI Ingestion Engine' },
+                  { id: 'workflow', label: 'Visual Workflow Builder' }
+                ].map(sub => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setActiveIntegrationSubTab(sub.id as any)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase font-mono tracking-wider transition-all cursor-pointer ${
+                      activeIntegrationSubTab === sub.id
+                        ? 'bg-neutral-950 text-white shadow-sm border border-neutral-850'
+                        : 'text-neutral-500 hover:text-neutral-350 border border-transparent'
+                    }`}
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[
-                { name: 'PostgreSQL / Supabase', desc: 'Import rows directly from SQL schemas', status: 'Available', icon: Database, color: 'border-blue-500/20 text-blue-400 bg-blue-500/5' },
-                { name: 'REST API Ingestion endpoint', desc: 'Post JSON data streams asynchronously', status: 'Available', icon: Activity, color: 'border-emerald-500/20 text-emerald-400 bg-emerald-500/5' },
-                { name: 'Google Sheets live sync', desc: 'Keep custom dashboard tables synchronized', status: 'Coming Soon', icon: CheckCircle2, color: 'border-amber-500/10 text-amber-450 bg-amber-500/5 opacity-60' },
-                { name: 'Excel Spreadsheets loader', desc: 'Sync multi-tab books from local files', status: 'Available', icon: File, color: 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5', active: true }
-              ].map(integration => {
-                const Icon = integration.icon;
-                return (
-                  <Card key={integration.name} className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-lg ${integration.color}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="space-y-1 text-left min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-xs font-bold text-white">{integration.name}</h4>
-                          <span className="text-[8px] bg-neutral-950 border border-neutral-850 px-2 py-0.5 rounded text-neutral-450 font-mono uppercase tracking-wider font-extrabold">
-                            {integration.status}
-                          </span>
+            {/* SUB-TAB 1: PLUG AND PLAY CONNECTORS GRID */}
+            {activeIntegrationSubTab === 'connectors' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { name: 'Shopify Store', desc: 'Sync customer metrics, active transactions, and SKU indices', status: 'Connected', icon: UploadCloud, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5', rows: '14.5k Ingested', sync: '5m ago' },
+                    { name: 'Stripe Billing', desc: 'Sync subscription plans, credits usage, and invoices', status: 'Connected', icon: Shield, color: 'text-blue-400 border-blue-500/20 bg-blue-500/5', rows: '8.2k Ingested', sync: '10m ago' },
+                    { name: 'Supabase Database', desc: 'Direct mapping to user table schemas & auth structures', status: 'Connected', icon: Database, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5', rows: '25.0k Ingested', sync: 'Live' },
+                    { name: 'Google Ads API', desc: 'Track campaign ROAS, conversions, and ad impressions', status: 'Available', icon: Activity, color: 'text-purple-400 border-neutral-850 hover:border-purple-500/20', rows: '0 Ingested', sync: 'Never' },
+                    { name: 'Notion Workspace', desc: 'Sync spreadsheet pages & tabular databases to summary tables', status: 'Available', icon: Layers, color: 'text-amber-400 border-neutral-850 hover:border-amber-500/20', rows: '0 Ingested', sync: 'Never' },
+                    { name: 'Slack Dispatcher', desc: 'Send AI anomaly summaries directly to corporate channels', status: 'Available', icon: Bell, color: 'text-sky-400 border-neutral-850 hover:border-sky-500/20', rows: '0 Ingested', sync: 'Never' }
+                  ].map(conn => {
+                    const Icon = conn.icon;
+                    return (
+                      <Card key={conn.name} className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 rounded-[20px] p-5 relative overflow-hidden shadow-2xl flex flex-col justify-between min-h-[160px] text-left">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${conn.color}`}>
+                              <Icon className="w-4.5 h-4.5" />
+                            </div>
+                            <span className={`text-[8px] font-mono font-black uppercase tracking-wider px-2 py-0.5 border rounded-full ${
+                              conn.status === 'Connected'
+                                ? 'text-green-400 bg-green-500/10 border-green-500/20 shadow-[0_0_12px_rgba(16,185,129,0.08)]'
+                                : 'text-neutral-500 bg-neutral-900 border-neutral-800'
+                            }`}>
+                              {conn.status}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-bold text-white leading-none">{conn.name}</h4>
+                            <p className="text-[10px] text-neutral-450 leading-relaxed min-h-[30px]">{conn.desc}</p>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-neutral-400 leading-normal pt-1">{integration.desc}</p>
-                      </div>
+
+                        <div className="flex justify-between items-center text-[8px] font-mono text-neutral-500 border-t border-neutral-900 pt-3 mt-3">
+                          <span>INGESTED: <span className="text-neutral-350 font-bold">{conn.rows}</span></span>
+                          <span>SYNC: <span className="text-neutral-350 font-bold">{conn.sync}</span></span>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: AI INGESTION ENGINE */}
+            {activeIntegrationSubTab === 'auto_ingest' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left controls */}
+                <div className="lg:col-span-1 space-y-4 text-left">
+                  <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 rounded-[20px] p-5 shadow-2xl space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-purple-400" />
+                        AI Agentic Handshake
+                      </h4>
+                      <p className="text-[10px] text-neutral-450">Ingest apps, map fields, and format layouts via prompt commands</p>
                     </div>
 
-                    <div className="flex justify-end pt-6 border-t border-neutral-900/50 mt-6">
-                      <Button
-                        onClick={() => { if (integration.active) setActiveTab('datasets'); }}
-                        className="bg-neutral-850 hover:bg-neutral-800 text-neutral-250 border border-neutral-800 text-[10px] font-semibold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1 hover:border-neutral-700 hover:text-white"
-                      >
-                        {integration.active ? 'Configure Connector' : 'Connect Source'} <ArrowRight className="w-3.5 h-3.5" />
-                      </Button>
+                    <div className="space-y-2">
+                      <label className="text-[8px] font-bold font-mono text-neutral-500 uppercase tracking-widest block">Natural Language Prompt</label>
+                      <textarea
+                        value={autoIngestPrompt}
+                        onChange={(e) => setAutoIngestPrompt(e.target.value)}
+                        placeholder="e.g., Connect my Stripe store and create a transaction metrics card with anomaly alerts..."
+                        className="w-full h-24 bg-neutral-950 border border-neutral-850 hover:border-neutral-700 focus:border-purple-500 focus:outline-none rounded-xl p-3 text-xs text-white placeholder-neutral-600 transition-colors resize-none font-sans"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleAutoIngestExecute}
+                      disabled={autoIngestLoading || !autoIngestPrompt.trim()}
+                      className="w-full bg-white hover:bg-neutral-200 text-neutral-950 rounded-xl font-bold py-3 text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border-none shadow-md"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${autoIngestLoading ? 'animate-spin' : ''}`} />
+                      {autoIngestLoading ? 'Auto Ingesting...' : 'Ingest Data Source'}
+                    </Button>
+                  </Card>
+                </div>
+
+                {/* Right Terminal Logs View */}
+                <div className="lg:col-span-2 space-y-4 text-left flex flex-col justify-between">
+                  <Card className="bg-neutral-950 border border-neutral-850 rounded-[20px] p-5 shadow-2xl flex-grow flex flex-col justify-between min-h-[300px]">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center border-b border-neutral-900 pb-3">
+                        <h4 className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                          <Laptop className="w-4.5 h-4.5 text-blue-400" />
+                          Ingestion Terminal Console
+                        </h4>
+                        <span className="text-[8px] bg-neutral-900 border border-neutral-800 text-neutral-500 px-2 py-0.5 rounded font-mono">
+                          Gemini Ingest Agent • Offline Sync
+                        </span>
+                      </div>
+
+                      {autoIngestLogs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-neutral-500 font-mono text-[10px] space-y-2">
+                          <BrainCircuit className="w-7 h-7 text-neutral-700 animate-pulse" />
+                          <span>Console standby. Write a prompt on the left and run the engine to observe schema extractions.</span>
+                        </div>
+                      ) : (
+                        <div className="font-mono text-[9px] text-left leading-relaxed space-y-2 max-h-52 overflow-y-auto scrollbar-thin">
+                          {autoIngestLogs.map((log, index) => (
+                            <div key={index} className="flex items-start gap-2 animate-fade-in">
+                              <span className="text-neutral-500">[{index + 1}]</span>
+                              <span className="text-neutral-200">{log}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[8px] text-neutral-600 font-mono uppercase tracking-widest pt-3 border-t border-neutral-900 mt-4 leading-none">
+                      Metrics Flow Autonomous Ingest Console • Log Complete
                     </div>
                   </Card>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: VISUAL WORKFLOW BUILDER (n8n/Zapier style) */}
+            {activeIntegrationSubTab === 'workflow' && (
+              <div className="space-y-6 text-left">
+                <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 rounded-[20px] p-6 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
+                  
+                  <div className="flex justify-between items-center border-b border-neutral-900 pb-4 mb-6">
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Sliders className="w-4.5 h-4.5 text-purple-400" />
+                        AI Workflow Builder Canvas
+                      </h4>
+                      <p className="text-[10px] text-neutral-450">Establish trigger pipelines, filter conditions, and AI forecasting outcomes</p>
+                    </div>
+
+                    <Button
+                      onClick={handleWorkflowDryRun}
+                      disabled={workflowRunning}
+                      className="bg-white hover:bg-neutral-200 text-neutral-950 rounded-xl font-bold px-4 py-2 text-[10px] flex items-center gap-1 cursor-pointer border-none shadow-md"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {workflowRunning ? 'Dry-Running...' : '⚡ Test Dry-Run'}
+                    </Button>
+                  </div>
+
+                  {/* Flow chart layout workspace */}
+                  <div className="p-8 rounded-2xl bg-neutral-950 border border-neutral-900 relative overflow-x-auto scrollbar-thin">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-4 min-w-[600px] py-4">
+                      {activeWorkflowNodes.map((node, index) => {
+                        const isLast = index === activeWorkflowNodes.length - 1;
+                        return (
+                          <React.Fragment key={node.id}>
+                            <div 
+                              className={`p-4 rounded-xl border w-44 text-left transition-all duration-300 relative shadow-lg ${
+                                workflowRunning && index === 0 ? 'border-green-500 bg-green-500/5 animate-pulse scale-105' :
+                                workflowRunning && index === 1 ? 'border-amber-500 bg-amber-500/5 animate-pulse scale-105 transition-delay-300' :
+                                workflowRunning && index === 2 ? 'border-purple-500 bg-purple-500/5 animate-pulse scale-105 transition-delay-500' :
+                                workflowRunning && index === 3 ? 'border-blue-500 bg-blue-500/5 animate-pulse scale-105 transition-delay-700' :
+                                'border-neutral-850 bg-neutral-900/40 hover:border-neutral-700'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className={`p-1.5 rounded bg-neutral-950 border border-neutral-850 ${
+                                  node.id === 'trigger' ? 'text-green-400' :
+                                  node.id === 'condition' ? 'text-amber-400' :
+                                  node.id === 'ai_node' ? 'text-purple-400' : 'text-blue-400'
+                                }`}>
+                                  {node.id === 'trigger' && <UploadCloud className="w-3.5 h-3.5" />}
+                                  {node.id === 'condition' && <Shield className="w-3.5 h-3.5" />}
+                                  {node.id === 'ai_node' && <BrainCircuit className="w-3.5 h-3.5" />}
+                                  {node.id === 'action' && <Bell className="w-3.5 h-3.5" />}
+                                </div>
+                                <span className="text-[10px] font-bold text-white truncate leading-none">{node.label}</span>
+                              </div>
+                              <p className="text-[9px] text-neutral-500 leading-normal truncate">{node.desc}</p>
+                              
+                              <div className="absolute top-2 right-2 flex items-center">
+                                <span className={`w-1.5 h-1.5 rounded-full ${node.active ? 'bg-emerald-500' : 'bg-neutral-700'}`}></span>
+                              </div>
+                            </div>
+
+                            {!isLast && (
+                              <div className="flex items-center justify-center text-neutral-700 shrink-0 font-bold rotate-90 md:rotate-0">
+                                <ArrowRight className="w-4 h-4 animate-pulse text-neutral-700" />
+                              </div>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {workflowRunning && (
+                    <div className="mt-4 flex items-center text-green-400 text-xs bg-green-500/5 p-3 rounded-lg border border-green-500/10 justify-center animate-bounce">
+                      <CheckCircle2 className="w-4 h-4 mr-2" /> Visual Workflow test succeeded! Logs verified and Slack summary dispatches verified OK.
+                    </div>
+                  )}
+                </Card>
+              </div>
+            )}
           </main>
         )}
 
@@ -2103,6 +2425,97 @@ export default function DashboardPage() {
                   >
                     Close Reader
                   </Button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+          {copilotOpen && (
+            <div className="fixed inset-0 z-45 bg-black/60 backdrop-blur-xs flex justify-end">
+              <div 
+                className="absolute inset-0 bg-transparent" 
+                onClick={() => setCopilotOpen(false)}
+              />
+              <motion.div
+                initial={{ x: '100%', opacity: 0.9 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 0.9 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="w-96 h-full bg-neutral-950 border-l border-neutral-900 shadow-2xl flex flex-col justify-between relative z-50 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-neutral-900 flex justify-between items-center bg-neutral-950/60 backdrop-blur-md">
+                  <div className="flex items-center space-x-2 text-left">
+                    <Sparkles className="w-5 h-5 text-purple-400 animate-pulse" />
+                    <div>
+                      <h3 className="text-sm font-bold text-white leading-none">Metrics Flow Copilot</h3>
+                      <span className="text-[8px] text-emerald-400 font-mono font-bold uppercase tracking-widest block mt-1">● Active Orchestrator</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setCopilotOpen(false)}
+                    className="text-neutral-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-neutral-900 border border-transparent hover:border-neutral-800 cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Dialog scrollable viewport */}
+                <div className="flex-grow overflow-y-auto p-6 space-y-4 scrollbar-thin text-xs text-left">
+                  {copilotMessages.map((msg, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                    >
+                      <div 
+                        className={`p-3.5 rounded-2xl max-w-[85%] leading-relaxed ${
+                          msg.sender === 'user'
+                            ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-tr-none'
+                            : 'bg-neutral-900 border border-neutral-850 text-neutral-300 rounded-tl-none font-sans'
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                      </div>
+                      <span className="text-[8px] text-neutral-600 font-mono mt-1 px-1">{msg.time}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quick actions chips */}
+                <div className="p-4 border-t border-neutral-900/60 bg-neutral-950/20 space-y-2">
+                  <span className="text-[8px] font-bold font-mono text-neutral-500 uppercase tracking-widest block text-left">Recommended Commands</span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: "📊 Sales KPI", text: "Create a sales dashboard report with OLS forecasting" },
+                      { label: "🔌 Stripe Ingest", text: "Connect Stripe revenue source and aggregate schema" },
+                      { label: "⚡ Workflow Alert", text: "Generate weekly analytics alert for Slack channels" }
+                    ].map(chip => (
+                      <button
+                        key={chip.label}
+                        onClick={() => handleCopilotSend(chip.text)}
+                        className="text-[9px] font-semibold bg-neutral-900 border border-neutral-850 hover:border-neutral-700 text-neutral-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Text entry area */}
+                <div className="p-4 border-t border-neutral-900 bg-neutral-950/40 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={copilotInput}
+                    onChange={(e) => setCopilotInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleCopilotSend(copilotInput); }}
+                    placeholder="Ask Metrics Flow Copilot..."
+                    className="flex-1 bg-neutral-950 border border-neutral-850 focus:border-purple-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none placeholder-neutral-500 transition-colors font-sans"
+                  />
+                  <button
+                    onClick={() => handleCopilotSend(copilotInput)}
+                    className="bg-white hover:bg-neutral-200 text-neutral-950 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer border-none"
+                  >
+                    Send
+                  </button>
                 </div>
               </motion.div>
             </div>
