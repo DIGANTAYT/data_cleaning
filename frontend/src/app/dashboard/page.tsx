@@ -1410,56 +1410,60 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               
               {/* Hypothesis Testing Card */}
-              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group min-h-[360px]">
                 <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
                 <CardHeader className="border-b border-neutral-900/50 pb-4">
                   <div className="flex items-center space-x-2">
                     <Activity className="w-4.5 h-4.5 text-blue-400" />
-                    <CardTitle className="text-sm font-bold">Hypothesis Testing & Significance</CardTitle>
+                    <CardTitle className="text-sm font-bold tracking-tight text-white">Hypothesis Testing & Significance</CardTitle>
                   </div>
                   <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">Scientific statistical diagnostics</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
-                  <div className="space-y-3.5 text-neutral-400">
-                    <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-850 space-y-2">
-                      <p className="font-mono text-[9px] text-neutral-500 uppercase leading-none font-bold">Hypothesis Statements</p>
-                      <p className="text-neutral-200 leading-relaxed font-semibold">
-                        <span className="text-blue-400 font-bold">Null (H₀):</span> The dataset mean is equal to the target baseline of <span className="font-mono text-white">${tTestResult.baseline.toLocaleString()}</span>.
-                      </p>
-                      <p className="text-neutral-200 leading-relaxed font-semibold">
-                        <span className="text-purple-400 font-bold">Alt (H₁):</span> The dataset mean differs significantly from the target baseline.
-                      </p>
+                  <div className="space-y-4 text-neutral-400">
+                    <div className="p-3.5 rounded-xl bg-neutral-950/40 border border-neutral-850 space-y-2.5">
+                      <p className="font-mono text-[9px] text-neutral-500 uppercase leading-none font-bold tracking-wider">Hypothesis Statements</p>
+                      <div className="pl-3 border-l-2 border-blue-500 py-0.5">
+                        <p className="text-neutral-200 leading-relaxed font-semibold">
+                          <span className="text-blue-400 font-bold">Null (H₀):</span> The dataset mean equals target baseline of <span className="font-mono text-white">${tTestResult.baseline.toLocaleString()}</span>.
+                        </p>
+                      </div>
+                      <div className="pl-3 border-l-2 border-purple-500 py-0.5">
+                        <p className="text-neutral-200 leading-relaxed font-semibold">
+                          <span className="text-purple-400 font-bold">Alt (H₁):</span> The dataset mean differs significantly from baseline.
+                        </p>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 font-mono">
-                      <div className="p-2.5 rounded-lg border border-neutral-850 bg-neutral-955/40 text-center">
-                        <span className="text-[7px] text-neutral-500 uppercase block font-bold">Mean Val</span>
-                        <span className="text-xs font-bold text-white">${tTestResult.mean.toLocaleString()}</span>
+                      <div className="p-2.5 rounded-xl border border-neutral-850/80 bg-neutral-950/60 text-center">
+                        <span className="text-[8px] text-neutral-500 uppercase block font-bold tracking-wide">Mean Val</span>
+                        <span className="text-xs font-extrabold text-neutral-200">${tTestResult.mean.toLocaleString()}</span>
                       </div>
-                      <div className="p-2.5 rounded-lg border border-neutral-850 bg-neutral-955/40 text-center">
-                        <span className="text-[7px] text-neutral-500 uppercase block font-bold">T-Stat</span>
-                        <span className="text-xs font-bold text-white">{tTestResult.t}</span>
+                      <div className="p-2.5 rounded-xl border border-neutral-850/80 bg-neutral-950/60 text-center">
+                        <span className="text-[8px] text-neutral-500 uppercase block font-bold tracking-wide">T-Stat</span>
+                        <span className="text-xs font-extrabold text-neutral-200">{tTestResult.t}</span>
                       </div>
-                      <div className="p-2.5 rounded-lg border border-neutral-850 bg-neutral-955/40 text-center">
-                        <span className="text-[7px] text-neutral-500 uppercase block font-bold">P-Value</span>
-                        <span className="text-xs font-bold text-white">{tTestResult.p}</span>
+                      <div className="p-2.5 rounded-xl border border-neutral-850/80 bg-neutral-950/60 text-center">
+                        <span className="text-[8px] text-neutral-500 uppercase block font-bold tracking-wide">P-Value</span>
+                        <span className="text-xs font-extrabold text-neutral-200">{tTestResult.p}</span>
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] font-mono border-t border-neutral-900 pt-3">
-                      <span className="text-neutral-500 font-bold">DEGREES OF FREEDOM:</span>
-                      <span className="text-neutral-350 font-bold">{tTestResult.df} (N = {localRawData.length})</span>
+                    <div className="flex justify-between items-center text-[9px] font-mono border-t border-neutral-900 pt-3">
+                      <span className="text-neutral-500 font-bold tracking-wider">DEGREES OF FREEDOM</span>
+                      <span className="text-neutral-350 font-bold">DF = {tTestResult.df} (N = {localRawData.length})</span>
                     </div>
                   </div>
 
                   <div className="pt-2">
                     {tTestResult.sig ? (
-                      <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold font-mono text-[10px] uppercase tracking-wider text-center">
+                      <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-bold font-mono text-[10px] uppercase tracking-wider text-center shadow-[0_0_15px_rgba(16,185,129,0.08)]">
                         <CheckCircle2 className="w-4 h-4 animate-bounce" /> Reject H₀: Statistically Significant
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10 text-yellow-550 font-bold font-mono text-[10px] uppercase tracking-wider text-center">
-                        <AlertCircle className="w-4 h-4" /> Fail to Reject H₀: Insignificant Difference
+                      <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/15 text-yellow-500 font-bold font-mono text-[10px] uppercase tracking-wider text-center shadow-[0_0_15px_rgba(234,179,8,0.04)]">
+                        <AlertCircle className="w-4 h-4" /> Fail to Reject H₀: Stable/Insignificant
                       </div>
                     )}
                   </div>
@@ -1467,13 +1471,13 @@ export default function DashboardPage() {
               </Card>
 
               {/* Time-Series Forecasting Card */}
-              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group min-h-[360px]">
                 <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
                 <CardHeader className="border-b border-neutral-900/50 pb-4 flex flex-row items-center justify-between gap-4">
                   <div className="space-y-1 text-left">
                     <div className="flex items-center space-x-2">
                       <LineChart className="w-4.5 h-4.5 text-purple-400" />
-                      <CardTitle className="text-sm font-bold">Predictive Trend Forecasting</CardTitle>
+                      <CardTitle className="text-sm font-bold tracking-tight text-white">Predictive Trend Forecasting</CardTitle>
                     </div>
                     <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">Linear Regression run-rate projection</CardDescription>
                   </div>
@@ -1482,7 +1486,7 @@ export default function DashboardPage() {
                   <select
                     value={forecastYears}
                     onChange={(e) => setForecastYears(e.target.value as any)}
-                    className="bg-neutral-900 border border-neutral-800 text-[10px] font-bold text-neutral-355 rounded-xl px-2.5 py-1.5 cursor-pointer focus:outline-none hover:border-neutral-700 transition-colors"
+                    className="bg-neutral-950 border border-neutral-850 hover:border-neutral-700 hover:text-white text-[10px] font-bold text-neutral-350 rounded-xl px-2.5 py-1.5 cursor-pointer focus:outline-none transition-all"
                   >
                     <option value="2">Next 2 Years</option>
                     <option value="3">Next 3 Years</option>
@@ -1490,12 +1494,12 @@ export default function DashboardPage() {
                   </select>
                 </CardHeader>
                 <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4">
-                  <div className="h-44 w-full text-[9px] font-mono">
+                  <div className="h-52 w-full text-[9px] font-mono">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart data={forecastData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                        <XAxis dataKey="name" stroke="#737373" fontSize={8} />
-                        <YAxis stroke="#737373" fontSize={8} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+                        <XAxis dataKey="name" stroke="#737373" fontSize={9} />
+                        <YAxis stroke="#737373" fontSize={9} />
                         <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', borderRadius: '8px' }} />
                         <Line 
                           type="monotone" 
@@ -1513,7 +1517,7 @@ export default function DashboardPage() {
                       </RechartsLineChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex justify-between items-center text-[8px] font-mono text-neutral-500 border-t border-neutral-900 pt-2.5 leading-none">
+                  <div className="flex justify-between items-center text-[9px] font-mono text-neutral-500 border-t border-neutral-900 pt-2.5 leading-none">
                     <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Historical</span>
                     <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> OLS Forecast (Dashed)</span>
                   </div>
@@ -1521,28 +1525,28 @@ export default function DashboardPage() {
               </Card>
 
               {/* Executive Final Conclusion Card */}
-              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group min-h-[360px]">
                 <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
                 <CardHeader className="border-b border-neutral-900/50 pb-4">
                   <div className="flex items-center space-x-2">
                     <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" />
-                    <CardTitle className="text-sm font-bold">Executive Final Conclusion</CardTitle>
+                    <CardTitle className="text-sm font-bold tracking-tight text-white">Executive Final Conclusion</CardTitle>
                   </div>
                   <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">SaaS analytics summary report</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
-                  <div className="space-y-3.5 text-neutral-400 text-left">
+                  <div className="space-y-4 text-neutral-400 text-left">
                     <div className="flex items-center justify-between font-mono">
                       <span className="text-neutral-500 font-bold text-[9px] uppercase leading-none">Overall Quality Grade</span>
-                      <span className="bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-emerald-400 text-[10px] font-black leading-none">{finalConclusion.grade} Rating</span>
+                      <span className="bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full text-emerald-450 text-[10px] font-black leading-none shadow-[0_0_12px_rgba(16,185,129,0.08)]">{finalConclusion.grade} Rating</span>
                     </div>
 
-                    <p className="leading-relaxed text-neutral-350 font-medium">
+                    <p className="leading-relaxed text-neutral-300 font-medium text-xs">
                       {finalConclusion.text}
                     </p>
 
-                    <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-850 space-y-1">
-                      <span className="text-[8px] font-bold font-mono text-neutral-550 uppercase block">RECOMMENDED NEXT STEP:</span>
+                    <div className="p-3.5 rounded-xl bg-neutral-950/60 border border-neutral-850 space-y-1.5">
+                      <span className="text-[8px] font-bold font-mono text-amber-500 uppercase block tracking-wider">RECOMMENDED NEXT STEP</span>
                       <p className="text-[10px] text-neutral-200 leading-normal font-semibold">{finalConclusion.recommendation}</p>
                     </div>
                   </div>
@@ -1557,8 +1561,7 @@ export default function DashboardPage() {
 
             </div>
 
-                        </div>
-
+          </div>
             {/* 6. Data Source Integrations Connect Panel */}
             <div className="space-y-4">
               <h2 className="text-xs font-bold text-neutral-450 uppercase tracking-widest border-b border-neutral-900 pb-2 font-mono flex items-center">
