@@ -54,7 +54,10 @@ export default function DashboardPage() {
   // Visualizer Chart Configs
   const [chartType, setChartType] = useState<'area' | 'bar' | 'line'>('area');
   const [dataPointsLimit, setDataPointsLimit] = useState<'5' | '10' | 'all'>('10');
-  const [forecastYears, setForecastYears] = useState<'2' | '3' | '5'>('2');
+  const [forecastYears, setForecastYears] = useState<string>('2');
+  const [customForecastPeriods, setCustomForecastPeriods] = useState<number>(4);
+  const [customBaseline, setCustomBaseline] = useState<string>('');
+  const [growthMultiplier, setGrowthMultiplier] = useState<number>(1.0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -541,7 +544,10 @@ export default function DashboardPage() {
     
     // Baselines dynamically adjusted per dataset scale to keep test statistically valid & responsive
     let baseline = 6000;
-    if (selectedDataset) {
+    if (customBaseline !== '') {
+      const parsed = parseFloat(customBaseline);
+      if (!isNaN(parsed)) baseline = parsed;
+    } else if (selectedDataset) {
       const isFintech = selectedDataset.name.toLowerCase().includes('fintech') || selectedDataset.name.toLowerCase().includes('fraud');
       const isSuicide = selectedDataset.name.toLowerCase().includes('suicide') || selectedDataset.name.toLowerCase().includes('world');
       const isMarketing = selectedDataset.name.toLowerCase().includes('marketing') || selectedDataset.name.toLowerCase().includes('ad');
@@ -574,7 +580,7 @@ export default function DashboardPage() {
       baseline,
       sig: pValue < 0.05
     };
-  }, [localRawData, selectedDataset]);
+  }, [localRawData, selectedDataset, customBaseline]);
 
   // Real-time Time-Series Forecasting Engine (Linear Regression y = mx + c)
   const forecastData = useMemo(() => {
@@ -605,8 +611,8 @@ export default function DashboardPage() {
       isForecast: false
     }));
     
-    // Project future periods based on interactive forecastYears
-    const yearsToProject = Number(forecastYears);
+    // Project future periods based on interactive forecastYears & growthMultiplier parameter
+    const yearsToProject = forecastYears === 'custom' ? customForecastPeriods : Number(forecastYears);
     const lastPointName = localRawData[n - 1].name;
     
     let startYear = 2026;
@@ -614,9 +620,11 @@ export default function DashboardPage() {
       startYear = 2027;
     }
     
+    const adjustedM = m * growthMultiplier;
+    
     for (let i = 1; i <= yearsToProject; i++) {
       const futureIndex = n - 1 + i;
-      const projectedVal = m * futureIndex + c;
+      const projectedVal = adjustedM * futureIndex + c;
       combined.push({
         name: `Year ${i} (${startYear + i - 1})`,
         Sales: Math.round(Math.max(0, projectedVal)),
@@ -625,7 +633,7 @@ export default function DashboardPage() {
     }
     
     return combined;
-  }, [localRawData, forecastYears]);
+  }, [localRawData, forecastYears, customForecastPeriods, growthMultiplier]);
 
   // Dynamic Context-Aware Executive Conclusion
   const finalConclusion = useMemo(() => {
@@ -1429,6 +1437,18 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
                   <div className="space-y-4 text-neutral-400">
+                    {/* Custom Hypothesis Baseline Parameter Input */}
+                    <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-neutral-950/40 border border-neutral-850/80 mb-1.5">
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase font-mono tracking-wider">Custom Baseline (H₀):</span>
+                      <input
+                        type="number"
+                        value={customBaseline}
+                        onChange={(e) => setCustomBaseline(e.target.value)}
+                        placeholder={`Default ($${tTestResult.baseline})`}
+                        className="w-28 bg-neutral-950 border border-neutral-850 hover:border-neutral-700 focus:border-blue-500 focus:outline-none rounded-lg px-2 py-1 text-[10px] text-white font-mono text-right transition-colors"
+                      />
+                    </div>
+
                     <div className="p-3.5 rounded-xl bg-neutral-950/40 border border-neutral-850 space-y-2.5">
                       <p className="font-mono text-[9px] text-neutral-500 uppercase leading-none font-bold tracking-wider">Hypothesis Statements</p>
                       <div className="pl-3 border-l-2 border-blue-500 py-0.5">
@@ -1493,16 +1513,31 @@ export default function DashboardPage() {
                   {/* Forecast Year Selector */}
                   <select
                     value={forecastYears}
-                    onChange={(e) => setForecastYears(e.target.value as any)}
+                    onChange={(e) => setForecastYears(e.target.value)}
                     className="bg-neutral-950 border border-neutral-850 hover:border-neutral-700 hover:text-white text-[10px] font-bold text-neutral-350 rounded-xl px-2.5 py-1.5 cursor-pointer focus:outline-none transition-all"
                   >
                     <option value="2">Next 2 Years</option>
                     <option value="3">Next 3 Years</option>
                     <option value="5">Next 5 Years</option>
+                    <option value="custom">Custom Periods...</option>
                   </select>
                 </CardHeader>
                 <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4">
-                  <div className="h-52 w-full text-[9px] font-mono">
+                  {forecastYears === 'custom' && (
+                    <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-neutral-950/40 border border-neutral-850/80 mb-1 animate-fade-in">
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase font-mono tracking-wider">Forecast Years:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={customForecastPeriods}
+                        onChange={(e) => setCustomForecastPeriods(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-16 bg-neutral-950 border border-neutral-850 focus:border-purple-500 focus:outline-none rounded-lg px-2 py-1 text-[10px] text-white font-mono text-center"
+                      />
+                    </div>
+                  )}
+
+                  <div className="h-44 w-full text-[9px] font-mono">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart data={forecastData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
@@ -1528,6 +1563,25 @@ export default function DashboardPage() {
                   <div className="flex justify-between items-center text-[9px] font-mono text-neutral-500 border-t border-neutral-900 pt-2.5 leading-none">
                     <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Historical</span>
                     <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> OLS Forecast (Dashed)</span>
+                  </div>
+
+                  {/* Growth Multiplier Scenario Slider */}
+                  <div className="flex items-center justify-between gap-3 pt-2 text-[10px] border-t border-neutral-900/60 mt-1">
+                    <span className="text-[9px] font-bold text-neutral-450 uppercase font-mono tracking-wider">Prediction Growth Multiplier:</span>
+                    <div className="flex items-center gap-2 flex-grow justify-end">
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={growthMultiplier}
+                        onChange={(e) => setGrowthMultiplier(parseFloat(e.target.value) || 1.0)}
+                        className="w-24 h-1 bg-neutral-950 rounded-lg appearance-none cursor-pointer accent-purple-500 focus:outline-none"
+                      />
+                      <span className="font-mono text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded font-extrabold shrink-0">
+                        {growthMultiplier.toFixed(1)}x
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
