@@ -1406,6 +1406,7 @@ export default function DashboardPage() {
                   )}
                 </CardContent>
               </Card>
+            </div>
 {/* 5. Advanced AI Statistical & Forecasting Studio */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               
@@ -1561,7 +1562,6 @@ export default function DashboardPage() {
 
             </div>
 
-          </div>
             {/* 6. Data Source Integrations Connect Panel */}
             <div className="space-y-4">
               <h2 className="text-xs font-bold text-neutral-450 uppercase tracking-widest border-b border-neutral-900 pb-2 font-mono flex items-center">
