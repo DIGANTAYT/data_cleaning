@@ -754,42 +754,26 @@ export default function DashboardPage() {
 
             {/* 3. overview KPI grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-              {kpiCards.map((card) => {
+              {kpiCards.slice(0, 5).map((card) => {
                 const isEditingCard = editingKpiId === card.id;
                 const sparklineData = getKpiSparkline(card.sparkline);
-                const resolvedVal = card.isManual ? card.value : (getDynamicKpiValue(card.id, card.type) || card.value);
+                const resolvedVal = getDynamicKpiValue(card.id, card.type) || card.value;
                 
                 if (isEditingCard) {
                   return (
                     <Card key={card.id} className="bg-neutral-900 border-blue-500 shadow-2xl relative p-3 flex flex-col justify-between h-40 z-30">
-                      <div className="space-y-1 flex-grow flex flex-col justify-between text-left">
+                      <div className="space-y-1.5 flex-grow flex flex-col justify-between text-left">
                         <div className="space-y-0.5">
                           <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Label</label>
                           <input
                             type="text"
                             value={card.title}
                             onChange={(e) => updateKpiTitle(card.id, e.target.value)}
-                            className="w-full bg-neutral-955 border border-neutral-850 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                            className="w-full bg-neutral-950 border border-neutral-850 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
                             placeholder="KPI Label"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
-                          <div className="space-y-0.5">
-                            <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Value</label>
-                            <input
-                              type="text"
-                              value={resolvedVal}
-                              disabled={!card.isCustom}
-                              onChange={(e) => updateKpiValue(card.id, e.target.value)}
-                              className={`w-full border rounded px-1.5 py-0.5 text-[9px] focus:outline-none font-mono font-bold ${
-                                !card.isCustom 
-                                  ? 'bg-neutral-950/60 border-neutral-900 text-neutral-500 cursor-not-allowed' 
-                                  : 'bg-neutral-955 border-neutral-855 text-white focus:border-blue-500'
-                              }`}
-                              placeholder="1,000"
-                              title={!card.isCustom ? "Derived automatically from dataset" : "Enter custom value"}
-                            />
-                          </div>
                           <div className="space-y-0.5">
                             <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Trend</label>
                             <input
@@ -799,30 +783,34 @@ export default function DashboardPage() {
                                   const val = e.target.value;
                                   setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, trend: val } : k));
                               }}
-                              className="w-full bg-neutral-955 border border-neutral-855 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                              className="w-full bg-neutral-955 border border-neutral-850 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-blue-500 font-mono"
                               placeholder="+5.2%"
                             />
                           </div>
+                          <div className="space-y-0.5">
+                            <label className="text-[7px] text-neutral-500 uppercase font-mono font-bold block">Format Type</label>
+                            <select
+                              value={card.type}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, type: val } : k));
+                              }}
+                              className="w-full bg-neutral-955 border border-neutral-850 text-[9px] text-neutral-350 rounded px-1.5 py-0.5 cursor-pointer focus:outline-none font-semibold font-mono"
+                            >
+                              <option value="currency">Currency ($)</option>
+                              <option value="number">Number</option>
+                              <option value="percent">Percentage (%)</option>
+                              <option value="progress">Score Ring</option>
+                              <option value="model">Model</option>
+                              <option value="text">Raw Text</option>
+                            </select>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center pt-1">
-                          <select
-                            value={card.type}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setKpiCards(prev => prev.map(k => k.id === card.id ? { ...k, type: val } : k));
-                            }}
-                            className="bg-neutral-955 border border-neutral-850 text-[7px] text-neutral-400 rounded px-1 py-0.5 cursor-pointer focus:outline-none font-bold"
-                          >
-                            <option value="currency">Currency ($)</option>
-                            <option value="number">Number</option>
-                            <option value="percent">Percentage (%)</option>
-                            <option value="progress">Score Ring</option>
-                            <option value="model">Model</option>
-                            <option value="text">Raw Text</option>
-                          </select>
+                        <div className="flex justify-between items-center pt-1 border-t border-neutral-850/50">
+                          <span className="text-[8px] text-neutral-500 font-bold font-mono">Value: Auto-detected</span>
                           <Button
                             onClick={() => setEditingKpiId(null)}
-                            className="bg-blue-650 hover:bg-blue-555 text-white text-[7px] font-black px-2 py-0.5 rounded h-auto min-h-0 cursor-pointer"
+                            className="bg-blue-650 hover:bg-blue-555 text-white text-[8px] font-black px-2 py-0.5 rounded h-auto min-h-0 cursor-pointer"
                           >
                             Save
                           </Button>
@@ -834,20 +822,11 @@ export default function DashboardPage() {
  
                 return (
                   <Card key={card.id} className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border-neutral-850 shadow-2xl relative overflow-hidden text-neutral-50 flex flex-col justify-between h-40 group/card">
-                    {/* Delete Card Button */}
-                    <button
-                      onClick={(e) => deleteKpiCard(card.id, e)}
-                      className="absolute top-2.5 right-2.5 opacity-0 group-hover/card:opacity-100 text-neutral-500 hover:text-red-400 transition-all p-1 rounded hover:bg-neutral-800/50 cursor-pointer z-20"
-                      title="Remove KPI Card"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
- 
                     {/* Edit Card Button */}
                     <button
                       onClick={() => setEditingKpiId(card.id)}
-                      className="absolute top-2.5 right-8 opacity-0 group-hover/card:opacity-100 text-neutral-500 hover:text-blue-400 transition-all p-1 rounded hover:bg-neutral-800/50 cursor-pointer z-20"
-                      title="Customize KPI"
+                      className="absolute top-2.5 right-2.5 opacity-0 group-hover/card:opacity-100 text-neutral-500 hover:text-blue-400 transition-all p-1 rounded hover:bg-neutral-800/50 cursor-pointer z-20"
+                      title="Customize KPI Label/Trend/Type"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
@@ -877,10 +856,10 @@ export default function DashboardPage() {
                             <h2 
                               onClick={() => setEditingKpiId(card.id)}
                               className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-emerald-455 flex items-center gap-1 group/kpi"
-                              title="Click to Edit"
+                              title="Click to Customize Card"
                             >
                               {resolvedVal.includes('%') ? resolvedVal : `${resolvedVal}%`}
-                              <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-500 transition-opacity shrink-0" />
+                              <Edit3 className="w-3 h-3 opacity-0 group-hover/kpi:opacity-100 text-neutral-555 transition-opacity shrink-0" />
                             </h2>
                             <p className="text-[8px] text-neutral-500 font-mono pt-1">Completeness index</p>
                           </div>
@@ -908,7 +887,7 @@ export default function DashboardPage() {
                             <h2 
                               onClick={() => setEditingKpiId(card.id)}
                               className="text-xl font-black tracking-tight text-white leading-none cursor-pointer hover:text-blue-400 flex items-center gap-1 group/kpi"
-                              title="Click to Edit"
+                              title="Click to Customize Card"
                             >
                               {card.type === 'currency' && Number(resolvedVal)
                                 ? `$${Number(resolvedVal).toLocaleString()}`
@@ -942,17 +921,6 @@ export default function DashboardPage() {
                   </Card>
                 );
               })}
-              
-              {/* Add Custom KPI Card */}
-              <button
-                onClick={addCustomKpiCard}
-                className="bg-neutral-900/20 hover:bg-neutral-900/40 border border-dashed border-neutral-800 hover:border-neutral-700 rounded-2xl shadow-xl flex flex-col items-center justify-center h-40 p-5 transition-all text-neutral-500 hover:text-neutral-300 gap-2 cursor-pointer group"
-              >
-                <div className="w-8 h-8 rounded-full border border-dashed border-neutral-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider font-mono">Add Custom KPI</span>
-              </button>
             </div>
             {/* 4. Interactive Charts visualizer block */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
