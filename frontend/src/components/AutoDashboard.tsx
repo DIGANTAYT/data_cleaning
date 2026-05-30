@@ -37,11 +37,26 @@ interface AutoDashboardProps {
 }
 
 const COLORS = [
-  '#3b82f6', '#6366f1', '#8b5cf6', '#a5b4fc', 
-  '#ec4899', '#d946ef', '#be123c', '#f43f5e', 
-  '#ef4444', '#f97316', '#f59e0b', '#eab308', 
-  '#84cc16', '#10b981', '#34d399', '#059669', 
-  '#14b8a6', '#06b6d4', '#0ea5e9', '#64748b'
+  '#3b82f6', // Bright Blue
+  '#10b981', // Emerald Green
+  '#f59e0b', // Amber Orange
+  '#ec4899', // Hot Pink
+  '#8b5cf6', // Deep Purple
+  '#06b6d4', // Cyan
+  '#ef4444', // Vibrant Red
+  '#eab308', // Gold Yellow
+  '#14b8a6', // Teal
+  '#f43f5e', // Rose
+  '#6366f1', // Indigo
+  '#84cc16', // Lime Green
+  '#f97316', // Bright Orange
+  '#d946ef', // Fuchsia
+  '#059669', // Forest Green
+  '#be123c', // Crimson
+  '#0ea5e9', // Sky Blue
+  '#34d399', // Mint
+  '#a5b4fc', // Soft Violet
+  '#64748b'  // Slate Gray
 ];
 const THEME_COLORS = [
   { name: 'Blue', value: '#3b82f6' },
