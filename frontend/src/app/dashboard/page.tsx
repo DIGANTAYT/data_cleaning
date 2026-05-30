@@ -391,7 +391,11 @@ export default function DashboardPage() {
       { name: 'May', Sales: 8900, Queries: 28500, Quality: 93, Anomalies: 14 },
       { name: 'Jun', Sales: 9400, Queries: 35600, Quality: 94.2, Anomalies: 0 },
       { name: 'Jul', Sales: 10800, Queries: 41200, Quality: 94.2, Anomalies: 0 },
-      { name: 'Aug', Sales: 12100, Queries: 45210, Quality: 94.2, Anomalies: 0 }
+      { name: 'Aug', Sales: 12100, Queries: 45210, Quality: 94.2, Anomalies: 0 },
+      { name: 'Sep', Sales: 11500, Queries: 43100, Quality: 94.2, Anomalies: 0 },
+      { name: 'Oct', Sales: 13200, Queries: 48900, Quality: 94.2, Anomalies: 0 },
+      { name: 'Nov', Sales: 14500, Queries: 52400, Quality: 94.2, Anomalies: 0 },
+      { name: 'Dec', Sales: 16800, Queries: 59000, Quality: 94.2, Anomalies: 0 }
     ];
 
     if (selectedDataset) {
@@ -405,7 +409,14 @@ export default function DashboardPage() {
           { name: 'TXN-02', Sales: 12500, Queries: 940, Quality: 81, Anomalies: 15 },
           { name: 'TXN-03', Sales: 89, Queries: 50, Quality: 95, Anomalies: 1 },
           { name: 'TXN-04', Sales: 1800, Queries: 810, Quality: 84, Anomalies: 8 },
-          { name: 'TXN-05', Sales: 15, Queries: 20, Quality: 98, Anomalies: 0 }
+          { name: 'TXN-05', Sales: 15, Queries: 20, Quality: 98, Anomalies: 0 },
+          { name: 'TXN-06', Sales: 3200, Queries: 1400, Quality: 90, Anomalies: 6 },
+          { name: 'TXN-07', Sales: 7500, Queries: 2900, Quality: 87, Anomalies: 10 },
+          { name: 'TXN-08', Sales: 150, Queries: 80, Quality: 96, Anomalies: 2 },
+          { name: 'TXN-09', Sales: 9800, Queries: 3800, Quality: 88, Anomalies: 12 },
+          { name: 'TXN-10', Sales: 620, Queries: 240, Quality: 93, Anomalies: 3 },
+          { name: 'TXN-11', Sales: 4100, Queries: 1900, Quality: 89, Anomalies: 7 },
+          { name: 'TXN-12', Sales: 230, Queries: 110, Quality: 97, Anomalies: 1 }
         ];
       } else if (isSuicide) {
         rawData = [
@@ -413,7 +424,14 @@ export default function DashboardPage() {
           { name: 'US (Fem)', Sales: 2900, Queries: 4300, Quality: 94, Anomalies: 5 },
           { name: 'JP (Male)', Sales: 6500, Queries: 1700, Quality: 91, Anomalies: 14 },
           { name: 'JP (Fem)', Sales: 2100, Queries: 1800, Quality: 95, Anomalies: 3 },
-          { name: 'GER (Male)', Sales: 850, Queries: 450, Quality: 93, Anomalies: 1 }
+          { name: 'GER (Male)', Sales: 850, Queries: 450, Quality: 93, Anomalies: 1 },
+          { name: 'GER (Fem)', Sales: 240, Queries: 500, Quality: 96, Anomalies: 0 },
+          { name: 'UK (Male)', Sales: 4100, Queries: 1500, Quality: 90, Anomalies: 8 },
+          { name: 'UK (Fem)', Sales: 1100, Queries: 1600, Quality: 94, Anomalies: 2 },
+          { name: 'FR (Male)', Sales: 5200, Queries: 2100, Quality: 88, Anomalies: 11 },
+          { name: 'FR (Fem)', Sales: 1500, Queries: 2200, Quality: 93, Anomalies: 4 },
+          { name: 'CAN (Male)', Sales: 3100, Queries: 1200, Quality: 92, Anomalies: 6 },
+          { name: 'CAN (Fem)', Sales: 850, Queries: 1300, Quality: 95, Anomalies: 1 }
         ];
       } else if (isMarketing) {
         rawData = [
@@ -421,7 +439,14 @@ export default function DashboardPage() {
           { name: 'Meta Ads', Sales: 4000, Queries: 1600, Quality: 93, Anomalies: 5 },
           { name: 'YouTube', Sales: 7500, Queries: 2400, Quality: 90, Anomalies: 8 },
           { name: 'LinkedIn', Sales: 3000, Queries: 1700, Quality: 94, Anomalies: 1 },
-          { name: 'Google Display', Sales: 1500, Queries: 450, Quality: 97, Anomalies: 0 }
+          { name: 'Google Display', Sales: 1500, Queries: 450, Quality: 97, Anomalies: 0 },
+          { name: 'Twitter Ads', Sales: 2200, Queries: 950, Quality: 92, Anomalies: 3 },
+          { name: 'TikTok Ads', Sales: 4500, Queries: 1900, Quality: 89, Anomalies: 7 },
+          { name: 'Pinterest Ads', Sales: 1200, Queries: 500, Quality: 94, Anomalies: 1 },
+          { name: 'Email Newsletters', Sales: 6200, Queries: 2100, Quality: 98, Anomalies: 0 },
+          { name: 'Organic SEO', Sales: 9800, Queries: 3200, Quality: 95, Anomalies: 4 },
+          { name: 'Affiliate program', Sales: 3700, Queries: 1100, Quality: 91, Anomalies: 5 },
+          { name: 'Referrals & Direct', Sales: 5500, Queries: 1800, Quality: 96, Anomalies: 2 }
         ];
       }
     }
