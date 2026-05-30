@@ -1107,56 +1107,63 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
               {/* Left Column: Visualizer Chart Canvas */}
-              <Card className="lg:col-span-2 bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden">
-                <CardHeader className="border-b border-neutral-900/50 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex justify-between items-center w-full">
+              <Card className="lg:col-span-2 bg-neutral-950/40 backdrop-blur-md border border-neutral-850 text-neutral-50 shadow-2xl rounded-[24px] flex flex-col justify-between overflow-hidden">
+                <CardHeader className="border-b border-neutral-900/50 pb-4 flex flex-row items-center justify-between gap-4">
+                  <div className="flex items-center justify-between w-full">
+                    {/* Left: Title & Dataset */}
                     <div className="space-y-1 text-left">
                       <div className="flex items-center space-x-2">
                         <Sliders className="w-4.5 h-4.5 text-blue-400" />
-                        <CardTitle className="text-sm font-bold">Interactive Dataset Visualizer</CardTitle>
+                        <CardTitle className="text-sm font-bold text-white">Interactive Dataset Visualizer</CardTitle>
                       </div>
                       {/* Active Dataset display */}
                       <p className="text-[10px] text-neutral-500 font-mono">
-                        Active: <span className="font-bold text-neutral-300">{selectedDataset?.name || 'customer_metrics_unclean.csv'}</span>
+                        Active: <span className="font-bold text-neutral-350">{selectedDataset?.name || 'customer_metrics_unclean.csv'}</span>
                       </p>
                     </div>
-                    <Button
-                      onClick={handleDownloadCleaned}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] py-1.5 px-3 h-8 rounded-xl flex items-center gap-1 shadow-md cursor-pointer font-bold shrink-0 transition-colors border-none"
-                      title="Download Cleaned Dataset"
-                    >
-                      <UploadCloud className="w-3.5 h-3.5 rotate-180" /> Download Cleaned CSV
-                    </Button>
-                  </div>
 
-                  {/* Chart Type toggles & point limit selectors */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-                    <div className="flex space-x-1 bg-neutral-950 border border-neutral-900 p-1 rounded-xl">
-                      {['area', 'bar', 'line'].map(type => (
-                        <button
-                          key={type}
-                          onClick={() => setChartType(type as any)}
-                          className={`px-2.5 py-1 rounded-lg uppercase text-[9px] font-bold tracking-wider cursor-pointer ${
-                            chartType === type ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-250'
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
+                    {/* Middle: Download Button */}
+                    <div className="flex-1 flex justify-center px-4">
+                      <Button
+                        onClick={handleDownloadCleaned}
+                        className="bg-white hover:bg-neutral-200 text-neutral-950 text-xs font-bold px-4 py-2 h-9 rounded-full flex items-center gap-1.5 shadow-md cursor-pointer transition-all border-none shrink-0"
+                        title="Download Cleaned CSV"
+                      >
+                        <UploadCloud className="w-4 h-4 rotate-180 text-neutral-800" /> Download Cleaned CSV
+                      </Button>
                     </div>
 
-                    <div className="flex space-x-1 bg-neutral-950 border border-neutral-900 p-1 rounded-xl">
-                      {['5', '10', 'all'].map(pt => (
-                        <button
-                          key={pt}
-                          onClick={() => setDataPointsLimit(pt as any)}
-                          className={`px-2.5 py-1 rounded-lg text-[9px] font-bold tracking-wider cursor-pointer ${
-                            dataPointsLimit === pt ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-250'
-                          }`}
-                        >
-                          {pt === 'all' ? 'All' : `Top ${pt}`}
-                        </button>
-                      ))}
+                    {/* Right: Selectors Stack */}
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {/* Chart Type Toggles */}
+                      <div className="flex bg-neutral-950 border border-neutral-900 p-0.5 rounded-full">
+                        {['area', 'bar', 'line'].map(type => (
+                          <button
+                            key={type}
+                            onClick={() => setChartType(type as any)}
+                            className={`px-3 py-1 rounded-full uppercase text-[9px] font-extrabold tracking-wider cursor-pointer transition-all ${
+                              chartType === type ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Point Limit Selectors */}
+                      <div className="flex bg-neutral-950 border border-neutral-900 p-0.5 rounded-full">
+                        {['5', '10', 'all'].map(pt => (
+                          <button
+                            key={pt}
+                            onClick={() => setDataPointsLimit(pt as any)}
+                            className={`px-3 py-1 rounded-full text-[9px] font-extrabold tracking-wider cursor-pointer transition-all ${
+                              dataPointsLimit === pt ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'
+                            }`}
+                          >
+                            {pt === 'all' ? 'All' : `Top ${pt}`}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -1203,13 +1210,13 @@ export default function DashboardPage() {
                 <div className="border-t border-neutral-900 bg-neutral-950/20">
                   <button
                     onClick={() => setShowSpreadsheet(!showSpreadsheet)}
-                    className="w-full flex items-center justify-between px-5 py-3.5 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-5 py-3.5 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer bg-transparent border-none"
                   >
                     <span className="flex items-center gap-1.5">
                       <Sliders className="w-3.5 h-3.5 text-blue-400" />
                       <span>{showSpreadsheet ? 'Hide Data Points Spreadsheet' : 'View & Edit Data Points Spreadsheet'}</span>
                     </span>
-                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-bold font-mono">
+                    <span className="text-[10px] text-blue-400 font-bold font-mono">
                       {chartData.length} Points • Live Sync
                     </span>
                   </button>
@@ -1289,13 +1296,13 @@ export default function DashboardPage() {
               </Card>
 
               {/* Right Column: AI Insights Recommendations panel */}
-              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+              <Card className="bg-neutral-950/40 backdrop-blur-md border border-neutral-850 text-neutral-50 shadow-2xl rounded-[24px] flex flex-col justify-between overflow-hidden relative group">
                 <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-2xl pointer-events-none -z-10 group-hover:bg-purple-500/10 transition-all duration-300"></div>
                 
                 <CardHeader className="border-b border-neutral-900/50 pb-4">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="w-4.5 h-4.5 text-purple-400 animate-pulse" />
-                    <CardTitle className="text-sm font-bold">AI Diagnostics & Recommendations</CardTitle>
+                    <CardTitle className="text-sm font-bold text-white">AI Diagnostics & Recommendations</CardTitle>
                   </div>
                   <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">Automated anomalies profiling</CardDescription>
                 </CardHeader>
@@ -1313,69 +1320,69 @@ export default function DashboardPage() {
                     <div className="space-y-3.5 text-xs text-neutral-400">
                       {aiCleaned ? (
                         <>
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-500/[0.02] border border-emerald-500/20 text-left transition-all hover:bg-emerald-500/[0.04]">
                             <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5 animate-bounce" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">Dataset Fully Verified Clean</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">Data completeness evaluated at 98.5%. Anomalies trimmed.</p>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-emerald-400 text-xs tracking-tight">Dataset Fully Verified Clean</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">Data completeness evaluated at 98.5%. Anomalies trimmed.</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-500/[0.02] border border-emerald-500/20 text-left transition-all hover:bg-emerald-500/[0.04]">
                             <Check className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">Duplicates Pruned</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">Pruned all 8 duplicate row sets successfully. Unique rows index: 100%.</p>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-emerald-400 text-xs tracking-tight">Duplicates Pruned</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">Pruned all 8 duplicate row sets successfully. Unique rows index: 100%.</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-500/[0.02] border border-emerald-500/20 text-left transition-all hover:bg-emerald-500/[0.04]">
                             <Check className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">Outlier Anomaly Solved</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">Standardized 14 outlier values. Root-Mean-Square Error: 0.00%.</p>
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-emerald-400 text-xs tracking-tight">Outlier Anomaly Solved</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">Standardized 14 outlier values. Root-Mean-Square Error: 0.00%.</p>
                             </div>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10">
-                            <AlertCircle className="w-4.5 h-4.5 text-yellow-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">Outlier Anomaly Detected</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">We isolated 14 numeric anomalies in 'SalesAmount' column values.</p>
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-amber-500/[0.02] border border-amber-500/20 text-left transition-all hover:bg-amber-500/[0.04]">
+                            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-amber-400 text-xs tracking-tight">Outlier Anomaly Detected</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">We isolated 14 numeric anomalies in 'SalesAmount' column values.</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                            <Info className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">Data Completeness Flagged</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">45 missing categories in 'ProductCategory' column identified.</p>
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-blue-500/[0.02] border border-blue-500/20 text-left transition-all hover:bg-blue-500/[0.04]">
+                            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-blue-400 text-xs tracking-tight">Data Completeness Flagged</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">45 missing categories in 'ProductCategory' column identified.</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
-                            <Layers className="w-4.5 h-4.5 text-purple-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">Data Redundancy Warning</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">We found 8 duplicate index combinations inside active table rows.</p>
+                           <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-purple-500/[0.02] border border-purple-500/20 text-left transition-all hover:bg-purple-500/[0.04]">
+                            <Layers className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-purple-400 text-xs tracking-tight">Data Redundancy Warning</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">We found 8 duplicate index combinations inside active table rows.</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                            <BrainCircuit className="w-4.5 h-4.5 text-emerald-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">High Feature Correlation</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">Category dimensions correlate at 92.4% with SalesAmount variance.</p>
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-500/[0.02] border border-emerald-500/20 text-left transition-all hover:bg-emerald-500/[0.04]">
+                            <BrainCircuit className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-emerald-400 text-xs tracking-tight">High Feature Correlation</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">Category dimensions correlate at 92.4% with SalesAmount variance.</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                            <Activity className="w-4.5 h-4.5 text-blue-400 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <h4 className="font-bold text-white leading-normal">System Temporal Trajectory</h4>
-                              <p className="text-[10px] text-neutral-500 leading-normal">Run-rate displays a positive chronological slope of +0.35/month.</p>
+                          <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-sky-500/[0.02] border border-sky-500/20 text-left transition-all hover:bg-sky-500/[0.04]">
+                            <Activity className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-sky-400 text-xs tracking-tight">System Temporal Trajectory</h4>
+                              <p className="text-[10px] text-neutral-450 leading-relaxed">Run-rate displays a positive chronological slope of +0.35/month.</p>
                             </div>
                           </div>
                         </>
@@ -1387,9 +1394,9 @@ export default function DashboardPage() {
                     <div className="pt-2">
                       <Button
                         onClick={triggerAiClean}
-                        className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-xl py-5 shadow-lg shadow-purple-600/10 hover:shadow-purple-600/20 transition-all font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                        className="w-full bg-white hover:bg-neutral-200 text-neutral-950 rounded-full py-5 font-bold flex items-center justify-center gap-2 cursor-pointer text-xs transition-all border-none shadow-md"
                       >
-                        <Sparkles className="w-3.5 h-3.5" /> 1-Click AI Auto Clean
+                        <Sparkles className="w-4 h-4 text-neutral-900" /> 1-Click AI Auto Clean
                       </Button>
                     </div>
                   )}
@@ -1398,9 +1405,9 @@ export default function DashboardPage() {
                     <div className="pt-2">
                       <Button
                         onClick={handleDownloadCleaned}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl py-5 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs border-none"
+                        className="w-full bg-white hover:bg-neutral-200 text-neutral-950 rounded-full py-5 font-bold flex items-center justify-center gap-2 cursor-pointer text-xs transition-all border-none shadow-md"
                       >
-                        <UploadCloud className="w-3.5 h-3.5 rotate-180" /> Download Cleaned Dataset
+                        <UploadCloud className="w-4 h-4 rotate-180 text-neutral-900" /> Download Cleaned Dataset
                       </Button>
                     </div>
                   )}
