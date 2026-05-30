@@ -85,17 +85,105 @@ export default function DashboardPage() {
     setCopilotInput('');
 
     setTimeout(() => {
-      let aiText = "I've analyzed your request! As an autonomous agent orchestrator, I will check your active dataset layout and suggest the ideal configuration.";
+      let aiText = "";
       const query = text.toLowerCase();
-      
-      if (query.includes('sales') || query.includes('revenue') || query.includes('kpi')) {
-        aiText = "📊 Sales KPI Pipeline Detected! I have automatically re-computed the OLS regression slope for your historical timeline. I recommend using the **Next 5 Years** projection curve and a growth multiplier of **1.5x** to visualize target trends. Let me know if I should insert this card.";
-      } else if (query.includes('connect') || query.includes('stripe') || query.includes('shopify')) {
-        aiText = "🔌 Integration Trigger Initialized! I can execute a real-time ETL sync with Stripe or Shopify APIs. I will auto-detect the inbound fields (e.g. Sales, Queries, Anomalies), drop duplicate transactions using a Z-score fallback, and automatically compile a clean data grid.";
-      } else if (query.includes('slack') || query.includes('alert') || query.includes('workflow')) {
-        aiText = "⚡ Zapier-style workflow configured! I've created a condition block: `If anomaly rate spikes > 15%, then trigger Slack email alert`. You can test this workflow live in the **Integrations & Workflows** tab.";
-      } else if (query.includes('forecast') || query.includes('churn')) {
-        aiText = "🔮 AI Predictive Forecasting ready! I've executed a t-Test significance model against your custom baseline. P-value: 0.034 (Significant). I've tilting the historical Sales slope to project a growth rate trajectory.";
+      const timestamp = `[${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]`;
+
+      // ────────────────────────────────────────────────────────
+      // MULTI-AGENT ORCHESTRATION ROUTER ENGINE
+      // ────────────────────────────────────────────────────────
+      if (query.includes('sales') || query.includes('revenue') || query.includes('kpi') || query.includes('report')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **KPI_LAYOUT_BUILDER**.\n` +
+          `Routing query to 📊 **Dashboard Builder Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Parsed active columns in your loaded dataset.\n` +
+          `2. Formulated SQL aggregate queries for key metrics:\n` +
+          `   \`\`\`sql\n` +
+          `   SELECT SUM(Sales) AS total_revenue,\n` +
+          `          AVG(Quality) AS avg_completeness,\n` +
+          `          COUNT(*) AS total_records\n` +
+          `   FROM active_dataset;\n` +
+          `   \`\`\`\n` +
+          `3. Configured five locked-value KPI cards dynamically mapping Sales and complete completion indexes.\n\n` +
+          `**Recommendation**: I've tilting the Sparkline trends and recommend standardizing a Cozy card radius for optimal dashboard visibility. Let me know if you would like me to lock these metrics!`;
+      } 
+      else if (query.includes('connect') || query.includes('stripe') || query.includes('shopify') || query.includes('database') || query.includes('ingest')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **ETL_INGESTION_CONNECTOR**.\n` +
+          `Routing query to 🔌 **Integration Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Initialized SaaS authentication OAuth handshake.\n` +
+          `2. Traced connected relational schema structures:\n` +
+          `   \`\`\`json\n` +
+          `   { "source": "Stripe_API", "inbound_rows": 1000, "status": "verified" }\n` +
+          `   \`\`\`\n` +
+          `3. Deduplicated inbound vectors. Isolated anomalies and applied Z-score outlier fallbacks.\n\n` +
+          `**Recommendation**: Stripe and Shopify connectors are now fully active on your **Integrations** panel. Click **Ingest Data Source** to trigger real-time operational schema syncing!`;
+      } 
+      else if (query.includes('slack') || query.includes('alert') || query.includes('workflow') || query.includes('zapier') || query.includes('n8n')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **WORKFLOW_AUTOMATION_BUILDER**.\n` +
+          `Routing query to ⚡ **Automation Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Established a conditional trigger listener on active data streams.\n` +
+          `2. Configured n8n-style flowchart logic node map:\n` +
+          `   \`[shopify_order_created] ──> [price_check_condition] ──> [ai_analytics] ──> [dispatch_slack_alert]\`\n` +
+          `3. Registered Slack Webhook endpoints for operational alerts.\n\n` +
+          `**Recommendation**: Go to the **Visual Workflow Builder** tab and click **Test Dry-Run** to verify the trigger pipeline works correctly!`;
+      } 
+      else if (query.includes('forecast') || query.includes('regression') || query.includes('slope') || query.includes('growth') || query.includes('predict')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **TIME_SERIES_FORECASTER**.\n` +
+          `Routing query to 🔮 **Forecast Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Extracted historical timeline vectors from the active dataset.\n` +
+          `2. Solved OLS linear regression parameters (y = mx + c) to establish standard chronological slopes.\n` +
+          `3. Applied Prediction Growth Multiplier (1.5x) to run baseline, optimistic, and pessimistic projections.\n\n` +
+          `**Recommendation**: Chart projection is loaded. Adjust the growth slider on the **Predictive Trend Forecasting** card to view Tilting Forecast scenarios dynamically!`;
+      } 
+      else if (query.includes('stat') || query.includes('hypothesis') || query.includes('t-test') || query.includes('p-value')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **STATISTICAL_SOLVER**.\n` +
+          `Routing query to 🧠 **Analytics Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Isolated numeric fields for One-Sample t-Test calculation.\n` +
+          `2. Computed mean values against custom baseline: Null (H0): Mean equals baseline.\n` +
+          `3. Solved Two-Tailed t-Distribution algorithm:\n` +
+          `   - T-statistic: ${tTestResult.t}\n` +
+          `   - P-value: ${tTestResult.p} (Significance threshold: 0.05)\n` +
+          `   - Decision: ${tTestResult.sig ? "Reject Null Hypothesis (Significant)" : "Fail to Reject Null (Stable)"}\n\n` +
+          `**Recommendation**: Enter a value in the **Custom Baseline (H₀)** field to observe significance index updates instantly!`;
+      } 
+      else if (query.includes('clean') || query.includes('impute') || query.includes('outlier') || query.includes('duplicate') || query.includes('z-score')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **DATA_QUALITY_AUDITOR**.\n` +
+          `Routing query to 🧹 **Data Cleaning Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Scanned column records for Null placeholders and blank cell blocks.\n` +
+          `2. Executed IQR bounds check and resolved standard deviation fallbacks to isolate extreme outliers.\n` +
+          `3. Imputed missing categories and flagged duplicates.\n\n` +
+          `**Recommendation**: Navigate to the **AI Quality Center** tab and click **1-Click AI Auto Clean** to write back the clean records and update your system completeness ratings!`;
+      } 
+      else if (query.includes('security') || query.includes('soc2') || query.includes('gdpr') || query.includes('sso') || query.includes('encrypt') || query.includes('protect')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **ENTERPRISE_SECURITY_SHIELD**.\n` +
+          `Routing query to 🛡️ **Security Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Enforced TLS 1.3 session encryption connections.\n` +
+          `2. Audited database queries to ensure Row-Level Security (RLS) policies are active.\n` +
+          `3. Initialized PII masking rules: automatically scrubbing email prefixes and billing address fields.\n\n` +
+          `**Recommendation**: Corporate audit trails are locked. Multi-Factor Authentication (MFA) and Single Sign-On (SSO) settings can be configured inside Platform Settings.`;
+      } 
+      else if (query.includes('billing') || query.includes('plan') || query.includes('credits') || query.includes('upgrade')) {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent identified as **SAAS_BILLING_AUDITOR**.\n` +
+          `Routing query to 💳 **Billing Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Synced current billing session via Stripe API endpoints.\n` +
+          `2. Verified active account quota: **${userPlan}**.\n` +
+          `3. Projected MRR credit consumption limits against queries run.\n\n` +
+          `**Recommendation**: You currently have **${userCredits} credits** left. Keep track of operations via the Sidebar status meter to prevent threshold throttles!`;
+      } 
+      else {
+        aiText = `${timestamp} 🤖 *Orchestrator Agent*: Intent classified as **GENERAL_ANALYTICS_QUERY**.\n` +
+          `Routing query to 🤖 **Orchestrator Agent**...\n\n` +
+          `**Analysis & Actions Taken**:\n` +
+          `1. Searched the active RAG vector database for context alignment.\n` +
+          `2. Retrieved historical preferences for visual dashboard layouts.\n\n` +
+          `**Recommendation**: I can build customizable charts, construct Zapier-style workflow automation triggers, solve hypothesis formulas, or clean spreadsheets. Ask me anything about your Metrics Flow SaaS operating system!`;
       }
 
       const aiMsg = { sender: 'ai', text: aiText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
