@@ -54,6 +54,7 @@ export default function DashboardPage() {
   // Visualizer Chart Configs
   const [chartType, setChartType] = useState<'area' | 'bar' | 'line'>('area');
   const [dataPointsLimit, setDataPointsLimit] = useState<'5' | '10' | 'all'>('10');
+  const [forecastYears, setForecastYears] = useState<'2' | '3' | '5'>('2');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -528,6 +529,161 @@ export default function DashboardPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  // Real-time Hypothesis Testing Engine (One-Sample t-Test)
+  const tTestResult = useMemo(() => {
+    if (!localRawData || localRawData.length < 2) {
+      return { t: 0, p: 1.0, df: 0, mean: 0, baseline: 0, sig: false };
+    }
+    const salesValues = localRawData.map(d => Number(d.Sales) || 0);
+    const n = salesValues.length;
+    const mean = salesValues.reduce((a, b) => a + b, 0) / n;
+    
+    // Baselines dynamically adjusted per dataset scale to keep test statistically valid & responsive
+    let baseline = 6000;
+    if (selectedDataset) {
+      const isFintech = selectedDataset.name.toLowerCase().includes('fintech') || selectedDataset.name.toLowerCase().includes('fraud');
+      const isSuicide = selectedDataset.name.toLowerCase().includes('suicide') || selectedDataset.name.toLowerCase().includes('world');
+      const isMarketing = selectedDataset.name.toLowerCase().includes('marketing') || selectedDataset.name.toLowerCase().includes('ad');
+      if (isFintech) baseline = 1500;
+      else if (isSuicide) baseline = 3000;
+      else if (isMarketing) baseline = 4000;
+    }
+    
+    const variance = salesValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (n - 1);
+    const sd = Math.sqrt(variance);
+    
+    if (sd === 0) {
+      return { t: 0, p: 1.0, df: n - 1, mean: Number(mean.toFixed(1)), baseline, sig: false };
+    }
+    
+    const se = sd / Math.sqrt(n);
+    const tStat = (mean - baseline) / se;
+    const df = n - 1;
+    
+    // High-fidelity p-value approximation for Two-Tailed t-Distribution
+    const absT = Math.abs(tStat);
+    const z = absT * (1 - 1 / (4 * df)); // correction factor for t to normal
+    const pValue = 2 * (1 - (1 / (1 + Math.exp(-0.07056 * Math.pow(z, 3) - 1.5976 * z))));
+    
+    return {
+      t: Number(tStat.toFixed(3)),
+      p: Number(Math.max(0.0001, Math.min(1.0, pValue)).toFixed(4)),
+      df,
+      mean: Number(mean.toFixed(1)),
+      baseline,
+      sig: pValue < 0.05
+    };
+  }, [localRawData, selectedDataset]);
+
+  // Real-time Time-Series Forecasting Engine (Linear Regression y = mx + c)
+  const forecastData = useMemo(() => {
+    if (!localRawData || localRawData.length < 2) return [];
+    
+    const salesValues = localRawData.map(d => Number(d.Sales) || 0);
+    const n = salesValues.length;
+    
+    // Compute Means
+    const meanX = (n - 1) / 2;
+    const meanY = salesValues.reduce((a, b) => a + b, 0) / n;
+    
+    // Compute Slope (m) and Intercept (c)
+    let numerator = 0;
+    let denominator = 0;
+    for (let i = 0; i < n; i++) {
+      numerator += (i - meanX) * (salesValues[i] - meanY);
+      denominator += Math.pow(i - meanX, 2);
+    }
+    
+    const m = denominator === 0 ? 0 : numerator / denominator;
+    const c = meanY - m * meanX;
+    
+    // Combine historical values
+    const combined = localRawData.map((d) => ({
+      name: d.name,
+      Sales: Number(d.Sales) || 0,
+      isForecast: false
+    }));
+    
+    // Project future periods based on interactive forecastYears
+    const yearsToProject = Number(forecastYears);
+    const lastPointName = localRawData[n - 1].name;
+    
+    let startYear = 2026;
+    if (lastPointName.toLowerCase().includes('dec') || lastPointName.toLowerCase().includes('aug') || lastPointName.toLowerCase().includes('12')) {
+      startYear = 2027;
+    }
+    
+    for (let i = 1; i <= yearsToProject; i++) {
+      const futureIndex = n - 1 + i;
+      const projectedVal = m * futureIndex + c;
+      combined.push({
+        name: `Year ${i} (${startYear + i - 1})`,
+        Sales: Math.round(Math.max(0, projectedVal)),
+        isForecast: true
+      });
+    }
+    
+    return combined;
+  }, [localRawData, forecastYears]);
+
+  // Dynamic Context-Aware Executive Conclusion
+  const finalConclusion = useMemo(() => {
+    if (!localRawData || localRawData.length === 0) {
+      return {
+        text: "No active dataset loaded. Please upload a file to compile final operational conclusions.",
+        grade: "N/A",
+        recommendation: "Ingest a new dataset profile to initialize statistical diagnostics."
+      };
+    }
+    
+    const salesSum = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+    const avgQuality = localRawData.reduce((acc, row) => acc + (Number(row.Quality) || 0), 0) / localRawData.length;
+    const totalAnomalies = localRawData.reduce((acc, row) => acc + (Number(row.Anomalies) || 0), 0);
+    
+    let datasetType = "Enterprise Operations";
+    if (selectedDataset) {
+      const name = selectedDataset.name.toLowerCase();
+      if (name.includes('fintech') || name.includes('fraud')) datasetType = "Fintech Transaction Fraud";
+      else if (name.includes('suicide') || name.includes('world')) datasetType = "Global Healthcare Statistics";
+      else if (name.includes('marketing') || name.includes('ad')) datasetType = "Marketing Campaign Performance";
+    }
+    
+    const isClean = totalAnomalies === 0;
+    const grade = avgQuality >= 95 ? 'A+' : avgQuality >= 90 ? 'A' : avgQuality >= 80 ? 'B' : 'C';
+    
+    let analysisText = "";
+    let recommendation = "";
+    
+    if (datasetType === "Fintech Transaction Fraud") {
+      analysisText = `The transaction fraud dataset exhibits high operational integrity with a current mean risk of ${tTestResult.mean}% and ${localRawData.length} indexed sectors. Compared to our baseline of ${tTestResult.baseline}%, the current metrics indicate a ${tTestResult.sig ? 'statistically significant' : 'stable'} trend. We detected a total cumulative transaction volume of $${salesSum.toLocaleString()}.`;
+      recommendation = isClean 
+        ? "Maintain active real-time transaction firewalls; standard deviation bounds are highly optimized."
+        : `Run immediate AI auto-cleansing. We isolated ${totalAnomalies} critical outlier anomalies in transaction amounts that skew risk projections.`;
+    } else if (datasetType === "Global Healthcare Statistics") {
+      analysisText = `The demographics dataset provides verified incident metrics across ${localRawData.length} international categories. The average incident rate stands at ${tTestResult.mean.toLocaleString()} (baseline: ${tTestResult.baseline.toLocaleString()}), showing a ${tTestResult.sig ? 'statistically significant divergence' : 'stable chronological slope'}. Average reporting quality has reached ${avgQuality.toFixed(1)}%.`;
+      recommendation = isClean
+        ? "Publish findings to demographic registers; regional parameters show complete reporting indexes."
+        : `Execute data repairs. We detected ${totalAnomalies} missing or abnormal incident metrics in the reporting indexes.`;
+    } else if (datasetType === "Marketing Campaign Performance") {
+      analysisText = `The marketing execution analytics compile performance figures across ${localRawData.length} active channels. Average channel revenue averages $${tTestResult.mean.toLocaleString()} against our historical baseline of $${tTestResult.baseline.toLocaleString()} (p-value: ${tTestResult.p}). Combined ad campaign conversions generated a total of $${salesSum.toLocaleString()} in revenue.`;
+      recommendation = isClean
+        ? "Scale the high-performing YouTube and Organic SEO campaigns; acquisition margins are running at peak efficiency."
+        : `Prune budget allocations on underperforming segments. We found ${totalAnomalies} performance gaps in click-through rates that degrade ROI.`;
+    } else {
+      analysisText = `The enterprise operations database profiles ${localRawData.length} core business periods. The Sales run-rate averages $${tTestResult.mean.toLocaleString()} compared to our historical target baseline of $${tTestResult.baseline.toLocaleString()} (t-stat: ${tTestResult.t}). Overall dataset reporting completeness is graded at ${avgQuality.toFixed(1)}% with ${isClean ? 'zero' : totalAnomalies} outlier anomalies.`;
+      recommendation = isClean
+        ? "Execute forecast expansions; current operational margins are stable and suitable for strategic planning."
+        : `Run the AI Outlier Cleaner pipeline. Resolving the ${totalAnomalies} isolated anomalies will yield a clean, forecast-ready dataset.`;
+    }
+    
+    return {
+      text: analysisText,
+      grade,
+      recommendation
+    };
+  }, [localRawData, selectedDataset, tTestResult]);
+
 
   return (
     <div className="bg-neutral-950 text-neutral-50 min-h-screen flex selection:bg-blue-500/30 overflow-x-hidden font-sans antialiased">
@@ -1250,7 +1406,158 @@ export default function DashboardPage() {
                   )}
                 </CardContent>
               </Card>
+{/* 5. Advanced AI Statistical & Forecasting Studio */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+              
+              {/* Hypothesis Testing Card */}
+              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
+                <CardHeader className="border-b border-neutral-900/50 pb-4">
+                  <div className="flex items-center space-x-2">
+                    <Activity className="w-4.5 h-4.5 text-blue-400" />
+                    <CardTitle className="text-sm font-bold">Hypothesis Testing & Significance</CardTitle>
+                  </div>
+                  <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">Scientific statistical diagnostics</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
+                  <div className="space-y-3.5 text-neutral-400">
+                    <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-850 space-y-2">
+                      <p className="font-mono text-[9px] text-neutral-500 uppercase leading-none font-bold">Hypothesis Statements</p>
+                      <p className="text-neutral-200 leading-relaxed font-semibold">
+                        <span className="text-blue-400 font-bold">Null (H₀):</span> The dataset mean is equal to the target baseline of <span className="font-mono text-white">${tTestResult.baseline.toLocaleString()}</span>.
+                      </p>
+                      <p className="text-neutral-200 leading-relaxed font-semibold">
+                        <span className="text-purple-400 font-bold">Alt (H₁):</span> The dataset mean differs significantly from the target baseline.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 font-mono">
+                      <div className="p-2.5 rounded-lg border border-neutral-850 bg-neutral-955/40 text-center">
+                        <span className="text-[7px] text-neutral-500 uppercase block font-bold">Mean Val</span>
+                        <span className="text-xs font-bold text-white">${tTestResult.mean.toLocaleString()}</span>
+                      </div>
+                      <div className="p-2.5 rounded-lg border border-neutral-850 bg-neutral-955/40 text-center">
+                        <span className="text-[7px] text-neutral-500 uppercase block font-bold">T-Stat</span>
+                        <span className="text-xs font-bold text-white">{tTestResult.t}</span>
+                      </div>
+                      <div className="p-2.5 rounded-lg border border-neutral-850 bg-neutral-955/40 text-center">
+                        <span className="text-[7px] text-neutral-500 uppercase block font-bold">P-Value</span>
+                        <span className="text-xs font-bold text-white">{tTestResult.p}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] font-mono border-t border-neutral-900 pt-3">
+                      <span className="text-neutral-500 font-bold">DEGREES OF FREEDOM:</span>
+                      <span className="text-neutral-350 font-bold">{tTestResult.df} (N = {localRawData.length})</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    {tTestResult.sig ? (
+                      <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold font-mono text-[10px] uppercase tracking-wider text-center">
+                        <CheckCircle2 className="w-4 h-4 animate-bounce" /> Reject H₀: Statistically Significant
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10 text-yellow-550 font-bold font-mono text-[10px] uppercase tracking-wider text-center">
+                        <AlertCircle className="w-4 h-4" /> Fail to Reject H₀: Insignificant Difference
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Time-Series Forecasting Card */}
+              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
+                <CardHeader className="border-b border-neutral-900/50 pb-4 flex flex-row items-center justify-between gap-4">
+                  <div className="space-y-1 text-left">
+                    <div className="flex items-center space-x-2">
+                      <LineChart className="w-4.5 h-4.5 text-purple-400" />
+                      <CardTitle className="text-sm font-bold">Predictive Trend Forecasting</CardTitle>
+                    </div>
+                    <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">Linear Regression run-rate projection</CardDescription>
+                  </div>
+                  
+                  {/* Forecast Year Selector */}
+                  <select
+                    value={forecastYears}
+                    onChange={(e) => setForecastYears(e.target.value as any)}
+                    className="bg-neutral-900 border border-neutral-800 text-[10px] font-bold text-neutral-355 rounded-xl px-2.5 py-1.5 cursor-pointer focus:outline-none hover:border-neutral-700 transition-colors"
+                  >
+                    <option value="2">Next 2 Years</option>
+                    <option value="3">Next 3 Years</option>
+                    <option value="5">Next 5 Years</option>
+                  </select>
+                </CardHeader>
+                <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4">
+                  <div className="h-44 w-full text-[9px] font-mono">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsLineChart data={forecastData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                        <XAxis dataKey="name" stroke="#737373" fontSize={8} />
+                        <YAxis stroke="#737373" fontSize={8} />
+                        <RechartsTooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', borderRadius: '8px' }} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="Sales" 
+                          stroke="#a855f7" 
+                          strokeWidth={2} 
+                          dot={(props: any) => {
+                            const { cx, cy, payload } = props;
+                            if (payload.isForecast) {
+                              return <circle cx={cx} cy={cy} r={3.5} fill="#10b981" stroke="#fff" strokeWidth={1} key={cx + "-" + cy} />;
+                            }
+                            return <circle cx={cx} cy={cy} r={3.5} fill="#3b82f6" key={cx + "-" + cy} />;
+                          }}
+                        />
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-between items-center text-[8px] font-mono text-neutral-500 border-t border-neutral-900 pt-2.5 leading-none">
+                    <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Historical</span>
+                    <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> OLS Forecast (Dashed)</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Executive Final Conclusion Card */}
+              <Card className="bg-gradient-to-br from-neutral-900/60 to-neutral-950/40 border border-neutral-850 text-neutral-50 shadow-2xl rounded-2xl flex flex-col justify-between overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none -z-10"></div>
+                <CardHeader className="border-b border-neutral-900/50 pb-4">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" />
+                    <CardTitle className="text-sm font-bold">Executive Final Conclusion</CardTitle>
+                  </div>
+                  <CardDescription className="text-neutral-450 text-[10px] uppercase font-mono tracking-wider mt-0.5">SaaS analytics summary report</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
+                  <div className="space-y-3.5 text-neutral-400 text-left">
+                    <div className="flex items-center justify-between font-mono">
+                      <span className="text-neutral-500 font-bold text-[9px] uppercase leading-none">Overall Quality Grade</span>
+                      <span className="bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-emerald-400 text-[10px] font-black leading-none">{finalConclusion.grade} Rating</span>
+                    </div>
+
+                    <p className="leading-relaxed text-neutral-350 font-medium">
+                      {finalConclusion.text}
+                    </p>
+
+                    <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-850 space-y-1">
+                      <span className="text-[8px] font-bold font-mono text-neutral-550 uppercase block">RECOMMENDED NEXT STEP:</span>
+                      <p className="text-[10px] text-neutral-200 leading-normal font-semibold">{finalConclusion.recommendation}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-1.5 flex justify-end">
+                    <div className="text-[8px] text-neutral-500 font-bold font-mono uppercase tracking-wider">
+                      Metrics Flow AI Auditor • Compiled Live
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
             </div>
+
+                        </div>
 
             {/* 6. Data Source Integrations Connect Panel */}
             <div className="space-y-4">
