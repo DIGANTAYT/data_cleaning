@@ -1231,15 +1231,15 @@ export default function DashboardWorkspace() {
                         </button>
                       </div>
 
-                      <CardHeader className={`pb-3 pt-4 px-5 border-b ${themeStyles.cardHeader} flex flex-row items-center justify-between space-y-0`}>
-                        <div className="flex items-center space-x-2 min-w-0">
+                      <CardHeader className={`pb-3 pt-4 px-5 border-b ${themeStyles.cardHeader} relative flex flex-col items-start gap-1 space-y-0`}>
+                        <div className="flex items-center space-x-2 w-full pr-12">
                           {canvasViewMode === 'builder' && (
                             <GripVertical className="w-3.5 h-3.5 text-neutral-500 hover:text-neutral-300 cursor-grab active:cursor-grabbing shrink-0" />
                           )}
                           {widget.starred && (
                             <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                           )}
-                          <CardTitle className={`text-xs font-bold truncate max-w-[150px] sm:max-w-[200px] ${themeStyles.headingText}`} title={widget.title}>
+                          <CardTitle className={`text-xs font-bold truncate ${themeStyles.headingText}`} title={widget.title}>
                             {widget.title}
                           </CardTitle>
                         </div>
