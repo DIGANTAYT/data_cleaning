@@ -340,33 +340,33 @@ export default function DashboardPage() {
 
   // Dynamically aggregates active dataset values in real-time
   const getDynamicKpiValue = (cardId: string, cardType: string) => {
-    if (!localRawData || localRawData.length === 0) return '0';
+    if (!filteredData || filteredData.length === 0) return '0';
     
     switch (cardId) {
       case 'txn_vol':
       case 'sales': {
-        const sum = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+        const sum = filteredData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
         return String(sum);
       }
       case 'peak_txn': {
-        const max = Math.max(...localRawData.map(row => Number(row.Sales) || 0));
+        const max = Math.max(...filteredData.map(row => Number(row.Sales) || 0));
         return String(max === -Infinity ? 0 : max);
       }
       case 'quality':
       case 'country_quality':
       case 'fraud_risk': {
-        const avg = localRawData.reduce((acc, row) => acc + (Number(row.Quality) || 0), 0) / localRawData.length;
+        const avg = filteredData.reduce((acc, row) => acc + (Number(row.Quality) || 0), 0) / filteredData.length;
         return String(avg.toFixed(1));
       }
       case 'queries':
       case 'active_users':
       case 'male_incidents': {
-        const sum = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
+        const sum = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
         return String(sum);
       }
       case 'cleanRate': {
-        const anomalies = localRawData.reduce((acc, row) => acc + (Number(row.Anomalies) || 0), 0);
-        const totalQueries = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
+        const anomalies = filteredData.reduce((acc, row) => acc + (Number(row.Anomalies) || 0), 0);
+        const totalQueries = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
         if (totalQueries === 0) return '99.8';
         const rate = ((totalQueries - anomalies) / totalQueries) * 100;
         return String(rate.toFixed(1));
@@ -375,35 +375,35 @@ export default function DashboardPage() {
       case 'active_profiles':
       case 'campaigns':
       case 'models': {
-        return String(localRawData.length);
+        return String(filteredData.length);
       }
       case 'total_incidents': {
-        const sum = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+        const sum = filteredData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
         return String(sum);
       }
       case 'female_incidents': {
-        const sum = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0) * 0.25;
+        const sum = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0) * 0.25;
         return String(Math.round(sum));
       }
       case 'roi': {
-        const sales = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
-        const spend = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
+        const sales = filteredData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+        const spend = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
         if (spend === 0) return '3.2';
         return String((sales / spend).toFixed(1));
       }
       case 'impressions': {
-        const sum = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0) * 1.5;
+        const sum = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0) * 1.5;
         return String(Math.round(sum));
       }
       case 'ctr': {
-        const clicks = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
-        const imps = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0) * 1.5;
+        const clicks = filteredData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+        const imps = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0) * 1.5;
         if (imps === 0) return '3.8';
         return String(((clicks / imps) * 100).toFixed(1));
       }
       case 'cpa': {
-        const spend = localRawData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
-        const acquisitions = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+        const spend = filteredData.reduce((acc, row) => acc + (Number(row.Queries) || 0), 0);
+        const acquisitions = filteredData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
         if (acquisitions === 0) return '12.5';
         return String((spend / acquisitions).toFixed(2));
       }
@@ -456,6 +456,18 @@ export default function DashboardPage() {
   // High-fidelity active dataset visualization state
   const [localRawData, setLocalRawData] = useState<any[]>([]);
   const [showSpreadsheet, setShowSpreadsheet] = useState(false);
+
+  // Dynamic Timeline Filter
+  const filteredData = useMemo(() => {
+    if (!localRawData || localRawData.length === 0) return [];
+    if (dateFilter === 'Last 30 Days') {
+      return localRawData.slice(-4);
+    }
+    if (dateFilter === 'This Quarter') {
+      return localRawData.slice(-6);
+    }
+    return localRawData;
+  }, [localRawData, dateFilter]);
 
   useEffect(() => {
     let rawData = [
@@ -549,15 +561,15 @@ export default function DashboardPage() {
   };
 
   const chartData = useMemo(() => {
-    let sortedData = [...localRawData];
+    let sortedData = [...filteredData];
     if (dataPointsLimit === '5') {
       return sortedData.sort((a, b) => (b.Sales || 0) - (a.Sales || 0)).slice(0, 5);
     }
     if (dataPointsLimit === '10') {
       return sortedData.sort((a, b) => (b.Sales || 0) - (a.Sales || 0)).slice(0, 10);
     }
-    return localRawData;
-  }, [localRawData, dataPointsLimit]);
+    return filteredData;
+  }, [filteredData, dataPointsLimit]);
 
   // AI 1-Click Clean Trigger
   const triggerAiClean = () => {
@@ -630,10 +642,10 @@ export default function DashboardPage() {
 
   // Real-time Hypothesis Testing Engine (One-Sample t-Test)
   const tTestResult = useMemo(() => {
-    if (!localRawData || localRawData.length < 2) {
+    if (!filteredData || filteredData.length < 2) {
       return { t: 0, p: 1.0, df: 0, mean: 0, baseline: 0, sig: false };
     }
-    const salesValues = localRawData.map(d => Number(d.Sales) || 0);
+    const salesValues = filteredData.map(d => Number(d.Sales) || 0);
     const n = salesValues.length;
     const mean = salesValues.reduce((a, b) => a + b, 0) / n;
     
@@ -675,13 +687,13 @@ export default function DashboardPage() {
       baseline,
       sig: pValue < 0.05
     };
-  }, [localRawData, selectedDataset, customBaseline]);
+  }, [filteredData, selectedDataset, customBaseline]);
 
   // Real-time Time-Series Forecasting Engine (Linear Regression y = mx + c)
   const forecastData = useMemo(() => {
-    if (!localRawData || localRawData.length < 2) return [];
+    if (!filteredData || filteredData.length < 2) return [];
     
-    const salesValues = localRawData.map(d => Number(d.Sales) || 0);
+    const salesValues = filteredData.map(d => Number(d.Sales) || 0);
     const n = salesValues.length;
     
     // Compute Means
@@ -700,7 +712,7 @@ export default function DashboardPage() {
     const c = meanY - m * meanX;
     
     // Combine historical values
-    const combined = localRawData.map((d) => ({
+    const combined = filteredData.map((d) => ({
       name: d.name,
       Sales: Number(d.Sales) || 0,
       isForecast: false
@@ -708,7 +720,7 @@ export default function DashboardPage() {
     
     // Project future periods based on interactive forecastYears & growthMultiplier parameter
     const yearsToProject = forecastYears === 'custom' ? customForecastPeriods : Number(forecastYears);
-    const lastPointName = localRawData[n - 1].name;
+    const lastPointName = filteredData[n - 1].name;
     
     let startYear = 2026;
     if (lastPointName.toLowerCase().includes('dec') || lastPointName.toLowerCase().includes('aug') || lastPointName.toLowerCase().includes('12')) {
@@ -728,11 +740,11 @@ export default function DashboardPage() {
     }
     
     return combined;
-  }, [localRawData, forecastYears, customForecastPeriods, growthMultiplier]);
+  }, [filteredData, forecastYears, customForecastPeriods, growthMultiplier]);
 
   // Dynamic Context-Aware Executive Conclusion
   const finalConclusion = useMemo(() => {
-    if (!localRawData || localRawData.length === 0) {
+    if (!filteredData || filteredData.length === 0) {
       return {
         text: "No active dataset loaded. Please upload a file to compile final operational conclusions.",
         grade: "N/A",
@@ -740,9 +752,9 @@ export default function DashboardPage() {
       };
     }
     
-    const salesSum = localRawData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
-    const avgQuality = localRawData.reduce((acc, row) => acc + (Number(row.Quality) || 0), 0) / localRawData.length;
-    const totalAnomalies = localRawData.reduce((acc, row) => acc + (Number(row.Anomalies) || 0), 0);
+    const salesSum = filteredData.reduce((acc, row) => acc + (Number(row.Sales) || 0), 0);
+    const avgQuality = filteredData.reduce((acc, row) => acc + (Number(row.Quality) || 0), 0) / filteredData.length;
+    const totalAnomalies = filteredData.reduce((acc, row) => acc + (Number(row.Anomalies) || 0), 0);
     
     let datasetType = "Enterprise Operations";
     if (selectedDataset) {
@@ -759,22 +771,22 @@ export default function DashboardPage() {
     let recommendation = "";
     
     if (datasetType === "Fintech Transaction Fraud") {
-      analysisText = `The transaction fraud dataset exhibits high operational integrity with a current mean risk of ${tTestResult.mean}% and ${localRawData.length} indexed sectors. Compared to our baseline of ${tTestResult.baseline}%, the current metrics indicate a ${tTestResult.sig ? 'statistically significant' : 'stable'} trend. We detected a total cumulative transaction volume of $${salesSum.toLocaleString()}.`;
+      analysisText = `The transaction fraud dataset exhibits high operational integrity with a current mean risk of ${tTestResult.mean}% and ${filteredData.length} indexed sectors. Compared to our baseline of ${tTestResult.baseline}%, the current metrics indicate a ${tTestResult.sig ? 'statistically significant' : 'stable'} trend. We detected a total cumulative transaction volume of $${salesSum.toLocaleString()}.`;
       recommendation = isClean 
         ? "Maintain active real-time transaction firewalls; standard deviation bounds are highly optimized."
         : `Run immediate AI auto-cleansing. We isolated ${totalAnomalies} critical outlier anomalies in transaction amounts that skew risk projections.`;
     } else if (datasetType === "Global Healthcare Statistics") {
-      analysisText = `The demographics dataset provides verified incident metrics across ${localRawData.length} international categories. The average incident rate stands at ${tTestResult.mean.toLocaleString()} (baseline: ${tTestResult.baseline.toLocaleString()}), showing a ${tTestResult.sig ? 'statistically significant divergence' : 'stable chronological slope'}. Average reporting quality has reached ${avgQuality.toFixed(1)}%.`;
+      analysisText = `The demographics dataset provides verified incident metrics across ${filteredData.length} international categories. The average incident rate stands at ${tTestResult.mean.toLocaleString()} (baseline: ${tTestResult.baseline.toLocaleString()}), showing a ${tTestResult.sig ? 'statistically significant divergence' : 'stable chronological slope'}. Average reporting quality has reached ${avgQuality.toFixed(1)}%.`;
       recommendation = isClean
         ? "Publish findings to demographic registers; regional parameters show complete reporting indexes."
         : `Execute data repairs. We detected ${totalAnomalies} missing or abnormal incident metrics in the reporting indexes.`;
     } else if (datasetType === "Marketing Campaign Performance") {
-      analysisText = `The marketing execution analytics compile performance figures across ${localRawData.length} active channels. Average channel revenue averages $${tTestResult.mean.toLocaleString()} against our historical baseline of $${tTestResult.baseline.toLocaleString()} (p-value: ${tTestResult.p}). Combined ad campaign conversions generated a total of $${salesSum.toLocaleString()} in revenue.`;
+      analysisText = `The marketing execution analytics compile performance figures across ${filteredData.length} active channels. Average channel revenue averages $${tTestResult.mean.toLocaleString()} against our historical baseline of $${tTestResult.baseline.toLocaleString()} (p-value: ${tTestResult.p}). Combined ad campaign conversions generated a total of $${salesSum.toLocaleString()} in revenue.`;
       recommendation = isClean
         ? "Scale the high-performing YouTube and Organic SEO campaigns; acquisition margins are running at peak efficiency."
         : `Prune budget allocations on underperforming segments. We found ${totalAnomalies} performance gaps in click-through rates that degrade ROI.`;
     } else {
-      analysisText = `The enterprise operations database profiles ${localRawData.length} core business periods. The Sales run-rate averages $${tTestResult.mean.toLocaleString()} compared to our historical target baseline of $${tTestResult.baseline.toLocaleString()} (t-stat: ${tTestResult.t}). Overall dataset reporting completeness is graded at ${avgQuality.toFixed(1)}% with ${isClean ? 'zero' : totalAnomalies} outlier anomalies.`;
+      analysisText = `The enterprise operations database profiles ${filteredData.length} core business periods. The Sales run-rate averages $${tTestResult.mean.toLocaleString()} compared to our historical target baseline of $${tTestResult.baseline.toLocaleString()} (t-stat: ${tTestResult.t}). Overall dataset reporting completeness is graded at ${avgQuality.toFixed(1)}% with ${isClean ? 'zero' : totalAnomalies} outlier anomalies.`;
       recommendation = isClean
         ? "Execute forecast expansions; current operational margins are stable and suitable for strategic planning."
         : `Run the AI Outlier Cleaner pipeline. Resolving the ${totalAnomalies} isolated anomalies will yield a clean, forecast-ready dataset.`;
@@ -785,7 +797,7 @@ export default function DashboardPage() {
       grade,
       recommendation
     };
-  }, [localRawData, selectedDataset, tTestResult]);
+  }, [filteredData, selectedDataset, tTestResult]);
 
 
   return (
