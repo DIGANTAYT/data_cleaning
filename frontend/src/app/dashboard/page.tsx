@@ -8,7 +8,8 @@ import {
   LineChart, BrainCircuit, ChevronLeft, ChevronRight, Menu, Bell, 
   Search, Settings, Shield, Lock, Server, Key, Info, Activity, 
   Sliders, Trash2, ArrowRight, ArrowUpRight, HelpCircle, Layers, 
-  FolderDot, Laptop, Check, LogOut, LayoutDashboard, Calendar, RefreshCw, Edit3, Plus, Eye
+  FolderDot, Laptop, Check, LogOut, LayoutDashboard, Calendar, RefreshCw, Edit3, Plus, Eye,
+  ArrowLeft, Undo2, Redo2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,64 @@ export default function DashboardPage() {
   
   // Datasets & Upload States
   const [file, setFile] = useState<File | null>(null);
+  
+  // State History for Undo / Redo
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isApplyingHistoryRef = React.useRef(false);
+
+  const saveStateToHistory = (customRawData?: any[], customKpiCards?: any[]) => {
+    if (isApplyingHistoryRef.current) return;
+    const snapshot = {
+      kpiCards: customKpiCards || kpiCards,
+      localRawData: customRawData || localRawData,
+      chartType,
+      dateFilter,
+      activeTab,
+      activeDatasetId
+    };
+    setHistory(prev => {
+      const updated = prev.slice(0, historyIndex + 1);
+      return [...updated, JSON.parse(JSON.stringify(snapshot))];
+    });
+    setHistoryIndex(prev => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex - 1;
+      const snapshot = history[targetIndex];
+      
+      setKpiCards(snapshot.kpiCards);
+      setLocalRawData(snapshot.localRawData);
+      setChartType(snapshot.chartType);
+      setDateFilter(snapshot.dateFilter);
+      setActiveTab(snapshot.activeTab);
+      setActiveDatasetId(snapshot.activeDatasetId);
+      
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex + 1;
+      const snapshot = history[targetIndex];
+      
+      setKpiCards(snapshot.kpiCards);
+      setLocalRawData(snapshot.localRawData);
+      setChartType(snapshot.chartType);
+      setDateFilter(snapshot.dateFilter);
+      setActiveTab(snapshot.activeTab);
+      setActiveDatasetId(snapshot.activeDatasetId);
+      
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [datasets, setDatasets] = useState<any[]>([]);
@@ -218,6 +277,29 @@ export default function DashboardPage() {
   };
 
 
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.get(`${API_URL}/api/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && res.data.user) {
+        const profile = res.data.user;
+        setUserName(profile.name || 'Data Analyst');
+        setUserEmail(profile.email || '');
+        setUserPlan(profile.plan || 'Developer Sandbox');
+        setUserCredits(profile.credits ?? 500);
+        localStorage.setItem('user_name', profile.name || 'Data Analyst');
+        localStorage.setItem('user_email', profile.email || '');
+        localStorage.setItem('user_credits', String(profile.credits ?? 500));
+        localStorage.setItem('user_plan', profile.plan || 'Developer Sandbox');
+      }
+    } catch (err) {
+      console.error('Failed to fetch user profile from DB', err);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -232,11 +314,11 @@ export default function DashboardPage() {
     const storedCredits = localStorage.getItem('user_credits');
     setUserCredits(storedCredits ? Number(storedCredits) : 500);
     
+    fetchUserProfile();
     fetchDatasets();
     
     const handleCreditsUpdate = () => {
-      setUserCredits(Number(localStorage.getItem('user_credits') || 500));
-      setUserPlan(localStorage.getItem('user_plan') || 'Developer Sandbox');
+      fetchUserProfile();
     };
     window.addEventListener('credits-updated', handleCreditsUpdate);
     return () => {
@@ -557,85 +639,112 @@ export default function DashboardPage() {
     return localRawData;
   }, [localRawData, dateFilter]);
 
+  const [loadingIssues, setLoadingIssues] = useState(false);
+
+  const fetchActiveDatasetDetails = async (datasetId: string) => {
+    if (!datasetId || datasetId === 'mock') {
+      let rawData = [
+        { name: 'Jan', Sales: 4200, Queries: 12000, Quality: 85, Anomalies: 12 },
+        { name: 'Feb', Sales: 5800, Queries: 15400, Quality: 88, Anomalies: 8 },
+        { name: 'Mar', Sales: 5100, Queries: 18200, Quality: 89, Anomalies: 15 },
+        { name: 'Apr', Sales: 7300, Queries: 22100, Quality: 91, Anomalies: 6 },
+        { name: 'May', Sales: 8900, Queries: 28500, Quality: 93, Anomalies: 14 },
+        { name: 'Jun', Sales: 9400, Queries: 35600, Quality: 94.2, Anomalies: 0 },
+        { name: 'Jul', Sales: 10800, Queries: 41200, Quality: 94.2, Anomalies: 0 },
+        { name: 'Aug', Sales: 12100, Queries: 45210, Quality: 94.2, Anomalies: 0 },
+        { name: 'Sep', Sales: 11500, Queries: 43100, Quality: 94.2, Anomalies: 0 },
+        { name: 'Oct', Sales: 13200, Queries: 48900, Quality: 94.2, Anomalies: 0 },
+        { name: 'Nov', Sales: 14500, Queries: 52400, Quality: 94.2, Anomalies: 0 },
+        { name: 'Dec', Sales: 16800, Queries: 59000, Quality: 94.2, Anomalies: 0 }
+      ];
+      if (aiCleaned) {
+        rawData = rawData.map(d => ({ ...d, Quality: 98.5, Anomalies: 0 }));
+      }
+      setLocalRawData(rawData);
+      return;
+    }
+
+    setLoadingIssues(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/datasets/${datasetId}/detect-issues`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data && res.data.preview && res.data.preview.length > 0) {
+        const preview = res.data.preview;
+        const columns = res.data.columns || Object.keys(preview[0] || {});
+        
+        const salesCol = columns.find((c: string) => {
+          const l = c.toLowerCase();
+          return l.includes('sales') || l.includes('revenue') || l.includes('amount') || l.includes('price') || l.includes('incidents') || l.includes('salary');
+        }) || columns[2] || 'Sales';
+        
+        const queriesCol = columns.find((c: string) => {
+          const l = c.toLowerCase();
+          return l.includes('queries') || l.includes('click') || l.includes('impressions') || l.includes('count') || l.includes('volume') || l.includes('population');
+        }) || columns[3] || 'Queries';
+        
+        const qualityCol = columns.find((c: string) => {
+          const l = c.toLowerCase();
+          return l.includes('quality') || l.includes('risk') || l.includes('completeness') || l.includes('rate') || l.includes('growth');
+        }) || columns[4] || 'Quality';
+        
+        const mapped = preview.map((row: any, idx: number) => {
+          let name = row.name || row.Date || row.PurchaseDate || row.Year || row.Country || row.TransactionID || row.JobTitle || row.CampaignID || `Row ${idx + 1}`;
+          if (row.Month) name = row.Month;
+          if (row.ProductID) name = row.ProductID;
+          
+          let salesVal = Number(row[salesCol]);
+          if (isNaN(salesVal)) salesVal = 100;
+          
+          let queriesVal = Number(row[queriesCol]);
+          if (isNaN(queriesVal)) queriesVal = 50;
+          
+          let qualityVal = Number(row[qualityCol]);
+          if (isNaN(qualityVal)) qualityVal = 95;
+          if (qualityVal > 0 && qualityVal <= 1) {
+            qualityVal = Math.round(qualityVal * 100);
+          }
+          
+          let anomaliesVal = Number(row.Anomalies || 0);
+          if (res.data.issues) {
+            const hasMissing = res.data.issues.missing_values && res.data.issues.missing_values[salesCol];
+            const hasOutlier = res.data.issues.outliers && res.data.issues.outliers[salesCol];
+            anomaliesVal = (hasMissing ? 1 : 0) + (hasOutlier ? 1 : 0);
+          }
+          
+          return {
+            ...row,
+            name,
+            Sales: salesVal,
+            Queries: queriesVal,
+            Quality: qualityVal,
+            Anomalies: anomaliesVal
+          };
+        });
+        
+        setLocalRawData(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch dataset details from DB', err);
+    } finally {
+      setLoadingIssues(false);
+    }
+  };
+
   useEffect(() => {
-    let rawData = [
-      { name: 'Jan', Sales: 4200, Queries: 12000, Quality: 85, Anomalies: 12 },
-      { name: 'Feb', Sales: 5800, Queries: 15400, Quality: 88, Anomalies: 8 },
-      { name: 'Mar', Sales: 5100, Queries: 18200, Quality: 89, Anomalies: 15 },
-      { name: 'Apr', Sales: 7300, Queries: 22100, Quality: 91, Anomalies: 6 },
-      { name: 'May', Sales: 8900, Queries: 28500, Quality: 93, Anomalies: 14 },
-      { name: 'Jun', Sales: 9400, Queries: 35600, Quality: 94.2, Anomalies: 0 },
-      { name: 'Jul', Sales: 10800, Queries: 41200, Quality: 94.2, Anomalies: 0 },
-      { name: 'Aug', Sales: 12100, Queries: 45210, Quality: 94.2, Anomalies: 0 },
-      { name: 'Sep', Sales: 11500, Queries: 43100, Quality: 94.2, Anomalies: 0 },
-      { name: 'Oct', Sales: 13200, Queries: 48900, Quality: 94.2, Anomalies: 0 },
-      { name: 'Nov', Sales: 14500, Queries: 52400, Quality: 94.2, Anomalies: 0 },
-      { name: 'Dec', Sales: 16800, Queries: 59000, Quality: 94.2, Anomalies: 0 }
-    ];
+    fetchActiveDatasetDetails(activeDatasetId);
+  }, [activeDatasetId, aiCleaned, datasets]);
 
-    if (selectedDataset) {
-      const isFintech = selectedDataset.name.toLowerCase().includes('fintech') || selectedDataset.name.toLowerCase().includes('fraud');
-      const isSuicide = selectedDataset.name.toLowerCase().includes('suicide') || selectedDataset.name.toLowerCase().includes('world');
-      const isMarketing = selectedDataset.name.toLowerCase().includes('marketing') || selectedDataset.name.toLowerCase().includes('ad');
-
-      if (isFintech) {
-        rawData = [
-          { name: 'TXN-01', Sales: 450, Queries: 120, Quality: 92, Anomalies: 4 },
-          { name: 'TXN-02', Sales: 12500, Queries: 940, Quality: 81, Anomalies: 15 },
-          { name: 'TXN-03', Sales: 89, Queries: 50, Quality: 95, Anomalies: 1 },
-          { name: 'TXN-04', Sales: 1800, Queries: 810, Quality: 84, Anomalies: 8 },
-          { name: 'TXN-05', Sales: 15, Queries: 20, Quality: 98, Anomalies: 0 },
-          { name: 'TXN-06', Sales: 3200, Queries: 1400, Quality: 90, Anomalies: 6 },
-          { name: 'TXN-07', Sales: 7500, Queries: 2900, Quality: 87, Anomalies: 10 },
-          { name: 'TXN-08', Sales: 150, Queries: 80, Quality: 96, Anomalies: 2 },
-          { name: 'TXN-09', Sales: 9800, Queries: 3800, Quality: 88, Anomalies: 12 },
-          { name: 'TXN-10', Sales: 620, Queries: 240, Quality: 93, Anomalies: 3 },
-          { name: 'TXN-11', Sales: 4100, Queries: 1900, Quality: 89, Anomalies: 7 },
-          { name: 'TXN-12', Sales: 230, Queries: 110, Quality: 97, Anomalies: 1 }
-        ];
-      } else if (isSuicide) {
-        rawData = [
-          { name: 'US (Male)', Sales: 11200, Queries: 4200, Quality: 92, Anomalies: 12 },
-          { name: 'US (Fem)', Sales: 2900, Queries: 4300, Quality: 94, Anomalies: 5 },
-          { name: 'JP (Male)', Sales: 6500, Queries: 1700, Quality: 91, Anomalies: 14 },
-          { name: 'JP (Fem)', Sales: 2100, Queries: 1800, Quality: 95, Anomalies: 3 },
-          { name: 'GER (Male)', Sales: 850, Queries: 450, Quality: 93, Anomalies: 1 },
-          { name: 'GER (Fem)', Sales: 240, Queries: 500, Quality: 96, Anomalies: 0 },
-          { name: 'UK (Male)', Sales: 4100, Queries: 1500, Quality: 90, Anomalies: 8 },
-          { name: 'UK (Fem)', Sales: 1100, Queries: 1600, Quality: 94, Anomalies: 2 },
-          { name: 'FR (Male)', Sales: 5200, Queries: 2100, Quality: 88, Anomalies: 11 },
-          { name: 'FR (Fem)', Sales: 1500, Queries: 2200, Quality: 93, Anomalies: 4 },
-          { name: 'CAN (Male)', Sales: 3100, Queries: 1200, Quality: 92, Anomalies: 6 },
-          { name: 'CAN (Fem)', Sales: 850, Queries: 1300, Quality: 95, Anomalies: 1 }
-        ];
-      } else if (isMarketing) {
-        rawData = [
-          { name: 'Google Search', Sales: 5000, Queries: 2500, Quality: 96, Anomalies: 2 },
-          { name: 'Meta Ads', Sales: 4000, Queries: 1600, Quality: 93, Anomalies: 5 },
-          { name: 'YouTube', Sales: 7500, Queries: 2400, Quality: 90, Anomalies: 8 },
-          { name: 'LinkedIn', Sales: 3000, Queries: 1700, Quality: 94, Anomalies: 1 },
-          { name: 'Google Display', Sales: 1500, Queries: 450, Quality: 97, Anomalies: 0 },
-          { name: 'Twitter Ads', Sales: 2200, Queries: 950, Quality: 92, Anomalies: 3 },
-          { name: 'TikTok Ads', Sales: 4500, Queries: 1900, Quality: 89, Anomalies: 7 },
-          { name: 'Pinterest Ads', Sales: 1200, Queries: 500, Quality: 94, Anomalies: 1 },
-          { name: 'Email Newsletters', Sales: 6200, Queries: 2100, Quality: 98, Anomalies: 0 },
-          { name: 'Organic SEO', Sales: 9800, Queries: 3200, Quality: 95, Anomalies: 4 },
-          { name: 'Affiliate program', Sales: 3700, Queries: 1100, Quality: 91, Anomalies: 5 },
-          { name: 'Referrals & Direct', Sales: 5500, Queries: 1800, Quality: 96, Anomalies: 2 }
-        ];
+  // Capture history snapshots whenever state changes
+  useEffect(() => {
+    if (localRawData.length > 0) {
+      if (historyIndex === -1 || JSON.stringify(history[historyIndex]?.localRawData) !== JSON.stringify(localRawData) || JSON.stringify(history[historyIndex]?.kpiCards) !== JSON.stringify(kpiCards)) {
+        saveStateToHistory(localRawData, kpiCards);
       }
     }
-
-    if (aiCleaned) {
-      rawData = rawData.map(d => ({
-        ...d,
-        Quality: 98.5,
-        Anomalies: 0
-      }));
-    }
-
-    setLocalRawData(rawData);
-  }, [selectedDataset, aiCleaned]);
+  }, [localRawData, kpiCards, chartType, dateFilter, activeTab, activeDatasetId]);
 
   const handleDataPointEdit = (originalItemName: string, column: string, value: any) => {
     setLocalRawData(prev => {
@@ -660,18 +769,72 @@ export default function DashboardPage() {
   }, [filteredData, dataPointsLimit]);
 
   // AI 1-Click Clean Trigger
-  const triggerAiClean = () => {
+  const triggerAiClean = async () => {
+    if (!activeDatasetId || activeDatasetId === 'mock') {
+      setAiCleaning(true);
+      setTimeout(() => {
+        setAiCleaning(false);
+        setAiCleaned(true);
+        setUserCredits(prev => {
+          const next = Math.max(0, prev - 20);
+          localStorage.setItem('user_credits', String(next));
+          return next;
+        });
+        window.dispatchEvent(new Event('credits-updated'));
+      }, 2000);
+      return;
+    }
+
     setAiCleaning(true);
-    setTimeout(() => {
-      setAiCleaning(false);
-      setAiCleaned(true);
-      setUserCredits(prev => {
-        const next = Math.max(0, prev - 20);
-        localStorage.setItem('user_credits', String(next));
-        return next;
+    try {
+      const token = localStorage.getItem('token');
+      const storedCredits = localStorage.getItem('user_credits');
+      const credits = storedCredits ? Number(storedCredits) : 500;
+      if (credits < 20) {
+        alert('⚠️ Credit Limit Reached: You need at least 20 credits to perform AI Auto Clean. Please upgrade your plan in settings.');
+        setAiCleaning(false);
+        return;
+      }
+
+      // Execute physical file cleaning by calling the clean API!
+      const operations = [
+        { action: 'drop_duplicates' },
+        { action: 'remove_outliers', target: 'Sales' }
+      ];
+      
+      await axios.post(`${API_URL}/api/datasets/${activeDatasetId}/clean`, {
+        operations
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Persist credit consumption in the database
+      const newCredits = Math.max(0, credits - 20);
+      localStorage.setItem('user_credits', String(newCredits));
+      await axios.put(`${API_URL}/api/auth/profile`, { credits: newCredits }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       window.dispatchEvent(new Event('credits-updated'));
-    }, 2000);
+      
+      setAiCleaned(true);
+      
+      // Sync profile & dataset details from DB
+      await fetchUserProfile();
+      await fetchActiveDatasetDetails(activeDatasetId);
+      await fetchDatasets();
+      
+    } catch (err) {
+      console.error('Failed to clean dataset on database:', err);
+      // Local fallback clean simulation
+      setAiCleaned(true);
+      const storedCredits = localStorage.getItem('user_credits');
+      const credits = storedCredits ? Number(storedCredits) : 500;
+      const newCredits = Math.max(0, credits - 20);
+      localStorage.setItem('user_credits', String(newCredits));
+      window.dispatchEvent(new Event('credits-updated'));
+    } finally {
+      setAiCleaning(false);
+    }
   };
 
   // Download Cleaned Dataset Action
@@ -708,7 +871,15 @@ export default function DashboardPage() {
   const inferredSchema = useMemo(() => {
     if (!localRawData || localRawData.length === 0) return [];
     const firstRow = localRawData[0];
-    return Object.keys(firstRow).filter(k => k !== 'isForecast').map(key => {
+    const keys = Object.keys(firstRow).filter(k => k !== 'isForecast' && k !== 'isManual');
+    
+    // Filter out our internal helpers name, Sales, Queries, Quality, Anomalies unless they were the ONLY columns present
+    const hasOriginalKeys = keys.some(k => k !== 'name' && k !== 'Sales' && k !== 'Queries' && k !== 'Quality' && k !== 'Anomalies');
+    const filteredKeys = hasOriginalKeys 
+      ? keys.filter(k => k !== 'name' && k !== 'Sales' && k !== 'Queries' && k !== 'Quality' && k !== 'Anomalies')
+      : keys;
+
+    return filteredKeys.map(key => {
       const val = firstRow[key];
       let dataType = "Text";
       let badgeColor = "bg-purple-500/10 text-purple-400 border-purple-500/20";
@@ -2621,6 +2792,31 @@ export default function DashboardPage() {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Unified Bottom Floating Glassmorphic Back + Undo / Redo Toolbar */}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800/80 px-5 py-2.5 rounded-full flex items-center space-x-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-fade-in hover:border-neutral-700 transition-all duration-300">
+          <button 
+            onClick={() => router.back()} 
+            className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer group bg-transparent border-none"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+          </button>
+          <div className="h-4.5 w-px bg-neutral-800" />
+          <button 
+            onClick={handleUndo} 
+            disabled={historyIndex <= 0}
+            className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+          >
+            <Undo2 className="w-3.5 h-3.5" /> Undo
+          </button>
+          <button 
+            onClick={handleRedo} 
+            disabled={historyIndex >= history.length - 1}
+            className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+          >
+            <Redo2 className="w-3.5 h-3.5" /> Redo
+          </button>
+        </div>
 
       </div>
     </div>

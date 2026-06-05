@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Sparkles, AlertTriangle, CheckCircle, Download, History, GitCommit, Table, Database, Search, Info, RefreshCw } from 'lucide-react';
+import { Sparkles, AlertTriangle, CheckCircle, Download, History, GitCommit, Table, Database, Search, Info, RefreshCw, ArrowLeft, Undo2, Redo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AutoDashboard } from '@/components/AutoDashboard';
@@ -17,6 +17,50 @@ export default function DatasetDetail() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // State History for Undo / Redo
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isApplyingHistoryRef = React.useRef(false);
+
+  const saveStateToHistory = (customData?: any) => {
+    if (isApplyingHistoryRef.current) return;
+    setHistory(prev => {
+      const updated = prev.slice(0, historyIndex + 1);
+      return [...updated, JSON.parse(JSON.stringify(customData || data))];
+    });
+    setHistoryIndex(prev => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex - 1;
+      const snapshot = history[targetIndex];
+      setData(snapshot);
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex + 1;
+      const snapshot = history[targetIndex];
+      setData(snapshot);
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (data) {
+      if (historyIndex === -1 || JSON.stringify(history[historyIndex]) !== JSON.stringify(data)) {
+        saveStateToHistory(data);
+      }
+    }
+  }, [data]);
   const [cleaning, setCleaning] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -1109,6 +1153,32 @@ def run_automl(df, target_col):
         </Card>
 
       </div>
+
+      {/* Unified Bottom Floating Glassmorphic Back + Undo / Redo Toolbar */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800/80 px-5 py-2.5 rounded-full flex items-center space-x-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-fade-in hover:border-neutral-700 transition-all duration-300">
+        <button 
+          onClick={() => router.back()} 
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer group bg-transparent border-none"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+        </button>
+        <div className="h-4.5 w-px bg-neutral-800" />
+        <button 
+          onClick={handleUndo} 
+          disabled={historyIndex <= 0}
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+        >
+          <Undo2 className="w-3.5 h-3.5" /> Undo
+        </button>
+        <button 
+          onClick={handleRedo} 
+          disabled={historyIndex >= history.length - 1}
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+        >
+          <Redo2 className="w-3.5 h-3.5" /> Redo
+        </button>
+      </div>
+
     </motion.div>
   );
 }

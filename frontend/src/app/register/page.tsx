@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft, Undo2, Redo2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,58 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  // State History for Undo / Redo
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isApplyingHistoryRef = React.useRef(false);
+
+  const saveStateToHistory = (currName: string, currEmail: string, currPassword: string) => {
+    if (isApplyingHistoryRef.current) return;
+    setHistory(prev => {
+      const updated = prev.slice(0, historyIndex + 1);
+      return [...updated, { name: currName, email: currEmail, password: currPassword }];
+    });
+    setHistoryIndex(prev => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex - 1;
+      const snapshot = history[targetIndex];
+      setName(snapshot.name);
+      setEmail(snapshot.email);
+      setPassword(snapshot.password);
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex + 1;
+      const snapshot = history[targetIndex];
+      setName(snapshot.name);
+      setEmail(snapshot.email);
+      setPassword(snapshot.password);
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      if (name || email || password) {
+        const lastSnap = history[historyIndex];
+        if (!lastSnap || lastSnap.name !== name || lastSnap.email !== email || lastSnap.password !== password) {
+          saveStateToHistory(name, email, password);
+        }
+      }
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [name, email, password]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +153,32 @@ export default function RegisterPage() {
           </p>
         </CardFooter>
       </Card>
+
+      {/* Unified Bottom Floating Glassmorphic Back + Undo / Redo Toolbar */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800/80 px-5 py-2.5 rounded-full flex items-center space-x-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-fade-in hover:border-neutral-700 transition-all duration-300">
+        <button 
+          onClick={() => router.back()} 
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer group bg-transparent border-none"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+        </button>
+        <div className="h-4.5 w-px bg-neutral-800" />
+        <button 
+          onClick={handleUndo} 
+          disabled={historyIndex <= 0}
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+        >
+          <Undo2 className="w-3.5 h-3.5" /> Undo
+        </button>
+        <button 
+          onClick={handleRedo} 
+          disabled={historyIndex >= history.length - 1}
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+        >
+          <Redo2 className="w-3.5 h-3.5" /> Redo
+        </button>
+      </div>
+
     </div>
   );
 }

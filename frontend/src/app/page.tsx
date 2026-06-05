@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight, Check, Shield, Lock, Server, Key } from 'lucide-react';
+import { Database, Sparkles, LineChart, BrainCircuit, ArrowRight, Check, Shield, Lock, Server, Key, ArrowLeft, Undo2, Redo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 
@@ -10,6 +10,48 @@ export default function LandingPage() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const [billingInterval, setBillingInterval] = React.useState<'monthly' | 'annually'>('monthly');
+
+  // State History for Undo / Redo
+  const [history, setHistory] = React.useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = React.useState(-1);
+  const isApplyingHistoryRef = React.useRef(false);
+
+  const saveStateToHistory = (interval: 'monthly' | 'annually') => {
+    if (isApplyingHistoryRef.current) return;
+    setHistory(prev => {
+      const updated = prev.slice(0, historyIndex + 1);
+      return [...updated, interval];
+    });
+    setHistoryIndex(prev => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex - 1;
+      const interval = history[targetIndex];
+      setBillingInterval(interval);
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      isApplyingHistoryRef.current = true;
+      const targetIndex = historyIndex + 1;
+      const interval = history[targetIndex];
+      setBillingInterval(interval);
+      setHistoryIndex(targetIndex);
+      isApplyingHistoryRef.current = false;
+    }
+  };
+
+  React.useEffect(() => {
+    if (historyIndex === -1 || history[historyIndex] !== billingInterval) {
+      saveStateToHistory(billingInterval);
+    }
+  }, [billingInterval]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -456,6 +498,32 @@ export default function LandingPage() {
 
       {/* Professional Footer */}
       <Footer />
+
+      {/* Unified Bottom Floating Glassmorphic Back + Undo / Redo Toolbar */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800/80 px-5 py-2.5 rounded-full flex items-center space-x-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)] z-50 animate-fade-in hover:border-neutral-700 transition-all duration-300">
+        <button 
+          onClick={() => router.back()} 
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer group bg-transparent border-none"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+        </button>
+        <div className="h-4.5 w-px bg-neutral-800" />
+        <button 
+          onClick={handleUndo} 
+          disabled={historyIndex <= 0}
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+        >
+          <Undo2 className="w-3.5 h-3.5" /> Undo
+        </button>
+        <button 
+          onClick={handleRedo} 
+          disabled={historyIndex >= history.length - 1}
+          className="text-neutral-400 hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-400 bg-transparent border-none"
+        >
+          <Redo2 className="w-3.5 h-3.5" /> Redo
+        </button>
+      </div>
+
     </div>
   );
 }
