@@ -3,11 +3,14 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Sparkles, AlertTriangle, CheckCircle, Download, History, GitCommit, Table, Database, Search, Info, RefreshCw, ArrowLeft, Undo2, Redo2 } from 'lucide-react';
+import { Sparkles, AlertTriangle, CheckCircle, Download, History, GitCommit, Table, Database, Search, Info, RefreshCw, ArrowLeft, Undo2, Redo2, MessageSquare, TrendingUp, ShieldAlert, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AutoDashboard } from '@/components/AutoDashboard';
 import { AutoML } from '@/components/AutoML';
+import { CopilotChat } from '@/components/CopilotChat';
+import { DataQualityEngine } from '@/components/DataQualityEngine';
+import { SmartInsightFeed } from '@/components/SmartInsightFeed';
 import axios from 'axios';
 import { API_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -64,7 +67,7 @@ export default function DatasetDetail() {
   const [cleaning, setCleaning] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'explorer' | 'schema'>('explorer');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat' | 'predictive' | 'quality' | 'feed' | 'explorer'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDiagStage, setActiveDiagStage] = useState<number>(1);
   const [userPlan, setUserPlan] = useState<string>('Developer Sandbox');
@@ -600,42 +603,153 @@ export default function DatasetDetail() {
         </div>
 
         {/* Tab Selection */}
-        <div className="flex space-x-1.5 bg-neutral-900/60 p-1.5 rounded-xl border border-neutral-850 max-w-sm mt-4 backdrop-blur-sm">
+        <div className="flex flex-wrap gap-2 bg-neutral-900/60 p-2 rounded-2xl border border-neutral-850 mt-4 backdrop-blur-sm">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer ${
+              activeTab === 'dashboard'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
+                : 'text-neutral-400 hover:text-neutral-250'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            AI Dashboard Builder
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer ${
+              activeTab === 'chat'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
+                : 'text-neutral-400 hover:text-neutral-250'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            AI Chat with Data
+          </button>
+          <button
+            onClick={() => setActiveTab('predictive')}
+            className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer ${
+              activeTab === 'predictive'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
+                : 'text-neutral-400 hover:text-neutral-250'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            AI Forecasting Studio
+          </button>
+          <button
+            onClick={() => setActiveTab('quality')}
+            className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer ${
+              activeTab === 'quality'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
+                : 'text-neutral-400 hover:text-neutral-250'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Data Quality & Health
+          </button>
+          <button
+            onClick={() => setActiveTab('feed')}
+            className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer ${
+              activeTab === 'feed'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
+                : 'text-neutral-400 hover:text-neutral-250'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            Smart Insight Feed
+          </button>
           <button
             onClick={() => setActiveTab('explorer')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold tracking-wide transition-all cursor-pointer ${
               activeTab === 'explorer'
-                ? 'bg-neutral-800 text-white shadow-md'
-                : 'text-neutral-450 hover:text-neutral-250'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
+                : 'text-neutral-400 hover:text-neutral-250'
             }`}
           >
             <Table className="w-4 h-4" />
-            Data Explorer Grid
-          </button>
-          <button
-            onClick={() => setActiveTab('schema')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer ${
-              activeTab === 'schema'
-                ? 'bg-neutral-800 text-white shadow-md'
-                : 'text-neutral-450 hover:text-neutral-250'
-            }`}
-          >
-            <Database className="w-4 h-4" />
-            Schema Audit Profile
+            Data Explorer
           </button>
         </div>
 
         {/* Main Tab Render Canvas */}
-        <div className="mt-4">
+        <div className="mt-6">
           <AnimatePresence mode="wait">
-            {activeTab === 'explorer' ? (
+            {activeTab === 'dashboard' && (
+              <motion.div
+                key="dashboard"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AutoDashboard dataPreview={data?.preview} columns={data?.columns} />
+              </motion.div>
+            )}
+
+            {activeTab === 'chat' && (
+              <motion.div
+                key="chat"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CopilotChat datasetId={id as string} />
+              </motion.div>
+            )}
+
+            {activeTab === 'predictive' && (
+              <motion.div
+                key="predictive"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AutoML datasetId={id as string} columns={data?.columns} dataPreview={data?.preview} />
+              </motion.div>
+            )}
+
+            {activeTab === 'quality' && (
+              <motion.div
+                key="quality"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <DataQualityEngine 
+                  datasetId={id as string} 
+                  issues={data?.issues} 
+                  columns={data?.columns} 
+                  onRefresh={fetchIssues} 
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'feed' && (
+              <motion.div
+                key="feed"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <SmartInsightFeed dataPreview={data?.preview} columns={data?.columns} />
+              </motion.div>
+            )}
+
+            {activeTab === 'explorer' && (
               <motion.div
                 key="explorer"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
+                transition={{ duration: 0.2 }}
+                className="space-y-6"
               >
+                {/* raw table card */}
                 <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 overflow-hidden shadow-2xl rounded-2xl backdrop-blur-sm">
                   <CardHeader className="border-b border-neutral-900/60 pb-5 bg-neutral-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="text-left">
@@ -703,19 +817,12 @@ export default function DatasetDetail() {
                     </table>
                   </div>
                 </Card>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="schema"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-              >
+
+                {/* Schema Inferences & Checks */}
                 <Card className="bg-neutral-900/40 border border-neutral-850 text-neutral-50 overflow-hidden shadow-2xl rounded-2xl backdrop-blur-sm">
                   <CardHeader className="border-b border-neutral-900/60 pb-5 bg-neutral-950/20">
                     <CardTitle className="text-lg font-bold text-white flex items-center gap-2 text-left">
-                      <Database className="w-5 h-5 text-indigo-400" /> Schema & Data Quality Audits
+                      <Database className="w-5 h-5 text-indigo-400" /> Schema Inferences & Checks
                     </CardTitle>
                     <CardDescription className="text-neutral-400 text-xs mt-1 text-left">
                       Detailed type inferences, quality percentages, and anomaly logs per feature key.
@@ -783,12 +890,12 @@ export default function DatasetDetail() {
                                <td className="px-6 py-4.5">
                                  {hasAnomalies ? (
                                    <span className="inline-flex items-center gap-1.5 text-[10px] text-yellow-400 font-bold bg-yellow-500/5 px-3 py-1 border border-yellow-500/15 rounded-lg font-mono">
-                                     <AlertTriangle className="w-3 h-3 text-yellow-400" />
+                                     <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
                                      Imputation Recommended
                                    </span>
                                  ) : (
                                    <span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold bg-emerald-500/5 px-3 py-1 border border-emerald-500/15 rounded-lg font-mono">
-                                     <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                                      Verified Clean
                                    </span>
                                  )}
@@ -803,18 +910,6 @@ export default function DatasetDetail() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        {/* Automated Visualizations */}
-        <div className="pt-4">
-          <h2 className="text-xl font-bold tracking-tight text-white mb-4 text-left">AI Auto-Generated Visual Insights</h2>
-          <AutoDashboard dataPreview={data?.preview} columns={data?.columns} />
-        </div>
-
-        {/* Machine Learning Engine */}
-        <div className="pt-4">
-          <h2 className="text-xl font-bold tracking-tight text-white mb-4 text-left">AI ML Predictive Models Studio</h2>
-          <AutoML datasetId={id as string} columns={data?.columns} dataPreview={data?.preview} />
         </div>
 
         {/* 🧠 AI Engine Analytics & Pipeline Diagnostics Workbench */}
