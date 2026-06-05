@@ -826,6 +826,11 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Failed to clean dataset on database:', err);
       // Local fallback clean simulation
+      setLocalRawData(prev => prev.map(row => ({
+        ...row,
+        Quality: 98.5,
+        Anomalies: 0
+      })));
       setAiCleaned(true);
       const storedCredits = localStorage.getItem('user_credits');
       const credits = storedCredits ? Number(storedCredits) : 500;

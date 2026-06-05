@@ -24,6 +24,7 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const dataset_routes_1 = __importDefault(require("./routes/dataset.routes"));
+const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 app.use((0, cors_1.default)());
@@ -31,6 +32,7 @@ app.use(express_1.default.json());
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
 app.use('/api/auth', auth_routes_1.default);
 app.use('/api/datasets', dataset_routes_1.default);
+app.use('/api/dashboards', dashboard_routes_1.default);
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'backend' });
 });

@@ -367,12 +367,7 @@ def clean_dataset(request: CleanRequest):
     except Exception as e:
         print("API clean exception caught. Traceback:")
         traceback.print_exc()
-        return {
-            "message": "Dataset cleaned successfully (AI Fallback Mode)",
-            "rowCount": 50,
-            "records": [],
-            "columns": []
-        }
+        raise HTTPException(status_code=500, detail=f"AI engine clean failed: {str(e)}")
 
 class CopilotRequest(BaseModel):
     filePath: str

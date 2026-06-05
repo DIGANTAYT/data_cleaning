@@ -697,32 +697,32 @@ export const cleanDataset = async (req: AuthRequest, res: Response): Promise<voi
     
     const { rowCount, records, columns } = aiResponse.data;
     
+    if (!records || records.length === 0) {
+      throw new Error('AI engine returned empty records, falling back to local clean to protect data integrity.');
+    }
+    
     // Save the cleaned file locally on the Express backend!
     const newFileName = `cleaned_${Date.now()}-${path.basename(dataset.filePath)}`;
     const newFilePath = `uploads/${newFileName}`;
-    const absolutePath = path.resolve(newFilePath);
+    const absolutePath = path.resolve(__dirname, '../../', newFilePath);
     
     // Convert records back to CSV
     let fileContent = '';
-    if (records && records.length > 0) {
-      const headers = Object.keys(records[0]);
-      fileContent += headers.join(',') + '\n';
-      records.forEach((row: any) => {
-        const line = headers.map(header => {
-          let cell = row[header];
-          if (cell === null || cell === undefined) cell = '';
-          // Escape quotes
-          cell = cell.toString().replace(/"/g, '""');
-          if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
-            cell = `"${cell}"`;
-          }
-          return cell;
-        }).join(',');
-        fileContent += line + '\n';
-      });
-    } else {
-      fileContent = columns.join(',');
-    }
+    const headers = Object.keys(records[0]);
+    fileContent += headers.join(',') + '\n';
+    records.forEach((row: any) => {
+      const line = headers.map(header => {
+        let cell = row[header];
+        if (cell === null || cell === undefined) cell = '';
+        // Escape quotes
+        cell = cell.toString().replace(/"/g, '""');
+        if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
+          cell = `"${cell}"`;
+        }
+        return cell;
+      }).join(',');
+      fileContent += line + '\n';
+    });
     
     fs.writeFileSync(absolutePath, fileContent);
     

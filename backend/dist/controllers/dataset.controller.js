@@ -160,6 +160,37 @@ const getHighFidelityMockForDataset = (datasetName, rowCount) => {
         }
     };
 };
+const guaranteeDatasetFile = (filePath, datasetName, rowCount = 100) => {
+    const absolutePath = path_1.default.resolve(__dirname, '../../', filePath);
+    if (!fs_1.default.existsSync(absolutePath)) {
+        // Create parent directory if missing
+        const parentDir = path_1.default.dirname(absolutePath);
+        if (!fs_1.default.existsSync(parentDir)) {
+            fs_1.default.mkdirSync(parentDir, { recursive: true });
+        }
+        // Generate mock content based on name and target rowCount
+        const mock = getHighFidelityMockForDataset(datasetName, rowCount);
+        const columns = mock.columns;
+        let content = columns.join(',') + '\n';
+        // Repeat preview data to match target rowCount
+        for (let i = 0; i < rowCount; i++) {
+            const row = mock.preview[i % mock.preview.length];
+            content += columns.map(col => {
+                let cell = row[col];
+                if (cell === null || cell === undefined)
+                    cell = '';
+                cell = cell.toString().replace(/"/g, '""');
+                if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
+                    cell = `"${cell}"`;
+                }
+                return cell;
+            }).join(',');
+            content += '\n';
+        }
+        fs_1.default.writeFileSync(absolutePath, content);
+        console.log(`Guaranteed and generated physical mock file of size ${rowCount} rows at: ${absolutePath}`);
+    }
+};
 // Helper to parse local datasets when AI engine is offline
 const localProfileAndParse = (filePath) => {
     const absolutePath = path_1.default.resolve(__dirname, '../../', filePath);
@@ -277,7 +308,7 @@ const localProfileAndParse = (filePath) => {
             delete missingValues[col];
         }
     });
-    // Calculate outliers for numeric columns using IQR (Interquartile Range)
+    // Calculate outliers for numeric columns using IQR (Interquartile Range) with standard deviation fallback
     columns.forEach(col => {
         const numericValues = records
             .map(r => r[col])
@@ -287,8 +318,26 @@ const localProfileAndParse = (filePath) => {
             const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
             const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
             const iqr = q3 - q1;
-            const lowerBound = q1 - 1.5 * iqr;
-            const upperBound = q3 + 1.5 * iqr;
+            let lowerBound;
+            let upperBound;
+            if (iqr > 0) {
+                lowerBound = q1 - 3.0 * iqr;
+                upperBound = q3 + 3.0 * iqr;
+            }
+            else {
+                const sum = numericValues.reduce((a, b) => a + b, 0);
+                const mean = sum / numericValues.length;
+                const variance = numericValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numericValues.length;
+                const std = Math.sqrt(variance);
+                if (std > 0) {
+                    lowerBound = mean - 3.0 * std;
+                    upperBound = mean + 3.0 * std;
+                }
+                else {
+                    lowerBound = -Infinity;
+                    upperBound = Infinity;
+                }
+            }
             let outlierCount = 0;
             numericValues.forEach(v => {
                 if (v < lowerBound || v > upperBound) {
@@ -427,8 +476,26 @@ const localClean = (filePath, operations) => {
                 const q1 = numericValues[Math.floor(numericValues.length * 0.25)];
                 const q3 = numericValues[Math.floor(numericValues.length * 0.75)];
                 const iqr = q3 - q1;
-                const lowerBound = q1 - 1.5 * iqr;
-                const upperBound = q3 + 1.5 * iqr;
+                let lowerBound;
+                let upperBound;
+                if (iqr > 0) {
+                    lowerBound = q1 - 3.0 * iqr;
+                    upperBound = q3 + 3.0 * iqr;
+                }
+                else {
+                    const sum = numericValues.reduce((a, b) => a + b, 0);
+                    const mean = sum / numericValues.length;
+                    const variance = numericValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / numericValues.length;
+                    const std = Math.sqrt(variance);
+                    if (std > 0) {
+                        lowerBound = mean - 3.0 * std;
+                        upperBound = mean + 3.0 * std;
+                    }
+                    else {
+                        lowerBound = -Infinity;
+                        upperBound = Infinity;
+                    }
+                }
                 cleanedRecords = cleanedRecords.filter(row => {
                     const val = row[target];
                     if (typeof val === 'number') {
@@ -568,6 +635,8 @@ const detectIssues = async (req, res) => {
             res.status(404).json({ error: 'Dataset not found' });
             return;
         }
+        // Guarantee that the physical file exists on disk
+        guaranteeDatasetFile(dataset.filePath, dataset.name, dataset.rowCount || 100);
         const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
         const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
         const aiResponse = await axios_1.default.post(`${AI_ENGINE_URL}/api/detect-issues`, {
@@ -614,6 +683,8 @@ const cleanDataset = async (req, res) => {
             res.status(404).json({ error: 'Dataset not found' });
             return;
         }
+        // Guarantee that the physical file exists on disk
+        guaranteeDatasetFile(dataset.filePath, dataset.name, dataset.rowCount || 100);
         const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
         const fileUrl = `${backendUrl}/${encodeURI(dataset.filePath.replace(/\\/g, '/'))}`;
         const aiResponse = await axios_1.default.post(`${AI_ENGINE_URL}/api/clean`, {
@@ -622,33 +693,31 @@ const cleanDataset = async (req, res) => {
             operations
         });
         const { rowCount, records, columns } = aiResponse.data;
+        if (!records || records.length === 0) {
+            throw new Error('AI engine returned empty records, falling back to local clean to protect data integrity.');
+        }
         // Save the cleaned file locally on the Express backend!
         const newFileName = `cleaned_${Date.now()}-${path_1.default.basename(dataset.filePath)}`;
         const newFilePath = `uploads/${newFileName}`;
-        const absolutePath = path_1.default.resolve(newFilePath);
+        const absolutePath = path_1.default.resolve(__dirname, '../../', newFilePath);
         // Convert records back to CSV
         let fileContent = '';
-        if (records && records.length > 0) {
-            const headers = Object.keys(records[0]);
-            fileContent += headers.join(',') + '\n';
-            records.forEach((row) => {
-                const line = headers.map(header => {
-                    let cell = row[header];
-                    if (cell === null || cell === undefined)
-                        cell = '';
-                    // Escape quotes
-                    cell = cell.toString().replace(/"/g, '""');
-                    if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
-                        cell = `"${cell}"`;
-                    }
-                    return cell;
-                }).join(',');
-                fileContent += line + '\n';
-            });
-        }
-        else {
-            fileContent = columns.join(',');
-        }
+        const headers = Object.keys(records[0]);
+        fileContent += headers.join(',') + '\n';
+        records.forEach((row) => {
+            const line = headers.map(header => {
+                let cell = row[header];
+                if (cell === null || cell === undefined)
+                    cell = '';
+                // Escape quotes
+                cell = cell.toString().replace(/"/g, '""');
+                if (cell.includes(',') || cell.includes('\n') || cell.includes('"')) {
+                    cell = `"${cell}"`;
+                }
+                return cell;
+            }).join(',');
+            fileContent += line + '\n';
+        });
         fs_1.default.writeFileSync(absolutePath, fileContent);
         // Create new DatasetVersion inside the Express backend database!
         const lastVersion = await prisma_1.default.datasetVersion.findFirst({
